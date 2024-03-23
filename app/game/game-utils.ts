@@ -26,7 +26,7 @@ export function buildShareableResult(
     };
   }
   const guessCount = game.status === "WON" ? `${game.guesses.length}` : "X";
-  const title = `Framedl ${game.date} ${guessCount}/6`;
+  const title = `Framedl ${game.gameKey} ${guessCount}/6`;
   const text = buildResultText(game);
   return { title, text };
 }

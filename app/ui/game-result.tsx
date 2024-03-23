@@ -33,7 +33,7 @@ export default function GameResult({ game, shareUrl }: GameResultProps) {
       {game && (
         <div className="w-full flex flex-col gap-1 font-space">
           <p className="w-full text-left text-2xl py-1 font-spaceBold">
-            Framedl {game.date}
+            Framedl {game.gameKey}
           </p>
           <p className="w-full text-left text-xl">
             {game.status === "WON" ? "You won! 🎉" : "Better luck next time!"}
