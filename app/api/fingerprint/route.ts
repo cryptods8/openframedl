@@ -4,6 +4,7 @@ import { generateFingerprint } from "../../generate-image";
 import { gameService } from "../../game/game-service";
 import { verifySignedUrl, timeCall } from "../../utils";
 import { baseUrl } from "../../constants";
+import { GameIdentityProvider, UserKey } from "../../game/game-repository";
 
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
@@ -18,8 +19,10 @@ function verifyUrl(req: NextRequest) {
   return new URL(verifySignedUrl(url));
 }
 
-async function loadAllGamesByFid(fid: number) {
-  return timeCall("loadAllGamesByFid", () => gameService.loadAllByFid(fid));
+async function loadAllGames(userKey: UserKey) {
+  return timeCall("loadAllGames", () =>
+    gameService.loadAllDailiesByUserKey(userKey)
+  );
 }
 
 export async function GET(req: NextRequest) {
@@ -27,9 +30,10 @@ export async function GET(req: NextRequest) {
   try {
     const url = verifyUrl(req);
     const params = url.searchParams;
-    const fid = parseInt(params.get("fid") as string, 10);
+    const userId = params.get("uid") as string;
     const date = params.get("date") as string | undefined;
-    const games = await loadAllGamesByFid(fid);
+    const identityProvider = params.get("ip") as GameIdentityProvider;
+    const games = await loadAllGames({ userId, identityProvider });
     return timeCall("generateFingerprint", () =>
       generateFingerprint(games, date)
     );

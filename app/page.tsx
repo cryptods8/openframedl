@@ -9,6 +9,7 @@ import {
   getPreviousFrame,
   useFramesReducer,
 } from "frames.js/next/server";
+import { ClientProtocolId, UserDataReturnType } from "frames.js";
 import Link from "next/link";
 
 import { signUrl, verifySignedUrl, timeCall } from "./utils";
@@ -17,23 +18,56 @@ import { baseUrl, hubHttpUrl } from "./constants";
 import { gameService, GuessedGame } from "./game/game-service";
 import { buildShareableResult } from "./game/game-utils";
 import GameResult from "./ui/game-result";
+import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
+import {
+  GameIdentityProvider,
+  UserGameKey,
+  UserKey,
+} from "./game/game-repository";
 
-type GameStatus = "initial" | "in_progress" | "invalid" | "finished";
+type GamePage = "initial" | "in_progress" | "finished" | "leaderboard";
 type State = {
-  active: string;
-  status: GameStatus;
+  page: GamePage;
+  gameKey?: string;
+  daily?: boolean;
 };
 
-const initialState = { status: "initial" as GameStatus, active: "1" };
+const acceptedProtocols: ClientProtocolId[] = [
+  {
+    id: "xmtp",
+    version: "vNext",
+  },
+  {
+    id: "farcaster",
+    version: "vNext",
+  },
+];
 
-const reducer: FrameReducer<State> = (state, action) => {
-  return {
-    ...state,
-    active: action.postBody?.untrustedData.buttonIndex
-      ? String(action.postBody?.untrustedData.buttonIndex)
-      : "1",
-  };
-};
+const initialState: State = { page: "initial" };
+
+// const reducer: FrameReducer<State> = (state, action) => {
+//   const buttonIndex = action.postBody?.untrustedData.buttonIndex;
+//   switch (state.page) {
+//     case "initial":
+//       return {
+//         ...state,
+//         page: "in_progress",
+//         gameKey:
+//           buttonIndex === 1
+//             ? new Date().toISOString().split("T")[0]
+//             : Math.random().toString(36).substring(2),
+//       };
+//     case "in_progress":
+//       return state;
+//     case "finished":
+//       return { ...state, page: "initial", gameKey: undefined };
+//     case "leaderboard":
+//       if (buttonIndex === 1) {
+//         return { ...state, page: "initial", gameKey: undefined };
+//       }
+//   }
+//   return state;
+// };
 
 interface GameImageParams {
   message?: string;
@@ -42,9 +76,9 @@ interface GameImageParams {
 }
 
 interface GameFrame {
-  status: "initial" | "in_progress" | "invalid" | "finished" | "leaderboard";
   imageParams: GameImageParams;
   game?: GuessedGame;
+  state: State;
 }
 
 function isUrlSigned(
@@ -79,27 +113,76 @@ function isUrlSigned(
 }
 
 async function nextFrame(
-  fid: number | undefined,
+  userKey: UserKey | undefined,
+  prevState: State,
   inputText: string | undefined,
+  buttonIndex: number | undefined,
   userData?: GuessedGame["userData"]
 ): Promise<GameFrame> {
-  if (!fid) {
+  if (!userKey) {
     return {
-      status: "initial",
       imageParams: {},
+      state: {
+        page: "initial",
+      },
     };
   }
-  const game = await gameService.loadOrCreate(fid, userData);
+  if (prevState.page === "leaderboard") {
+    return {
+      imageParams: {},
+      state: {
+        page: "initial",
+      },
+    };
+  }
+  if (prevState.page === "finished") {
+    return {
+      imageParams: {},
+      state: {
+        page: buttonIndex === 1 ? "initial" : "leaderboard",
+      },
+    };
+  }
+
+  let gameKey = prevState.gameKey;
+  let daily = prevState.daily;
+  if (prevState.page === "initial") {
+    daily = buttonIndex === 1;
+    gameKey = daily
+      ? new Date().toISOString().split("T")[0]!
+      : Math.random().toString(36).substring(2);
+  }
+  if (!gameKey || daily == null) {
+    console.error("No game key");
+    gameKey = Math.random().toString(36).substring(2);
+    daily = false;
+  }
+  const newState = {
+    gameKey,
+    daily,
+  };
+  const userGameKey: UserGameKey = {
+    ...userKey,
+    gameKey,
+    isDaily: daily,
+  };
+  const game = await gameService.loadOrCreate(userGameKey, userData);
   if (game.status !== "IN_PROGRESS") {
     return {
-      status: "finished",
+      state: {
+        ...newState,
+        page: "finished",
+      },
       imageParams: { gameId: game.id },
       game,
     };
   }
   if (game.guesses.length === 0 && !inputText) {
     return {
-      status: "initial",
+      state: {
+        ...newState,
+        page: "in_progress",
+      },
       imageParams: { gameId: game.id },
       game,
     };
@@ -119,7 +202,10 @@ async function nextFrame(
         break;
     }
     return {
-      status: "invalid",
+      state: {
+        ...newState,
+        page: "in_progress",
+      },
       imageParams: { gameId: game.id, message },
       game,
     };
@@ -127,7 +213,10 @@ async function nextFrame(
 
   if (game.originalGuesses.includes(guess)) {
     return {
-      status: "invalid",
+      state: {
+        ...newState,
+        page: "in_progress",
+      },
       imageParams: { gameId: game.id, message: "Already guessed!" },
       game,
     };
@@ -135,24 +224,27 @@ async function nextFrame(
   const guessedGame = await gameService.guess(game, guess);
   if (guessedGame.status !== "IN_PROGRESS") {
     return {
-      status: "finished",
+      state: {
+        ...newState,
+        page: "finished",
+      },
       imageParams: { gameId: guessedGame.id },
       game: guessedGame,
     };
   }
 
   return {
-    status: "in_progress",
+    state: {
+      ...newState,
+      page: "in_progress",
+    },
     imageParams: { gameId: guessedGame.id },
     game: guessedGame,
   };
 }
 
-function buildImageUrl(p: GameImageParams, fid?: number): string {
+function buildImageUrl(p: GameImageParams): string {
   const params = new URLSearchParams();
-  if (fid != null) {
-    params.append("fid", fid.toString());
-  }
   if (p.message) {
     params.append("msg", p.message);
   }
@@ -173,44 +265,77 @@ function buildImageUrl(p: GameImageParams, fid?: number): string {
 export default async function Home({ searchParams }: NextServerPageProps) {
   const start = Date.now();
   const previousFrame = getPreviousFrame<State>(searchParams);
+  const prevState = previousFrame.prevState || initialState;
 
-  const [state] = useFramesReducer<State>(reducer, initialState, previousFrame);
-
-  const frameMessage = await timeCall("getFrameMessage", () =>
-    getFrameMessage(previousFrame.postBody, {
-      fetchHubContext:
-        state.status === "initial" || state.status === "finished",
+  let userId: string | undefined;
+  let inputText: string | undefined;
+  let buttonIndex: number | undefined;
+  let userData: UserDataReturnType | undefined;
+  let identityProvider: GameIdentityProvider | undefined;
+  if (
+    previousFrame.postBody &&
+    isXmtpFrameActionPayload(previousFrame.postBody)
+  ) {
+    const frameMessage = await getXmtpFrameMessage(previousFrame.postBody);
+    userId = frameMessage.verifiedWalletAddress;
+    // TODO do something with this
+    // gameKey = frameMessage.opaqueConversationIdentifier;
+    buttonIndex = frameMessage.buttonIndex;
+    inputText = frameMessage.inputText;
+    identityProvider = "xmtp";
+  } else {
+    const frameMessage = await getFrameMessage(previousFrame.postBody, {
+      fetchHubContext: prevState.page === "initial",
       hubHttpUrl,
-    })
+    });
+    if (frameMessage) {
+      userId = frameMessage.requesterFid.toString();
+      buttonIndex = frameMessage.buttonIndex;
+      inputText = frameMessage.inputText;
+      userData = frameMessage.requesterUserData;
+      identityProvider = "fc";
+    }
+  }
+
+  const userGameKey =
+    userId && identityProvider ? { userId, identityProvider } : undefined;
+  const { game, imageParams, state } = await timeCall("nextFrame", () =>
+    nextFrame(
+      userGameKey,
+      prevState,
+      inputText,
+      buttonIndex,
+      userData || undefined
+    )
   );
 
-  const fid = frameMessage?.requesterFid;
-  const inputText =
-    state.status !== "finished" ? frameMessage?.inputText : undefined;
-
-  if (state.status === "finished" && frameMessage?.buttonIndex === 2) {
+  if (state.page === "leaderboard" && userGameKey) {
     const clientType = previousFrame.postBody
       ? await timeCall("getClientType", () =>
           getClientType(previousFrame.postBody!)
         )
       : null;
     let shareUrl;
+    const lpParams = new URLSearchParams();
+    lpParams.set("uid", userGameKey.userId);
+    lpParams.set("ip", userGameKey.identityProvider);
     if (clientType === "WARPCAST") {
-      const url = `${baseUrl}/leaderboard?fid=${fid}`;
+      const url = `${baseUrl}/leaderboard?${lpParams.toString()}`;
       const params = new URLSearchParams();
       params.set("text", `Framedl Leaderboard`);
       params.set("embeds[]", url);
       shareUrl = `https://warpcast.com/~/compose?${params.toString()}`;
     }
     // return leaderboard
-    const imageUrl = `${baseUrl}/api/images/leaderboard?fid=${fid}`;
+    const imageUrl = `${baseUrl}/api/images/leaderboard?${lpParams.toString()}`;
     const signedImageUrl = signUrl(imageUrl);
     return (
       <FrameContainer
         pathname="/"
         postUrl="/frames"
-        state={{ ...state, status: "leaderboard" }}
+        state={{ page: "leaderboard" }}
         previousFrame={previousFrame}
+        accepts={acceptedProtocols}
       >
         <FrameImage src={signedImageUrl} />
         <FrameButton>Back</FrameButton>
@@ -223,12 +348,7 @@ export default async function Home({ searchParams }: NextServerPageProps) {
     );
   }
 
-  const { game, imageParams, status } = await timeCall("nextFrame", () =>
-    nextFrame(fid, inputText, frameMessage?.requesterUserData || undefined)
-  );
-
-  // then, when done, return next frame
-  const isFinished = status === "finished";
+  const isFinished = state.page === "finished";
 
   const gameIdParam = searchParams?.id as string;
   const gameById = gameIdParam
@@ -263,19 +383,20 @@ export default async function Home({ searchParams }: NextServerPageProps) {
   }
 
   const elements = [];
-  elements.push(
-    <FrameImage key="image" src={buildImageUrl(imageParams, fid)} />
-  );
-  if (fid && !isFinished) {
+  elements.push(<FrameImage key="image" src={buildImageUrl(imageParams)} />);
+  if (userId && state.page === "in_progress") {
     elements.push(<FrameInput key="input" text="Make your guess..." />);
   }
   const buttonLabel = isFinished
-    ? `Play again in ${24 - new Date().getUTCHours()} hours`
-    : fid
+    ? `Play again`
+    : state.page === "in_progress"
     ? "Guess"
-    : "Start";
+    : "Daily";
   elements.push(<FrameButton key="button">{buttonLabel}</FrameButton>);
-  if (isFinished) {
+  if (state.page === "initial") {
+    elements.push(<FrameButton key="random">🎲 Random</FrameButton>);
+  }
+  if (state.page === "finished") {
     elements.push(<FrameButton key="leaderboard">Leaderboard</FrameButton>);
   }
   redirects.forEach((r, i) =>
@@ -292,8 +413,9 @@ export default async function Home({ searchParams }: NextServerPageProps) {
       <FrameContainer
         pathname="/"
         postUrl="/frames"
-        state={{ ...state, status }}
+        state={state}
         previousFrame={previousFrame}
+        accepts={acceptedProtocols}
       >
         {elements}
       </FrameContainer>
@@ -303,7 +425,7 @@ export default async function Home({ searchParams }: NextServerPageProps) {
           shareUrl={`${baseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
         />
         <div className="text-center mt-8 text-sm text-slate-600">
-          Framedl made by{" "}
+          OpenFramedl made by{" "}
           <Link href="https://warpcast.com/ds8" className="underline">
             ds8
           </Link>

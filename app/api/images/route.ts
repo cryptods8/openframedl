@@ -4,6 +4,7 @@ import { generateImage } from "../../generate-image";
 import { gameService, GuessedGame } from "../../game/game-service";
 import { verifySignedUrl, timeCall } from "../../utils";
 import { baseUrl } from "../../constants";
+import { UserKey } from "../../game/game-repository";
 
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
@@ -33,8 +34,8 @@ async function loadGame(gid: string) {
   return timeCall("loadGame", () => gameService.load(gid));
 }
 
-async function loadGameStats(fid: number) {
-  return timeCall("loadGameStats", () => gameService.loadStats(fid));
+async function loadGameStats(userKey: UserKey) {
+  return timeCall("loadGameStats", () => gameService.loadStats(userKey));
 }
 
 export async function GET(req: NextRequest) {
@@ -50,7 +51,10 @@ export async function GET(req: NextRequest) {
       overlayMessage: msg,
       share: shr === "1",
       userStats:
-        (game && isGameFinished(game) && (await loadGameStats(game.fid))) ||
+        (game &&
+          isGameFinished(game) &&
+          game.isDaily &&
+          (await loadGameStats(game))) ||
         undefined,
     };
     return timeCall("generateImage", () => generateImage(game, options));

@@ -452,7 +452,7 @@ export async function generateImage(
                 color: "rgba(31, 21, 55, 0.87)",
               }}
             >
-              Framedl {game?.date}
+              Framedl {game?.gameKey}
             </div>
             <div
               tw="flex text-4xl flex-wrap"
@@ -573,14 +573,14 @@ export async function generateFingerprint(
   dateStr: string | null | undefined
 ) {
   const lastGameDateStr = games.reduce(
-    (acc, g) => maxStr(acc, g.date),
+    (acc, g) => maxStr(acc, g.gameKey),
     MIN_DATE_STRING
   );
   const lastDateStr = dateStr
     ? minStr(maxStr(dateStr, MIN_DATE_STRING), lastGameDateStr)
     : lastGameDateStr;
   const map = games.reduce((acc, g) => {
-    acc[g.date] = g;
+    acc[g.gameKey] = g;
     return acc;
   }, {} as Record<string, GuessedGame>);
   const lastDate = new Date(lastDateStr);
@@ -683,7 +683,11 @@ export async function generateLeaderboardImage(
         </div>
         <div
           tw="flex text-5xl p-12 text-white"
-          style={{ fontFamily: "SpaceGrotesk", fontWeight: 700, color: primaryColor(0.16) }}
+          style={{
+            fontFamily: "SpaceGrotesk",
+            fontWeight: 700,
+            color: primaryColor(0.16),
+          }}
         >
           Framedl
         </div>
@@ -715,7 +719,7 @@ export async function generateLeaderboardImage(
                   textOverflow: "ellipsis",
                 }}
               >
-                {e.userData?.displayName || e.fid}
+                {e.userData?.displayName || e.userId}
               </div>
               <div
                 tw="flex flex-1 pt-2"

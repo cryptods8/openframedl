@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Framedl by ds8",
+  title: "OpenFramedl by ds8",
   description: "Wordle in a frame",
 };
 

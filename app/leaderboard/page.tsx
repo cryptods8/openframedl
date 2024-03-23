@@ -12,11 +12,20 @@ export default async function Leaderboard({
   searchParams,
 }: NextServerPageProps) {
   const previousFrame = getPreviousFrame(searchParams);
-  const fidStr = searchParams?.fid;
-  const fid = fidStr ? parseInt(fidStr as string, 10) : undefined;
+  const uidStr = searchParams?.uid as string | undefined;
+  const ipStr = searchParams?.ip as string | undefined;
 
+  const imageParams = new URLSearchParams();
+  if (uidStr) {
+    imageParams.set("uid", uidStr);
+  }
+  if (ipStr) {
+    imageParams.set("ip", ipStr);
+  }
+
+  const queryString = imageParams.toString();
   const imageUrl = `${baseUrl}/api/images/leaderboard${
-    fid ? `?fid=${fid}` : ""
+    queryString ? `?${queryString}` : ""
   }`;
   const signedImageUrl = signUrl(imageUrl);
 

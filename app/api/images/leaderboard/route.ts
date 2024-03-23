@@ -4,6 +4,7 @@ import { generateLeaderboardImage } from "../../../generate-image";
 import { gameService } from "../../../game/game-service";
 import { verifySignedUrl, timeCall } from "../../../utils";
 import { baseUrl } from "../../../constants";
+import { GameIdentityProvider } from "../../../game/game-repository";
 
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
@@ -23,11 +24,11 @@ export async function GET(req: NextRequest) {
   try {
     const url = verifyUrl(req);
     const params = url.searchParams;
-    const fidParam = params.get("fid");
-    const fid = fidParam ? parseInt(fidParam, 10) : undefined;
+    const userIdParam = params.get("uid");
+    const ipParam = params.get("ip") as GameIdentityProvider;
 
     const leaderboard = await timeCall("loadLeaderboard", () =>
-      gameService.loadLeaderboard(fid)
+      gameService.loadLeaderboard(userIdParam, ipParam)
     );
 
     return timeCall("generateLeaderboardImage", () =>
