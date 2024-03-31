@@ -11,13 +11,14 @@ const allowedQueryParams = ["gid", "msg", "shr", "signed"];
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
   // remove extra query params
+  const urlParams = url.searchParams;
   for (const param of urlParams.keys()) {
     if (!allowedQueryParams.includes(param)) {
       urlParams.delete(param);
     }
   }
   
-  const search = url.searchParams.toString();
+  const search = urlParams.toString();
   return `${baseUrl}${url.pathname}${search ? `?${search}` : ""}`;
 }
 
