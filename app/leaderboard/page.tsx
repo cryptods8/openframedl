@@ -1,45 +1,50 @@
-import {
-  FrameButton,
-  FrameContainer,
-  FrameImage,
-  getPreviousFrame,
-} from "frames.js/next/server";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { fetchMetadata } from "frames.js/next";
+
+import { basePath } from "../games/frames";
+import { currentURL } from "../utils";
 import { NextServerPageProps } from "frames.js/next/types";
-import { baseUrl } from "../constants";
-import { signUrl } from "../utils";
 
-export default async function Leaderboard({
+export async function generateMetadata({
   searchParams,
-}: NextServerPageProps) {
-  const previousFrame = getPreviousFrame(searchParams);
-  const uidStr = searchParams?.uid as string | undefined;
-  const ipStr = searchParams?.ip as string | undefined;
-
-  const imageParams = new URLSearchParams();
-  if (uidStr) {
-    imageParams.set("uid", uidStr);
+}: NextServerPageProps): Promise<Metadata> {
+  const queryParams = new URLSearchParams();
+  if (searchParams?.ip) {
+    queryParams.set("ip", searchParams.ip as string);
   }
-  if (ipStr) {
-    imageParams.set("ip", ipStr);
+  if (searchParams?.uid) {
+    queryParams.set("uid", searchParams.uid as string);
+  }
+  // backwards compatibility
+  if (searchParams?.fid) {
+    queryParams.set("uid", searchParams.fid as string);
+    queryParams.set("ip", "fc");
   }
 
-  const queryString = imageParams.toString();
-  const imageUrl = `${baseUrl}/api/images/leaderboard${
-    queryString ? `?${queryString}` : ""
-  }`;
-  const signedImageUrl = signUrl(imageUrl);
+  const leaderboardUrl = currentURL(
+    `${basePath}/leaderboard?${queryParams.toString()}`
+  );
+  const other = await fetchMetadata(leaderboardUrl);
+  return {
+    title: "Framedl Leaderboard by ds8",
+    description: "Wordle in a frame",
+    other,
+  };
+}
 
+export default async function Home() {
   return (
-    <div>
-      <FrameContainer
-        pathname="/leaderboard"
-        postUrl="/frames"
-        previousFrame={previousFrame}
-        state={{}}
-      >
-        <FrameImage src={signedImageUrl} />
-        <FrameButton target="/">Play Framedl</FrameButton>
-      </FrameContainer>
+    <div className="flex flex-col p-6 w-full justify-center items-center text-slate-600">
+      <div>
+        Framedl Leaderboard by{" "}
+        <Link
+          href="https://warpcast.com/ds8"
+          className="underline hover:text-slate-700"
+        >
+          ds8
+        </Link>
+      </div>
     </div>
   );
 }

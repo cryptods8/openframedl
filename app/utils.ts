@@ -26,9 +26,51 @@ export function verifySignedUrl(url: string): string {
   return signature.verify(url);
 }
 
-export async function timeCall<T>(name: string, fn: () => Promise<T>): Promise<T> {
+export function isUrlSigned(
+  baseUrl: string,
+  searchParams:
+    | {
+        [key: string]: string | string[] | undefined;
+      }
+    | undefined
+) {
+  const params = new URLSearchParams();
+  for (const key in searchParams) {
+    const value = searchParams[key];
+    if (value) {
+      if (Array.isArray(value)) {
+        for (const v of value) {
+          params.append(key, v);
+        }
+      } else {
+        params.append(key, value as string);
+      }
+    }
+  }
+  const paramsString = params.toString();
+  const fullUrl = `${baseUrl}${paramsString ? `?${paramsString}` : ""}`;
+  try {
+    verifySignedUrl(fullUrl);
+    return true;
+  } catch (e) {
+    // ignore
+  }
+  return false;
+}
+
+export async function timeCall<T>(
+  name: string,
+  fn: () => Promise<T>
+): Promise<T> {
   const start = Date.now();
   const result = await fn();
   console.log(`Time for ${name}: ${Date.now() - start}ms`);
   return result;
+}
+
+export function createComposeUrl(text: string, url: string): string {
+  const params = new URLSearchParams();
+  params.set("text", text);
+  params.set("embeds[]", url);
+  return `https://warpcast.com/~/compose?${params.toString()}`;
 }
