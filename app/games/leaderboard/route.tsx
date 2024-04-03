@@ -62,10 +62,10 @@ const handleRequest = frames(async (ctx) => {
   return {
     image: imageUrl,
     buttons: [
-      <Button action="post" target="..">
+      <Button key="play" action="post" target="..">
         Play Framedl
       </Button>,
-      <Button action="link" target={shareUrl}>
+      <Button key="share" action="link" target={shareUrl}>
         Share
       </Button>,
     ],

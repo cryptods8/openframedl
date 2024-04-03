@@ -17,7 +17,7 @@ function getRequestUrl(req: NextRequest) {
       urlParams.delete(param);
     }
   }
-  
+
   const search = urlParams.toString();
   return `${baseUrl}${url.pathname}${search ? `?${search}` : ""}`;
 }

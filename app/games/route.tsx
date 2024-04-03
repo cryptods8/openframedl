@@ -23,10 +23,10 @@ const handleRequest = frames(async (ctx) => {
     state: {},
     image: signedImageUrl,
     buttons: [
-      <Button action="post" target={toVariantTarget("daily")}>
+      <Button key="daily" action="post" target={toVariantTarget("daily")}>
         Daily
       </Button>,
-      <Button action="post" target={toVariantTarget("random")}>
+      <Button key="random" action="post" target={toVariantTarget("random")}>
         🎲 Random
       </Button>,
     ],

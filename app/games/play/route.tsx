@@ -172,23 +172,27 @@ export const POST = frames(async (ctx) => {
     textInput: finished ? undefined : "Make your guess...",
     buttons: finished
       ? [
-          <Button action="post" target="..">
+          <Button key="play" action="post" target="..">
             Play again
           </Button>,
-          <Button action="post" target="/leaderboard">
+          <Button key="leaderboard" action="post" target="/leaderboard">
             Leaderboard
           </Button>,
           resultsUrl ? (
-            <Button action="link" target={resultsUrl}>
+            <Button key="results" action="link" target={resultsUrl}>
               Results
             </Button>
           ) : undefined,
           shareUrl ? (
-            <Button action="link" target={shareUrl}>
+            <Button key="share" action="link" target={shareUrl}>
               Share
             </Button>
           ) : undefined,
         ]
-      : [<Button action="post">Guess</Button>],
+      : [
+          <Button key="guess" action="post">
+            Guess
+          </Button>,
+        ],
   };
 });
