@@ -6,8 +6,6 @@ export function currentURL(pathname: string): URL {
   const host = headersList.get("x-forwarded-host") || headersList.get("host");
   const protocol = headersList.get("x-forwarded-proto") || "http";
 
-  console.log("CURRENT URL", `${protocol}://${host}`);
-
   return new URL(pathname, `${protocol}://${host}`);
 }
 
