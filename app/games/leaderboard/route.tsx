@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
 import { baseUrl } from "../../constants";
 import { signUrl, createComposeUrl } from "../../utils";
@@ -62,10 +63,10 @@ const handleRequest = frames(async (ctx) => {
   return {
     image: imageUrl,
     buttons: [
-      <Button key="play" action="post" target="..">
+      <Button action="post" target="..">
         Play Framedl
       </Button>,
-      <Button key="share" action="link" target={shareUrl}>
+      <Button action="link" target={shareUrl}>
         Share
       </Button>,
     ],

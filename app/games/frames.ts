@@ -1,5 +1,4 @@
-/* eslint-disable react/jsx-key */
-import { farcasterHubContext, openframes } from "frames.js/middleware";
+import { openframes } from "frames.js/middleware";
 import { createFrames } from "frames.js/next";
 import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
 import { hubHttpUrl } from "../constants";
@@ -23,7 +22,7 @@ const validationMiddleware: FramesMiddleware<
   try {
     payload = await request.clone().json();
     if (isXmtpFrameActionPayload(payload)) {
-      console.log("TODO");
+      // console.log("TODO");
       return next();
     }
   } catch (e) {

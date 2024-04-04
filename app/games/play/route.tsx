@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
 import { UserDataReturnType, getUserDataForFid } from "frames.js";
 
@@ -172,27 +173,23 @@ export const POST = frames(async (ctx) => {
     textInput: finished ? undefined : "Make your guess...",
     buttons: finished
       ? [
-          <Button key="play" action="post" target="..">
+          <Button action="post" target="..">
             Play again
           </Button>,
-          <Button key="leaderboard" action="post" target="/leaderboard">
+          <Button action="post" target="/leaderboard">
             Leaderboard
           </Button>,
           resultsUrl ? (
-            <Button key="results" action="link" target={resultsUrl}>
+            <Button action="link" target={resultsUrl}>
               Results
             </Button>
           ) : undefined,
           shareUrl ? (
-            <Button key="share" action="link" target={shareUrl}>
+            <Button action="link" target={shareUrl}>
               Share
             </Button>
           ) : undefined,
         ]
-      : [
-          <Button key="guess" action="post">
-            Guess
-          </Button>,
-        ],
+      : [<Button action="post">Guess</Button>],
   };
 });

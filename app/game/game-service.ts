@@ -26,6 +26,7 @@ const shuffleSecret = process.env.SHUFFLE_SECRET;
 if (!shuffleSecret) {
   throw new Error("SHUFFLE_SECRET must be set");
 }
+const isPro = process.env.FRAMEDL_PRO === "true";
 
 function shuffleArray<T>(array: T[], seed: string): T[] {
   let rng = seedrandom(seed);
@@ -62,7 +63,11 @@ const getWordForDateString = (dateString: string, seed: string): string => {
 };
 
 const getWordForUserGameKey = (userGameKey: UserGameKey): string => {
-  const seed = userGameKey.identityProvider + "/" + shuffleSecret;
+  const seed =
+    userGameKey.identityProvider +
+    "/" +
+    shuffleSecret +
+    (isPro ? `/pro/${userGameKey.userId}` : "");
   if (userGameKey.isDaily) {
     return getWordForDateString(userGameKey.gameKey, seed);
   }

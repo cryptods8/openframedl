@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
 
 import { frames } from "./frames";
@@ -23,10 +24,10 @@ const handleRequest = frames(async (ctx) => {
     state: {},
     image: signedImageUrl,
     buttons: [
-      <Button key="daily" action="post" target={toVariantTarget("daily")}>
+      <Button action="post" target={toVariantTarget("daily")}>
         Daily
       </Button>,
-      <Button key="random" action="post" target={toVariantTarget("random")}>
+      <Button action="post" target={toVariantTarget("random")}>
         🎲 Random
       </Button>,
     ],
