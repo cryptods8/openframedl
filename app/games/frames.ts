@@ -9,12 +9,38 @@ interface FrameValidationResult {
   isValid: boolean;
 }
 
-const currentUrlMiddleware: FramesMiddleware<any, { url: URL }> = async (
-  ctx,
-  next
-) => {
-  console.log("current url middleware", ctx.url.toString());
-  return next({ url: new URL(baseUrl) });
+type CreateUrlFunctionArgs =
+  | string
+  | { pathname?: string; query?: Record<string, string> };
+type CreateUrlFunction = (arg: CreateUrlFunctionArgs) => string;
+
+const urlBuilderMiddleware: FramesMiddleware<
+  any,
+  { createUrl: CreateUrlFunction; createUrlWithBasePath: CreateUrlFunction }
+> = async (ctx, next) => {
+  const provideCreateUrl = (withBasePath: boolean) => {
+    return (arg: CreateUrlFunctionArgs) => {
+      if (typeof arg === "string") {
+        const pathname = withBasePath ? `${ctx.basePath}${arg}` : arg;
+        return `${baseUrl}${pathname}`;
+      }
+      const { pathname, query } = arg;
+      const fullPathname = withBasePath
+        ? `${ctx.basePath}${pathname ?? ""}`
+        : pathname;
+      const url = new URL(fullPathname ?? "", baseUrl);
+      if (query) {
+        for (const [key, value] of Object.entries(query)) {
+          url.searchParams.set(key, value);
+        }
+      }
+      return url.toString();
+    };
+  };
+  return next({
+    createUrl: provideCreateUrl(false),
+    createUrlWithBasePath: provideCreateUrl(true),
+  });
 };
 
 const validationMiddleware: FramesMiddleware<
@@ -58,7 +84,7 @@ export const frames = createFrames({
   basePath,
   initialState,
   middleware: [
-    currentUrlMiddleware,
+    urlBuilderMiddleware,
     validationMiddleware,
     openframes({
       clientProtocol: {

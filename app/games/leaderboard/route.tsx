@@ -1,8 +1,7 @@
 /* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
-import { baseUrl } from "../../constants";
 import { signUrl, createComposeUrl } from "../../utils";
-import { frames, basePath } from "../frames";
+import { frames } from "../frames";
 import { getUserKeyFromContext } from "../message-utils";
 
 const constructLeaderboardSearchParams = (
@@ -24,11 +23,8 @@ const urlWithParams = (url: string, params: URLSearchParams) => {
   return `${url}${queryString ? `?${queryString}` : ""}`;
 };
 
-const constructImageUrl = (searchParams: URLSearchParams) => {
-  const imageUrl = urlWithParams(
-    `${baseUrl}/api/images/leaderboard`,
-    searchParams
-  );
+const constructImageUrl = (url: string, searchParams: URLSearchParams) => {
+  const imageUrl = urlWithParams(url, searchParams);
   return signUrl(imageUrl);
 };
 
@@ -53,9 +49,12 @@ const handleRequest = frames(async (ctx) => {
     uidStr,
     ipStr
   );
-  const imageUrl = constructImageUrl(leaderboardSearchParams);
+  const imageUrl = constructImageUrl(
+    ctx.createUrl("/api/images/leaderboard"),
+    leaderboardSearchParams
+  );
   const leaderboardUrl = urlWithParams(
-    `${baseUrl}${basePath}/leaderboard`,
+    ctx.createUrlWithBasePath("/leaderboard"),
     leaderboardSearchParams
   );
   const shareUrl = createComposeUrl("Framedl Leaderboard", leaderboardUrl);
@@ -63,7 +62,7 @@ const handleRequest = frames(async (ctx) => {
   return {
     image: imageUrl,
     buttons: [
-      <Button action="post" target={{ ...ctx.url, pathname: ".." }}>
+      <Button action="post" target={ctx.createUrlWithBasePath("/..")}>
         Play Framedl
       </Button>,
       <Button action="link" target={shareUrl}>

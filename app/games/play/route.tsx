@@ -5,7 +5,7 @@ import { UserDataReturnType, getUserDataForFid } from "frames.js";
 import { frames } from "../frames";
 import { GameIdentityProvider, UserGameKey } from "../../game/game-repository";
 import { GuessedGame, gameService } from "../../game/game-service";
-import { baseUrl, hubHttpUrl } from "../../constants";
+import { hubHttpUrl } from "../../constants";
 import { createComposeUrl, signUrl } from "../../utils";
 import { buildShareableResult } from "../../game/game-utils";
 
@@ -75,7 +75,7 @@ async function nextGameState(
   };
 }
 
-function buildImageUrl(state: GameState): string {
+function buildImageUrl(url: string, state: GameState): string {
   const params = new URLSearchParams();
   if (state.message) {
     params.append("msg", state.message);
@@ -84,9 +84,7 @@ function buildImageUrl(state: GameState): string {
     params.append("gid", state.game.id);
   }
   const strParams = params.toString();
-  const unsignedImageSrc = `${baseUrl}/api/images${
-    strParams ? `?${strParams}` : ""
-  }`;
+  const unsignedImageSrc = `${url}${strParams ? `?${strParams}` : ""}`;
   return signUrl(unsignedImageSrc);
 }
 
@@ -160,7 +158,7 @@ export const POST = frames(async (ctx) => {
   let resultsUrl: string | undefined;
   let shareUrl: string | undefined;
   if (finished && game) {
-    const url = `${baseUrl}?id=${game.id}`;
+    const url = ctx.createUrl(`?id=${game.id}`);
     resultsUrl = signUrl(url);
 
     const { title, text } = buildShareableResult(game);
@@ -169,14 +167,17 @@ export const POST = frames(async (ctx) => {
 
   return {
     state: { daily, gameKey },
-    image: buildImageUrl(gameState),
+    image: buildImageUrl(ctx.createUrl("/api/images"), gameState),
     textInput: finished ? undefined : "Make your guess...",
     buttons: finished
       ? [
-          <Button action="post" target={{ ...ctx.url, pathname: ".." }}>
+          <Button action="post" target={ctx.createUrlWithBasePath("/..")}>
             Play again
           </Button>,
-          <Button action="post" target={{ ...ctx.url, pathname: "/leaderboard" }}>
+          <Button
+            action="post"
+            target={ctx.createUrlWithBasePath("/leaderboard")}
+          >
             Leaderboard
           </Button>,
           resultsUrl ? (
