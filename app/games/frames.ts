@@ -1,13 +1,21 @@
 import { openframes } from "frames.js/middleware";
 import { createFrames } from "frames.js/next";
 import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
-import { hubHttpUrl } from "../constants";
+import { baseUrl, hubHttpUrl } from "../constants";
 import { FramesMiddleware } from "frames.js/types";
 import { validateFrameMessage } from "frames.js";
 
 interface FrameValidationResult {
   isValid: boolean;
 }
+
+const currentUrlMiddleware: FramesMiddleware<any, { url: URL }> = async (
+  ctx,
+  next
+) => {
+  console.log("current url middleware", ctx.url.toString());
+  return next({ url: new URL(baseUrl) });
+};
 
 const validationMiddleware: FramesMiddleware<
   any,
@@ -50,6 +58,7 @@ export const frames = createFrames({
   basePath,
   initialState,
   middleware: [
+    currentUrlMiddleware,
     validationMiddleware,
     openframes({
       clientProtocol: {

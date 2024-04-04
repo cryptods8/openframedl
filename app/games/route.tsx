@@ -13,6 +13,7 @@ function toVariantTarget(variant: GameVariant) {
 
 const handleRequest = frames(async (ctx) => {
   const { searchParams } = ctx;
+  console.log("current url", ctx.url.toString());
 
   let imageUrl = `${baseUrl}/api/images`;
   if (searchParams.id) {
