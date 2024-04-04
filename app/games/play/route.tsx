@@ -173,10 +173,10 @@ export const POST = frames(async (ctx) => {
     textInput: finished ? undefined : "Make your guess...",
     buttons: finished
       ? [
-          <Button action="post" target="..">
+          <Button action="post" target={{ ...ctx.url, pathname: ".." }}>
             Play again
           </Button>,
-          <Button action="post" target="/leaderboard">
+          <Button action="post" target={{ ...ctx.url, pathname: "/leaderboard" }}>
             Leaderboard
           </Button>,
           resultsUrl ? (

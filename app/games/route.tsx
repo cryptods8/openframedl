@@ -7,8 +7,8 @@ import { baseUrl } from "../constants";
 
 type GameVariant = "daily" | "random";
 
-function toVariantTarget(variant: GameVariant) {
-  return { pathname: "/play", query: { variant } };
+function toVariantTarget(url: URL, variant: GameVariant) {
+  return { ...url, pathname: "/play", query: { variant } };
 }
 
 const handleRequest = frames(async (ctx) => {
@@ -25,10 +25,10 @@ const handleRequest = frames(async (ctx) => {
     state: {},
     image: signedImageUrl,
     buttons: [
-      <Button action="post" target={toVariantTarget("daily")}>
+      <Button action="post" target={toVariantTarget(ctx.url, "daily")}>
         Daily
       </Button>,
-      <Button action="post" target={toVariantTarget("random")}>
+      <Button action="post" target={toVariantTarget(ctx.url, "random")}>
         🎲 Random
       </Button>,
     ],

@@ -63,7 +63,7 @@ const handleRequest = frames(async (ctx) => {
   return {
     image: imageUrl,
     buttons: [
-      <Button action="post" target="..">
+      <Button action="post" target={{ ...ctx.url, pathname: ".." }}>
         Play Framedl
       </Button>,
       <Button action="link" target={shareUrl}>
