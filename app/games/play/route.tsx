@@ -192,7 +192,7 @@ export const POST = frames(async (ctx) => {
           ) : undefined,
         ]
       : [
-          <Button action="post" target={ctx.createUrlWithBasePath("/")}>
+          <Button action="post" target={ctx.createUrlWithBasePath("/play")}>
             Guess
           </Button>,
         ],
