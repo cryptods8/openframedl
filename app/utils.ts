@@ -1,12 +1,19 @@
 import signed from "signed";
-import { headers } from "next/headers";
+// import { headers } from "next/headers";
+import { baseUrl } from "./constants";
 
 export function currentURL(pathname: string): URL {
-  const headersList = headers();
-  const host = headersList.get("x-forwarded-host") || headersList.get("host");
-  const protocol = headersList.get("x-forwarded-proto") || "http";
+  return new URL(pathname, baseUrl)
+  // if (process.env.NEXT_PUBLIC_HOST) {
+  //   return new URL(pathname, process.env.NEXT_PUBLIC_HOST);
+  // }
+  // const headersList = headers();
+  // const host = headersList.get("x-forwarded-host") || headersList.get("host");
+  // const protocol = headersList.get("x-forwarded-proto") || "http";
 
-  return new URL(pathname, `${protocol}://${host}`);
+  // console.debug("current url", `${protocol}://${host}`);
+
+  // return new URL(pathname, `${protocol}://${host}`);
 }
 
 const signingKey = process.env["SIGNING_KEY"];

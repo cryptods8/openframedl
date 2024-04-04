@@ -11,8 +11,7 @@ export const baseUrl =
 
 const fallbackHubHttpUrl = isProduction
   ? undefined
-  : // : "https://api.neynar.com:2281";
-    "http://localhost:3010/hub";
+  : "http://localhost:3010/hub";
 
 export const hubHttpUrl =
   process.env["FRAME_HUB_HTTP_URL"] || fallbackHubHttpUrl;
