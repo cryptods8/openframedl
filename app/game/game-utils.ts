@@ -1,3 +1,4 @@
+import { isPro } from "../constants";
 import { PublicGuessedGame } from "./game-service";
 
 function buildResultText(game: PublicGuessedGame) {
@@ -26,7 +27,7 @@ export function buildShareableResult(
     };
   }
   const guessCount = game.status === "WON" ? `${game.guesses.length}` : "X";
-  const title = `Framedl ${game.gameKey} ${guessCount}/6`;
+  const title = `Framedl ${isPro ? "PRO " : ""}${game.gameKey} ${guessCount}/6`;
   const text = buildResultText(game);
   return { title, text };
 }

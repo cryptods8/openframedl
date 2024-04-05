@@ -25,10 +25,10 @@ const handleRequest = frames(async (ctx) => {
     image: signedImageUrl,
     buttons: [
       <Button action="post" target={toVariantTarget("daily")}>
-        Daily
+        Play
       </Button>,
       <Button action="post" target={toVariantTarget("random")}>
-        🎲 Random
+        🎲 Practice
       </Button>,
     ],
   };
