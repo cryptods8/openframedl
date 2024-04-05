@@ -15,6 +15,8 @@ import {
   LeaderboardEntry,
 } from "./game/game-repository";
 
+import { baseUrl } from "./constants";
+
 function readFont(name: string) {
   return fs.readFileSync(path.resolve(`./public/${name}`));
 }
@@ -80,6 +82,8 @@ async function toImage(
     { ...options, ...satoriOptions }
   );
 }
+
+const isPro = process.env.FRAMEDL_PRO === "true";
 
 const MAX_GUESSES = 6;
 const CELL_W = 84;
@@ -432,7 +436,9 @@ export async function generateImage(
           {rows}
         </div>
         <div
-          tw="flex flex-col flex-1 pt-20 px-8 border-l"
+          tw={
+            "flex flex-col flex-1 px-8 border-l " + (isPro ? "pt-16" : "pt-20")
+          }
           style={{
             gap: "3rem",
             borderColor: "rgba(31, 21, 55, 0.2)",
@@ -444,7 +450,7 @@ export async function generateImage(
             style={{ gap: "1rem" }}
           >
             <div
-              tw="flex text-5xl flex-wrap"
+              tw="flex items-center text-5xl flex-wrap"
               style={{
                 fontFamily: "SpaceGrotesk",
                 fontWeight: 700,
@@ -452,7 +458,19 @@ export async function generateImage(
                 color: "rgba(31, 21, 55, 0.87)",
               }}
             >
-              Framedl {game?.gameKey}
+              {isPro ? (
+                <div tw="flex flex-col items-center" style={{ gap: "0.5rem" }}>
+                  <div tw="flex items-center" style={{ gap: "0.75rem" }}>
+                    <span>Framedl</span>
+                    <span style={{ color: "green" }}>PRO</span>
+                  </div>
+                  {game?.gameKey && (
+                    <div tw="flex text-3xl">{game?.gameKey}</div>
+                  )}
+                </div>
+              ) : (
+                <span>Framedl {game?.gameKey}</span>
+              )}
             </div>
             <div
               tw="flex text-4xl flex-wrap"
@@ -682,14 +700,17 @@ export async function generateLeaderboardImage(
           </div>
         </div>
         <div
-          tw="flex text-5xl p-12 text-white"
+          tw="flex items-center text-5xl p-12 text-white"
           style={{
             fontFamily: "SpaceGrotesk",
             fontWeight: 700,
-            color: primaryColor(0.16),
+            color: primaryColor(0.86),
+            opacity: 0.2,
+            gap: "0.75rem",
           }}
         >
-          Framedl
+          <span>Framedl</span>
+          {isPro && <span style={{ color: "green" }}>PRO</span>}
         </div>
       </div>
       <div
