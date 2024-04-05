@@ -1,3 +1,4 @@
+import { FramedlProPassOwnership } from "../pro/pass-ownership";
 import { db } from "./../db/db";
 import { v4 as uuidv4 } from "uuid";
 
@@ -6,6 +7,7 @@ export interface UserData {
   username?: string;
   bio?: string;
   profileImage?: string;
+  passOwnership?: FramedlProPassOwnership;
 }
 
 export type GameIdentityProvider = "xmtp" | "fc";

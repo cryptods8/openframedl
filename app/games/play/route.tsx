@@ -1,13 +1,26 @@
 /* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
-import { UserDataReturnType, getUserDataForFid } from "frames.js";
+import {
+  UserDataReturnType,
+  getAddressesForFid,
+  getUserDataForFid,
+} from "frames.js";
 
 import { frames } from "../frames";
-import { GameIdentityProvider, UserGameKey } from "../../game/game-repository";
+import {
+  GameIdentityProvider,
+  UserGameKey,
+  UserData,
+} from "../../game/game-repository";
 import { GuessedGame, gameService } from "../../game/game-service";
-import { hubHttpUrl } from "../../constants";
+import { hubHttpUrl, isPro } from "../../constants";
 import { createComposeUrl, signUrl } from "../../utils";
 import { buildShareableResult } from "../../game/game-utils";
+import { checkPassOwnership } from "../../pro/pass-ownership";
+import {
+  options as imageOptions,
+  PassOwnershipCheckFailedImage,
+} from "../../generate-image";
 
 interface GameState {
   finished?: boolean;
@@ -19,7 +32,7 @@ async function nextGameState(
   userGameKey: UserGameKey,
   // prevState: State,
   inputText: string | undefined,
-  userData: UserDataReturnType | undefined
+  userData: UserData | undefined
 ): Promise<GameState> {
   const game = await gameService.loadOrCreate(
     userGameKey,
@@ -101,27 +114,72 @@ export const POST = frames(async (ctx) => {
   let identityProvider: GameIdentityProvider;
   let userId: string;
   let userData: UserDataReturnType | undefined;
+  let walletAddresses: string[] = [];
   switch (clientProtocol.id) {
     case "farcaster": {
       identityProvider = "fc";
-      userId = message.requesterFid.toString();
-      // load only in the beginning
-      userData = state.gameKey
-        ? undefined
-        : await getUserDataForFid({
-            fid: message.requesterFid,
-            options: { hubHttpUrl: hubHttpUrl },
-          });
+      const fid = message.requesterFid;
+      userId = fid.toString();
+      const options = { hubHttpUrl: hubHttpUrl };
+      if (!state.gameKey) {
+        const userDataPromise = getUserDataForFid({ fid, options });
+        if (isPro) {
+          const [userDataRes, addressesRes] = await Promise.all([
+            userDataPromise,
+            getAddressesForFid({ fid, options }),
+          ]);
+          userData = userDataRes;
+          walletAddresses = addressesRes.map((a) => a.address);
+        } else {
+          userData = await userDataPromise;
+        }
+      }
       break;
     }
     case "xmtp": {
       identityProvider = "xmtp";
       userId = message.verifiedWalletAddress!;
+      walletAddresses.push(userId);
       break;
     }
     default: {
       throw new Error("Unsupported identity provider: " + clientProtocol.id);
     }
+  }
+
+  let passOwnership;
+  if (isPro && !state.gameKey) {
+    // check pass ownership
+    let passOwnershipResult;
+    try {
+      passOwnershipResult = await checkPassOwnership(walletAddresses);
+    } catch (e) {
+      console.error("Error checking pass ownership", e);
+    }
+    if (!passOwnershipResult) {
+      return {
+        imageOptions,
+        image: <PassOwnershipCheckFailedImage baseUrl={ctx.createUrl("")} />,
+        buttons: [
+          <Button action="post" target={ctx.createUrlWithBasePath("/..")}>
+            Back
+          </Button>,
+          <Button
+            action="post"
+            target={ctx.createUrlWithBasePath("/leaderboard")}
+          >
+            Leaderboard
+          </Button>,
+          <Button
+            action="link"
+            target="https://zora.co/collect/base:0x402ae0eb018c623b14ad61268b786edd4ad87c56"
+          >
+            Get a pass
+          </Button>,
+        ],
+      };
+    }
+    passOwnership = passOwnershipResult;
   }
 
   const { variant } = searchParams;
@@ -152,7 +210,10 @@ export const POST = frames(async (ctx) => {
     isDaily: daily,
   };
   const inputText = message.inputText;
-  const gameState = await nextGameState(userGameKey, inputText, userData);
+  const gameState = await nextGameState(userGameKey, inputText, {
+    ...userData,
+    passOwnership,
+  });
   const { finished, game } = gameState;
 
   let resultsUrl: string | undefined;

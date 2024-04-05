@@ -15,3 +15,5 @@ const fallbackHubHttpUrl = isProduction
 
 export const hubHttpUrl =
   process.env["FRAME_HUB_HTTP_URL"] || fallbackHubHttpUrl;
+
+export const isPro = process.env.FRAMEDL_PRO === "true";

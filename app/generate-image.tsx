@@ -15,7 +15,7 @@ import {
   LeaderboardEntry,
 } from "./game/game-repository";
 
-import { baseUrl } from "./constants";
+import { isPro } from "./constants";
 
 function readFont(name: string) {
   return fs.readFileSync(path.resolve(`./public/${name}`));
@@ -82,8 +82,6 @@ async function toImage(
     { ...options, ...satoriOptions }
   );
 }
-
-const isPro = process.env.FRAMEDL_PRO === "true";
 
 const MAX_GUESSES = 6;
 const CELL_W = 84;
@@ -436,9 +434,7 @@ export async function generateImage(
           {rows}
         </div>
         <div
-          tw={
-            "flex flex-col flex-1 px-8 border-l " + (isPro ? "pt-16" : "pt-20")
-          }
+          tw={"flex flex-col flex-1 px-8 border-l pt-20"}
           style={{
             gap: "3rem",
             borderColor: "rgba(31, 21, 55, 0.2)",
@@ -459,7 +455,10 @@ export async function generateImage(
               }}
             >
               {isPro ? (
-                <div tw="flex flex-col items-center" style={{ gap: "0.5rem" }}>
+                <div
+                  tw="flex flex-col items-center mb-4"
+                  style={{ gap: "0.5rem" }}
+                >
                   <div tw="flex items-center" style={{ gap: "0.75rem" }}>
                     <span>Framedl</span>
                     <span style={{ color: "green" }}>PRO</span>
@@ -788,6 +787,55 @@ export async function generateLeaderboardImage(
             </div>
           )
         )}
+      </div>
+    </div>
+  );
+}
+
+interface PassOwnershipCheckFailedImageProps {
+  baseUrl: string;
+}
+
+export function PassOwnershipCheckFailedImage({
+  baseUrl,
+}: PassOwnershipCheckFailedImageProps) {
+  /*
+  borderColor: "rgba(31, 21, 55, 0.2)",
+            backgroundColor: "rgba(31, 21, 55, 0.04)",
+  */
+  return (
+    <div
+      tw="flex flex-row w-full h-full bg-white"
+      style={{ fontFamily: "Inter", color: primaryColor() }}
+    >
+      <div
+        tw="flex items-center justify-center p-16 border-r"
+        style={{
+          backgroundColor: primaryColor(0.04),
+          borderColor: primaryColor(0.2),
+        }}
+      >
+        <div tw="flex">
+          <img src={`${baseUrl}/pro-full.png`} width="480" height="480" />
+        </div>
+      </div>
+      <div
+        tw="flex flex-col flex-1 p-20 text-center items-center justify-center text-5xl"
+        style={{ lineHeight: "1.33" }}
+      >
+        <div tw="flex">You need a </div>
+        <div
+          tw="flex"
+          style={{
+            fontFamily: "SpaceGrotesk",
+            fontWeight: 700,
+            color: primaryColor(),
+            gap: "0.75rem",
+          }}
+        >
+          Framedl <span style={{ color: "green" }}>PRO</span> Pass
+        </div>
+        <div tw="flex"> to participate</div>
       </div>
     </div>
   );
