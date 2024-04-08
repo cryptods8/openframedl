@@ -27,7 +27,9 @@ export function buildShareableResult(
     };
   }
   const guessCount = game.status === "WON" ? `${game.guesses.length}` : "X";
-  const title = `Framedl ${isPro ? "PRO " : ""}${game.gameKey} ${guessCount}/6`;
+  const title = `Framedl ${isPro ? "PRO " : ""}${game.gameKey} ${guessCount}/6${
+    game.isHardMode ? "*" : ""
+  }`;
   const text = buildResultText(game);
   return { title, text };
 }

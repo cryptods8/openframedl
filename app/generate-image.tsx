@@ -107,13 +107,13 @@ function determineGameMessage(
     const attempts = game.guesses.length;
     let who = "You won";
     if (share) {
-      if (game.userData?.displayName) {
-        who = game.userData.displayName + " won";
+      if (game.userData?.username) {
+        who = game.userData.username + " won";
       } else {
         who = "Won";
       }
     }
-    return `🎉 ${who} in ${attempts} attempts!`;
+    return `🎉 ${who} in ${attempts}${game.isHardMode ? "*" : ""} attempts!`;
   }
   if (game.status === "LOST") {
     if (share) {
@@ -124,7 +124,10 @@ function determineGameMessage(
   if (game.guesses.length === 0) {
     return "Start guessing...";
   }
-  return "Keep guessing...";
+  // keep it like this?
+  return (
+    "Keep guessing..." + (game.isHardMode && game.guesses.length > 1 ? "*" : "")
+  );
 }
 
 interface UserStatsPanelProps {
@@ -286,6 +289,24 @@ function UserStatsPanel(props: UserStatsPanelProps) {
       {/* <div tw="flex flex-col w-full" style={{ gap: "0.5rem" }}>
         {distribution}
       </div> */}
+    </div>
+  );
+}
+
+function OGBadge() {
+  return (
+    <div
+      tw="flex rounded"
+      style={{
+        color: "white",
+        backgroundColor: "green",
+        lineHeight: "1",
+        padding: "0.1em 0.25em",
+        fontWeight: 700,
+        fontFamily: "SpaceGrotesk",
+      }}
+    >
+      OG
     </div>
   );
 }
@@ -464,7 +485,15 @@ export async function generateImage(
                     <span style={{ color: "green" }}>PRO</span>
                   </div>
                   {game?.gameKey && (
-                    <div tw="flex text-3xl">{game?.gameKey}</div>
+                    <div tw="flex text-3xl items-center" style={{ gap: "0.5rem" }}>
+                      <div tw="flex">{game?.gameKey}</div>
+                      {(game?.userData?.passOwnership === "OG" ||
+                        game?.userData?.passOwnership === "BASIC_AND_OG") && (
+                        <div tw="flex text-2xl">
+                          <OGBadge />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (
@@ -724,12 +753,18 @@ export async function generateLeaderboardImage(
               style={{ gap: "3rem", fontWeight: e.highlight ? 600 : 400 }}
             >
               <div
-                tw="flex items-center justify-center rounded text-3xl w-12 h-12"
+                tw="flex items-center justify-center rounded text-3xl w-12 h-12 relative"
                 style={{
                   backgroundColor: primaryColor(e.highlight ? 0.24 : 0.12),
                 }}
               >
                 {e.pos}
+                {(e.userData?.passOwnership === "OG" ||
+                  e.userData?.passOwnership === "BASIC_AND_OG") && (
+                  <div tw="flex absolute -top-2 -right-4 text-base">
+                    <OGBadge />
+                  </div>
+                )}
               </div>
               <div
                 tw="flex overflow-hidden"
@@ -739,7 +774,7 @@ export async function generateLeaderboardImage(
                   textOverflow: "ellipsis",
                 }}
               >
-                {e.userData?.displayName || e.userId}
+                {e.userData?.username || e.userId}
               </div>
               <div
                 tw="flex flex-1 pt-2"

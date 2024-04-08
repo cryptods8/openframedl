@@ -91,6 +91,7 @@ export interface GuessedGame extends Omit<Game, "guesses"> {
   allGuessedCharacters: Record<string, GuessCharacter>;
   status: "IN_PROGRESS" | "WON" | "LOST";
   word: string;
+  isHardMode: boolean;
 }
 
 export interface PublicGuessedGame {
@@ -98,6 +99,7 @@ export interface PublicGuessedGame {
   gameKey: string;
   guesses: Guess[];
   status: "IN_PROGRESS" | "WON" | "LOST";
+  isHardMode: boolean;
   word?: string;
 }
 
@@ -192,6 +194,48 @@ export class GameServiceImpl implements GameService {
     return characters;
   }
 
+  private isHardMode(
+    prevGuess: GuessCharacter[],
+    characters: GuessCharacter[]
+  ) {
+    for (let i = 0; i < prevGuess.length; i++) {
+      const hint = prevGuess[i]!;
+      if (hint.status === "CORRECT") {
+        // check the position matches
+        const currentChar = characters[i];
+        if (!currentChar || currentChar.character !== hint.character) {
+          return false;
+        }
+      } else if (hint.status === "WRONG_POSITION") {
+        // check the character is in the guess
+        const currentChar = characters.find(
+          (c) => c.character === hint.character
+        );
+        if (!currentChar) {
+          return false;
+        }
+      }
+    }
+    // check that all prevGuess characters are in the current guess with at least the same multiplicities
+    const toMultiplicityMap = (chars: GuessCharacter[]) =>
+      chars.reduce((acc, c) => {
+        if (c.status === "CORRECT" || c.status === "WRONG_POSITION") {
+          acc[c.character] = (acc[c.character] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+    const prevCharMap = toMultiplicityMap(prevGuess);
+    const currentCharMap = toMultiplicityMap(characters);
+    for (const key in prevCharMap) {
+      const prevCount = prevCharMap[key] || 0;
+      const currentCount = currentCharMap[key] || 0;
+      if (prevCount > currentCount) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private toGuessedGame(game: Game): GuessedGame {
     const word = game.word;
     const wordCharacters = word.split("").reduce((acc, c, idx) => {
@@ -202,17 +246,25 @@ export class GameServiceImpl implements GameService {
       acc[c]!.positions[idx] = true;
       return acc;
     }, {} as Record<string, WordCharacter>);
-
+    // guessed - correct, wrong position, incorrect
     const allGuessedCharacters: Record<string, GuessCharacter> = {};
     const guesses: Guess[] = [];
+    let isHardMode = true;
+    let prevGuess: GuessCharacter[] | undefined;
     for (const guess of game.guesses) {
       const characters = this.toGuessCharacters(wordCharacters, guess);
+      if (isHardMode) {
+        if (prevGuess) {
+          isHardMode = this.isHardMode(prevGuess, characters);
+        }
+        prevGuess = characters;
+      }
       for (let i = 0; i < characters.length; i++) {
         const gc = characters[i]!;
-        const prevGuessedCharacters = allGuessedCharacters[gc.character];
+        const prevGuessedCharacter = allGuessedCharacters[gc.character];
         if (
-          !prevGuessedCharacters ||
-          prevGuessedCharacters.status === "INCORRECT" ||
+          !prevGuessedCharacter ||
+          prevGuessedCharacter.status === "INCORRECT" ||
           gc.status === "CORRECT"
         ) {
           allGuessedCharacters[gc.character] = gc;
@@ -240,6 +292,7 @@ export class GameServiceImpl implements GameService {
       allGuessedCharacters,
       status,
       word,
+      isHardMode,
     };
   }
 
@@ -272,6 +325,7 @@ export class GameServiceImpl implements GameService {
         status: "IN_PROGRESS",
         word,
         userData,
+        isHardMode: false,
       };
     }
     return this.toGuessedGame(game);
@@ -300,6 +354,7 @@ export class GameServiceImpl implements GameService {
     return {
       id: game.id,
       gameKey: game.gameKey,
+      isHardMode: guessedGame.isHardMode,
       guesses: guessedGame.guesses.map((g) => {
         return {
           characters: g.characters.map((c) => {
