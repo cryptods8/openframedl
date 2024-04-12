@@ -15,7 +15,7 @@ export const maintenanceMiddleware: FramesMiddleware<any, any> = async (
             Framedl is undergoing maintenance
           </div>
           <div tw="text-3xl text-slate-600">
-            Soon it'll be all over and you can finally relax
+            Soon it will be all over and you can finally relax
           </div>
         </div>
       ),
