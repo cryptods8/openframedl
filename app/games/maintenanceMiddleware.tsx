@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
 import { FramesMiddleware } from "frames.js/types";
 
