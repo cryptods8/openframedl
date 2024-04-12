@@ -45,6 +45,11 @@ async function loadGameStats(userKey: UserKey) {
 export async function GET(req: NextRequest) {
   const start = Date.now();
   try {
+    if (process.env.MAINTENANCE === "true") {
+      return await generateImage(undefined, {
+        overlayMessage: "Framedl is under maintenance",
+      });
+    }
     const url = verifyUrl(req);
     const params = url.searchParams;
     const gid = params.get("gid");

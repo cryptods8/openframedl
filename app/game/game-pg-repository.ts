@@ -51,7 +51,7 @@ export async function findAllDailyByUserKey(key: UserKey): Promise<DBGame[]> {
     .execute();
 }
 export async function insertAll(games: DBGameInsert[]) {
-  pgDb.insertInto("game").values(games).execute();
+  await pgDb.insertInto("game").values(games).execute();
 }
 
 const LEADERBOARD_DAYS = 14;

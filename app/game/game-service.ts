@@ -652,6 +652,7 @@ export class GameServiceImpl implements GameService {
   async migrateToPg(): Promise<DBGameInsert[]> {
     const games = await this.gameRepository.loadAll();
     const inserts = [];
+    console.log('Migrating games:', games.length);
     for (const game of games) {
       const pgGame: DBGame = {
         ...game,
@@ -685,7 +686,13 @@ export class GameServiceImpl implements GameService {
         userData: gg.userData ? JSON.stringify(gg.userData) : null,
       });
     }
-    await gameRepo.insertAll(inserts);
+    console.log('Inserting games:', inserts.length);
+    try {
+      await gameRepo.insertAll(inserts);
+    } catch (error) {
+      console.error('Error inserting games:', error);
+      throw new Error("Could not insert games!");
+    }
     return inserts;
   }
 }

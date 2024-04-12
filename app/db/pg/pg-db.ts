@@ -5,6 +5,7 @@ import { Database } from "./types"; // this is the Database interface we defined
 const dialect = new PostgresDialect({
   pool: new Pool({
     connectionString: process.env.PG_CONNECTION_STRING,
+    max: 20,
   }),
 });
 
@@ -15,5 +16,5 @@ const dialect = new PostgresDialect({
 export const pgDb = new Kysely<Database>({
   dialect,
   plugins: [new CamelCasePlugin()],
-  log: ['query']
+  log: ["query"],
 });
