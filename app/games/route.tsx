@@ -3,6 +3,7 @@ import { Button } from "frames.js/next";
 
 import { frames } from "./frames";
 import { signUrl } from "../utils";
+import { isPro } from "../constants";
 
 type GameVariant = "daily" | "random";
 
@@ -30,6 +31,14 @@ const handleRequest = frames(async (ctx) => {
       <Button action="post" target={toVariantTarget("random")}>
         🎲 Practice
       </Button>,
+      isPro ? (
+        <Button
+          action="post"
+          target={ctx.createUrlWithBasePath("/leaderboard")}
+        >
+          Leaderboard
+        </Button>
+      ) : null,
     ],
   };
 });

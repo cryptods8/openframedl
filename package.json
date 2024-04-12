@@ -19,7 +19,9 @@
     "@xmtp/frames-validator": "^0.5.2",
     "alchemy-sdk": "^3.2.1",
     "frames.js": "^0.11.4",
+    "kysely": "^0.27.3",
     "next": "14.1.0",
+    "pg": "^8.11.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "satori": "^0.10.13",
@@ -34,6 +36,7 @@
   "devDependencies": {
     "@frames.js/debugger": "^0.1.11",
     "@types/node": "^20",
+    "@types/pg": "^8.11.5",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/seedrandom": "^3.0.8",

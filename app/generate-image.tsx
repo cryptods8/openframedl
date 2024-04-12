@@ -16,6 +16,7 @@ import {
 } from "./game/game-repository";
 
 import { isPro } from "./constants";
+import { LeaderboardDataItem } from "./game/game-pg-repository";
 
 function readFont(name: string) {
   return fs.readFileSync(path.resolve(`./public/${name}`));
@@ -485,7 +486,10 @@ export async function generateImage(
                     <span style={{ color: "green" }}>PRO</span>
                   </div>
                   {game?.gameKey && (
-                    <div tw="flex text-3xl items-center" style={{ gap: "0.5rem" }}>
+                    <div
+                      tw="flex text-3xl items-center"
+                      style={{ gap: "0.5rem" }}
+                    >
                       <div tw="flex">{game?.gameKey}</div>
                       {(game?.userData?.passOwnership === "OG" ||
                         game?.userData?.passOwnership === "BASIC_AND_OG") && (
@@ -658,16 +662,15 @@ function primaryColor(opacity: number = 0.87) {
   return `rgba(31, 21, 55, ${opacity})`;
 }
 
-interface PersonalLeaderboardEntry extends LeaderboardEntry {
+interface PersonalLeaderboardEntry extends LeaderboardDataItem {
   pos?: string;
   highlight: boolean;
   avg: number;
+  isTop: boolean;
 }
 
-function calculateAvg(entry: LeaderboardEntry) {
-  return entry.totalGamesWon > 0
-    ? entry.totalGamesWonGuesses / entry.totalGamesWon
-    : 0;
+function calculateAvg(entry: LeaderboardDataItem) {
+  return entry.wonCount > 0 ? entry.wonGuessCount / entry.wonCount : 0;
 }
 
 const MAX_ENTRIES = 8;
@@ -675,7 +678,7 @@ const MAX_ENTRIES = 8;
 export async function generateLeaderboardImage(
   leaderboard: PersonalLeaderboard
 ) {
-  const { entries, personalEntryIndex, personalEntry } = leaderboard;
+  const { entries, personalEntryIndex, personalEntry, date } = leaderboard;
   const leaderboardEntries: (PersonalLeaderboardEntry | null)[] = [];
   const personalEntryUnranked =
     personalEntry &&
@@ -684,10 +687,18 @@ export async function generateLeaderboardImage(
     entries.length,
     personalEntryUnranked ? MAX_ENTRIES - 1 : MAX_ENTRIES
   );
+  let pos = 0;
+  let isTop = true;
   for (let i = 0; i < maxEntries; i++) {
     const entry = entries[i]!;
+    const prev = entries[i - 1];
+    if (!prev || prev.totalGuessCount < entry.totalGuessCount) {
+      pos = i + 1;
+      isTop = i < 3;
+    }
     leaderboardEntries.push({
-      pos: `${i + 1}`,
+      pos: `${pos}`,
+      isTop,
       highlight: i === personalEntryIndex,
       avg: calculateAvg(entry),
       ...entry,
@@ -697,6 +708,7 @@ export async function generateLeaderboardImage(
     leaderboardEntries.push(null);
     leaderboardEntries.push({
       pos: "X",
+      isTop: false,
       highlight: true,
       avg: calculateAvg(personalEntry),
       ...personalEntry,
@@ -724,7 +736,7 @@ export async function generateLeaderboardImage(
             tw="flex text-4xl"
             style={{ fontFamily: "Inter", color: primaryColor(0.54) }}
           >
-            Last 14 days
+            {date}
           </div>
         </div>
         <div
@@ -754,9 +766,20 @@ export async function generateLeaderboardImage(
             >
               <div
                 tw="flex items-center justify-center rounded text-3xl w-12 h-12 relative"
-                style={{
-                  backgroundColor: primaryColor(e.highlight ? 0.24 : 0.12),
-                }}
+                style={
+                  e.isTop
+                    ? {
+                        backgroundColor: primaryColor(
+                          e.highlight ? 0.64 : 0.94
+                        ),
+                        color: "white",
+                      }
+                    : {
+                        backgroundColor: primaryColor(
+                          e.highlight ? 0.24 : 0.12
+                        ),
+                      }
+                }
               >
                 {e.pos}
                 {(e.userData?.passOwnership === "OG" ||
@@ -783,7 +806,7 @@ export async function generateLeaderboardImage(
                 }}
               ></div>
               <div tw="flex justify-end" style={{ width: "40px" }}>
-                {e.totalGamesWon}
+                {e.wonCount}
               </div>
               <div tw="flex justify-end" style={{ width: "80px" }}>
                 {e.avg > 0 ? (

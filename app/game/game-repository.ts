@@ -3,11 +3,11 @@ import { db } from "./../db/db";
 import { v4 as uuidv4 } from "uuid";
 
 export interface UserData {
-  displayName?: string;
-  username?: string;
-  bio?: string;
-  profileImage?: string;
-  passOwnership?: FramedlProPassOwnership;
+  displayName?: string | null | undefined;
+  username?: string | null | undefined;
+  bio?: string | null | undefined;
+  profileImage?: string | null | undefined;
+  passOwnership?: FramedlProPassOwnership | null | undefined;
 }
 
 export type GameIdentityProvider = "xmtp" | "fc";
@@ -46,7 +46,7 @@ export interface UserStats extends UserKey {
   lastGameWonDate?: string;
   winGuessCounts: Record<number, number>;
   last30: GameResult[];
-  userData?: UserData;
+  userData?: UserData | null;
 }
 
 export interface LeaderboardEntry extends UserKey {
@@ -75,6 +75,7 @@ export interface GameSave extends Omit<Game, "id"> {
 export interface GameRepository {
   save(game: GameSave): Promise<string>;
   loadByUserGameKey(key: UserGameKey): Promise<Game | null>;
+  loadAll(): Promise<Game[]>;
   loadAllDailiesByUserKey(userKey: UserKey): Promise<Game[]>;
   loadById(id: string): Promise<Game | null>;
   saveStats(stats: UserStatsSave): Promise<UserStats>;
@@ -117,6 +118,10 @@ export class GameRepositoryImpl implements GameRepository {
 
   async loadAllDailiesByUserKey(userKey: UserKey): Promise<Game[]> {
     return await db.getAll<Game>(this.getAllDailiesKey(userKey));
+  }
+
+  async loadAll(): Promise<Game[]> {
+    return await db.getAll<Game>("games/*/user_id/*");
   }
 
   async loadById(id: string): Promise<Game | null> {

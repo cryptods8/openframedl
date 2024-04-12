@@ -14,7 +14,7 @@ import {
 } from "../../game/game-repository";
 import { GuessedGame, gameService } from "../../game/game-service";
 import { hubHttpUrl, isPro } from "../../constants";
-import { createComposeUrl, signUrl } from "../../utils";
+import { createComposeUrl, signUrl, timeCall } from "../../utils";
 import { buildShareableResult } from "../../game/game-utils";
 import { checkPassOwnership } from "../../pro/pass-ownership";
 import {
@@ -34,9 +34,8 @@ async function nextGameState(
   inputText: string | undefined,
   userData: UserData | undefined
 ): Promise<GameState> {
-  const game = await gameService.loadOrCreate(
-    userGameKey,
-    userData ?? undefined
+  const game = await timeCall("loadOrCreate", () =>
+    gameService.loadOrCreate(userGameKey, userData ?? undefined)
   );
   if (game.status !== "IN_PROGRESS") {
     return {
@@ -75,7 +74,9 @@ async function nextGameState(
       game,
     };
   }
-  const guessedGame = await gameService.guess(game, guess);
+  const guessedGame = await timeCall("guess", () =>
+    gameService.guess(game, guess)
+  );
   if (guessedGame.status !== "IN_PROGRESS") {
     return {
       finished: true,

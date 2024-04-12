@@ -2,20 +2,21 @@ import seedrandom from "seedrandom";
 import {
   GameRepository,
   GameRepositoryImpl,
-  Game,
   UserData,
   UserStats,
   UserStatsSave,
   GameResult,
-  LeaderboardEntry,
-  Leaderboard,
   UserGameKey,
   UserKey,
   GameIdentityProvider,
 } from "./game-repository";
+import * as gameRepo from "./game-pg-repository";
+import { Leaderboard, LeaderboardDataItem } from "./game-pg-repository";
 import answers from "../words/answer-words";
 import allWords from "../words/all-words";
 import { isPro } from "../constants";
+import { DBGame, DBGameInsert } from "../db/pg/types";
+import { v4 as uuidv4 } from "uuid";
 
 const startingDate = new Date("2024-02-03");
 
@@ -85,7 +86,7 @@ export interface Guess {
   characters: GuessCharacter[];
 }
 
-export interface GuessedGame extends Omit<Game, "guesses"> {
+export interface GuessedGame extends Omit<DBGame, "guesses"> {
   originalGuesses: string[];
   guesses: Guess[];
   allGuessedCharacters: Record<string, GuessCharacter>;
@@ -124,13 +125,15 @@ export interface GameService {
   loadStats(userKey: UserKey): Promise<UserStats | null>;
   loadLeaderboard(
     userId: string | null | undefined,
-    identityProvider: GameIdentityProvider
+    identityProvider: GameIdentityProvider,
+    date?: string
   ): Promise<PersonalLeaderboard>;
   getDailyKey(): string;
+  migrateToPg(): Promise<DBGameInsert[]>;
 }
 
 export interface PersonalLeaderboard extends Leaderboard {
-  personalEntry?: LeaderboardEntry;
+  personalEntry?: LeaderboardDataItem;
   personalEntryIndex?: number;
 }
 
@@ -236,7 +239,7 @@ export class GameServiceImpl implements GameService {
     return true;
   }
 
-  private toGuessedGame(game: Game): GuessedGame {
+  private toGuessedGame(game: DBGame): GuessedGame {
     const word = game.word;
     const wordCharacters = word.split("").reduce((acc, c, idx) => {
       if (!acc[c]) {
@@ -304,35 +307,34 @@ export class GameServiceImpl implements GameService {
     key: UserGameKey,
     userData?: UserData
   ): Promise<GuessedGame> {
-    const game = await this.gameRepository.loadByUserGameKey(key);
+    const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
       const word = getWordForUserGameKey(key);
       const newGame = {
         ...key,
-        guesses: [],
-        userData,
-        createdAt: new Date().toISOString(),
+        id: uuidv4(),
+        guesses: JSON.stringify([]),
+        userData: userData ? JSON.stringify(userData) : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         word,
+        status: "IN_PROGRESS" as const,
+        guessCount: 0,
+        isHardMode: true,
       };
-      const id = await this.gameRepository.save(newGame);
+      const createdGame = await gameRepo.insert(newGame);
       return {
-        id,
-        ...key,
-        createdAt: newGame.createdAt,
+        ...createdGame,
         guesses: [],
         originalGuesses: [],
         allGuessedCharacters: {},
-        status: "IN_PROGRESS",
-        word,
-        userData,
-        isHardMode: false,
       };
     }
     return this.toGuessedGame(game);
   }
 
   async load(id: string): Promise<GuessedGame | null> {
-    const game = await this.gameRepository.loadById(id);
+    const game = await gameRepo.findById(id);
     if (!game) {
       return null;
     }
@@ -343,7 +345,7 @@ export class GameServiceImpl implements GameService {
     id: string,
     personal: boolean
   ): Promise<PublicGuessedGame | null> {
-    const game = await this.gameRepository.loadById(id);
+    const game = await gameRepo.findById(id);
     if (!game) {
       return null;
     }
@@ -371,7 +373,7 @@ export class GameServiceImpl implements GameService {
     if (stats) {
       return stats;
     }
-    const allGames = await this.gameRepository.loadAllDailiesByUserKey(game);
+    const allGames = await gameRepo.findAllDailyByUserKey(game);
     const prevGames = allGames
       .map((g) => this.toGuessedGame(g))
       .filter(
@@ -394,7 +396,7 @@ export class GameServiceImpl implements GameService {
   }
 
   async loadAllDailiesByUserKey(userKey: UserKey): Promise<GuessedGame[]> {
-    const games = await this.gameRepository.loadAllDailiesByUserKey(userKey);
+    const games = await gameRepo.findAllDailyByUserKey(userKey);
     return games.map((g) => this.toGuessedGame(g));
   }
 
@@ -445,28 +447,39 @@ export class GameServiceImpl implements GameService {
     if (!this.isValidGuess(guess)) {
       throw new Error("Guess must be 5 letters");
     }
-    const game = await this.gameRepository.loadByUserGameKey(guessedGame);
+    const game = await gameRepo.findByUserGameKey(guessedGame);
     if (!game) {
       throw new Error(`Game not found: ${guessedGame.id}`);
     }
+    if (game.completedAt != null) {
+      throw new Error(`Game already completed: ${guessedGame.id}`);
+    }
     const formattedGuess = guess.trim().toLowerCase();
     game.guesses.push(formattedGuess);
-    const id = await this.gameRepository.save(game);
-    const resultGame = this.toGuessedGame({ ...game, id });
+    const resultGame = this.toGuessedGame(game);
     const isGameFinished =
       resultGame.status === "LOST" || resultGame.status === "WON";
+    await gameRepo.update(game.id, {
+      ...game,
+      guesses: JSON.stringify(game.guesses),
+      guessCount: game.guesses.length,
+      userData: game.userData ? JSON.stringify(game.userData) : null,
+      updatedAt: new Date(),
+      completedAt: isGameFinished ? new Date() : null,
+      status: resultGame.status,
+    });
     if (isGameFinished && game.isDaily) {
       // update stats
       const stats = await this.loadOrCreateStats(guessedGame);
       const newStats = this.updateStats(stats, resultGame);
+      this.gameRepository.saveStats(newStats);
       // update leaderboard !!! POSSIBLE RACE CONDITION !!!
-      const savedStats = await this.gameRepository.saveStats(newStats);
-      const l = await this.loadLeaderboard(null, guessedGame.identityProvider);
-      const updatedLeaderboard = await this.updateLeaderboard(savedStats, l);
-      await this.gameRepository.saveLeaderboard(
-        guessedGame.identityProvider,
-        updatedLeaderboard
-      );
+      // const l = await this.loadLeaderboard(null, guessedGame.identityProvider);
+      // const updatedLeaderboard = await this.updateLeaderboard(savedStats, l);
+      // await this.gameRepository.saveLeaderboard(
+      //   guessedGame.identityProvider,
+      //   updatedLeaderboard
+      // );
     }
     return resultGame;
   }
@@ -499,7 +512,7 @@ export class GameServiceImpl implements GameService {
   private async toLeaderboardEntry(
     stats: UserStats,
     lastDate: string
-  ): Promise<LeaderboardEntry> {
+  ): Promise<LeaderboardDataItem> {
     const resultMap = stats.last30.reduce((acc, g) => {
       acc[g.date] = g;
       return acc;
@@ -509,8 +522,11 @@ export class GameServiceImpl implements GameService {
       : new Date(new Date(lastDate).getTime() - 1000 * 60 * 60 * 24);
     const last14: GameResult[] = [];
     let lastPlayedDate: string | undefined = undefined;
-    let totalGamesWon = 0;
-    let totalGamesWonGuesses = 0;
+    let wonCount = 0;
+    let lostCount = 0;
+    let unplayedCount = 0;
+    let wonGuessCount = 0;
+    let totalGuessCount = 0;
     for (let i = 13; i >= 0; i--) {
       const date = new Date(toDate.getTime() - 1000 * 60 * 60 * 24 * i);
       const dateKey = this.getDayString(date);
@@ -518,10 +534,16 @@ export class GameServiceImpl implements GameService {
       if (result) {
         last14.push(result);
         if (result.won) {
-          totalGamesWon++;
-          totalGamesWonGuesses += result.guessCount;
+          wonCount++;
+          wonGuessCount += result.guessCount;
+        } else {
+          wonGuessCount += 8;
+          lostCount++;
         }
         lastPlayedDate = dateKey;
+      } else {
+        totalGuessCount += 9;
+        unplayedCount += 1;
       }
     }
     let userData = stats.userData;
@@ -534,19 +556,16 @@ export class GameServiceImpl implements GameService {
       });
       userData = lastGame?.userData;
     }
-    const maxGuesses = 14 * MAX_GUESSES * 1.5;
-    const totalGuesses =
-      totalGamesWonGuesses + MAX_GUESSES * 1.5 * (14 - totalGamesWon);
-    const score = maxGuesses - totalGuesses;
     return {
       userId: stats.userId,
       identityProvider: stats.identityProvider,
-      totalGamesWon,
-      totalGamesWonGuesses,
-      lastDate: lastPlayedDate,
-      last14,
-      userData,
-      score,
+      wonCount,
+      lostCount,
+      unplayedCount,
+      wonGuessCount,
+      totalGuessCount,
+      userData: userData || null,
+      maxGameKey: lastPlayedDate ?? null,
     };
   }
 
@@ -579,77 +598,95 @@ export class GameServiceImpl implements GameService {
     return l;
   }
 
-  private sortLeaderboardEntries(
-    entries: LeaderboardEntry[]
-  ): LeaderboardEntry[] {
-    return [...entries].sort((a, b) => b.score - a.score).slice(0, 10);
-  }
+  // private sortLeaderboardEntries(
+  //   entries: LeaderboardEntry[]
+  // ): LeaderboardEntry[] {
+  //   return [...entries].sort((a, b) => b.score - a.score).slice(0, 10);
+  // }
 
-  private async updateLeaderboard(
-    stats: UserStats,
-    l: Leaderboard
-  ): Promise<Leaderboard> {
-    const entries = [...l.entries];
-    const personalEntryIndex = entries.findIndex(
-      (e) => e.userId === stats.userId
-    );
-    const personalEntry = await this.toLeaderboardEntry(stats, l.date);
-    if (stats.userId === "11124") {
-      return l;
-    }
-    if (personalEntryIndex !== -1) {
-      entries[personalEntryIndex] = personalEntry;
-    } else {
-      entries.push(personalEntry);
-    }
-    const lastDate = stats.last30[stats.last30.length - 1]?.date;
-    return {
-      ...l,
-      date: lastDate && lastDate > l.date ? lastDate : l.date,
-      entries: this.sortLeaderboardEntries(entries),
-      lastUpdatedAt: Date.now(),
-    };
-  }
+  // private async updateLeaderboard(
+  //   stats: UserStats,
+  //   l: Leaderboard
+  // ): Promise<Leaderboard> {
+  //   const entries = [...l.entries];
+  //   const personalEntryIndex = entries.findIndex(
+  //     (e) => e.userId === stats.userId
+  //   );
+  //   const personalEntry = await this.toLeaderboardEntry(stats, l.date);
+  //   if (stats.userId === "11124") {
+  //     return l;
+  //   }
+  //   if (personalEntryIndex !== -1) {
+  //     entries[personalEntryIndex] = personalEntry;
+  //   } else {
+  //     entries.push(personalEntry);
+  //   }
+  //   const lastDate = stats.last30[stats.last30.length - 1]?.date;
+  //   return {
+  //     ...l,
+  //     date: lastDate && lastDate > l.date ? lastDate : l.date,
+  //     entries: this.sortLeaderboardEntries(entries),
+  //     lastUpdatedAt: Date.now(),
+  //   };
+  // }
 
   async loadLeaderboard(
     userId: string | null | undefined,
-    identityProvider: GameIdentityProvider
+    identityProvider: GameIdentityProvider,
+    date?: string
   ): Promise<PersonalLeaderboard> {
-    const l = await this.gameRepository.loadLeaderboard(identityProvider);
-    if (l) {
-      if (userId == null) {
-        return l;
-      }
-      return this.enrichLeaderboard(
-        l,
-        { userId: userId, identityProvider },
-        this.gameRepository.loadStatsByUserKey
-      );
-    }
-    const allStats = (
-      await this.gameRepository.loadAllStats(identityProvider)
-    ).filter((s) => s.userId !== "11124");
-    const lastDate = allStats.reduce((acc, s) => {
-      const last = s.last30[s.last30.length - 1]?.date;
-      return last && last > acc ? last : acc;
-    }, "2024-02-05");
-    const entries = await Promise.all(
-      allStats.map((s) => this.toLeaderboardEntry(s, lastDate))
-    );
-    const newLeaderboard = {
-      date: lastDate,
-      entries: this.sortLeaderboardEntries(entries),
-      lastUpdatedAt: Date.now(),
-    };
-    await this.gameRepository.saveLeaderboard(identityProvider, newLeaderboard);
+    const leaderboardDate =
+      date ||
+      new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString().split("T")[0]!;
+    const l = await gameRepo.loadLeaderboard(identityProvider, leaderboardDate);
     if (userId == null) {
-      return newLeaderboard;
+      return l;
     }
     return this.enrichLeaderboard(
-      newLeaderboard,
-      { userId, identityProvider },
-      (id) => Promise.resolve(allStats.find((s) => s.userId === id.userId))
+      l,
+      { userId: userId, identityProvider },
+      this.gameRepository.loadStatsByUserKey
     );
+  }
+
+  async migrateToPg(): Promise<DBGameInsert[]> {
+    const games = await this.gameRepository.loadAll();
+    const inserts = [];
+    for (const game of games) {
+      const pgGame: DBGame = {
+        ...game,
+        // will be determined from guessed game
+        status: "IN_PROGRESS" as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        completedAt: null,
+        guessCount: game.guesses.length,
+        isHardMode: false,
+        userData: game.userData
+          ? {
+              displayName: game.userData.displayName ?? null,
+              username: game.userData.username ?? null,
+              profileImage: game.userData.profileImage ?? null,
+              bio: game.userData.bio ?? null,
+              passOwnership: game.userData.passOwnership
+                ? game.userData.passOwnership
+                : null,
+            }
+          : null,
+      };
+      const gg = this.toGuessedGame(pgGame);
+      inserts.push({
+        ...pgGame,
+        isHardMode: gg.isHardMode,
+        status: gg.status,
+        completedAt:
+          gg.status === "WON" || gg.status === "LOST" ? new Date() : null,
+        guesses: JSON.stringify(gg.originalGuesses),
+        userData: gg.userData ? JSON.stringify(gg.userData) : null,
+      });
+    }
+    await gameRepo.insertAll(inserts);
+    return inserts;
   }
 }
 

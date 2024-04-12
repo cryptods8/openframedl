@@ -6,7 +6,8 @@ import { getUserKeyFromContext } from "../message-utils";
 
 const constructLeaderboardSearchParams = (
   uid: string | undefined,
-  ip: string | undefined
+  ip: string | undefined,
+  date: string | undefined
 ): URLSearchParams => {
   const params = new URLSearchParams();
   if (uid) {
@@ -14,6 +15,9 @@ const constructLeaderboardSearchParams = (
   }
   if (ip) {
     params.set("ip", ip);
+  }
+  if (date) {
+    params.set("date", date);
   }
   return params;
 };
@@ -36,18 +40,24 @@ const handleRequest = frames(async (ctx) => {
   }
   let uidStr: string | undefined;
   let ipStr: string | undefined;
+  let dateStr: string | undefined;
   const userKey = getUserKeyFromContext(ctx);
   if (userKey) {
     uidStr = userKey.userId;
     ipStr = userKey.identityProvider;
+    dateStr = new Date(Date.now() - 1000 * 60 * 60 * 24)
+      .toISOString()
+      .split("T")[0]!;
   } else {
     uidStr = searchParams.uid as string | undefined;
     ipStr = searchParams.ip as string | undefined;
+    dateStr = searchParams.date as string | undefined;
   }
 
   const leaderboardSearchParams = constructLeaderboardSearchParams(
     uidStr,
-    ipStr
+    ipStr,
+    dateStr
   );
   const imageUrl = constructImageUrl(
     ctx.createUrl("/api/images/leaderboard"),

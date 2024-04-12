@@ -26,9 +26,10 @@ export async function GET(req: NextRequest) {
     const params = url.searchParams;
     const userIdParam = params.get("uid");
     const ipParam = (params.get("ip") ?? "fc") as GameIdentityProvider;
+    const date = params.get("date") as string;
 
     const leaderboard = await timeCall("loadLeaderboard", () =>
-      gameService.loadLeaderboard(userIdParam, ipParam)
+      gameService.loadLeaderboard(userIdParam, ipParam, date)
     );
 
     return timeCall("generateLeaderboardImage", () =>

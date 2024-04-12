@@ -14,11 +14,14 @@ const nextConfig = {
       },
     ],
   },
-  // logging: {
-  //   fetches: {
-  //     fullUrl: true
-  //   }
-  // }
+  logging:
+    process.env.NODE_ENV === "development"
+      ? {
+          fetches: {
+            fullUrl: true,
+          },
+        }
+      : {},
 };
 
 export default nextConfig;
