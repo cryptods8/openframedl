@@ -4,6 +4,7 @@ import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
 import { baseUrl, hubHttpUrl } from "../constants";
 import { FramesMiddleware } from "frames.js/types";
 import { validateFrameMessage } from "frames.js";
+import { maintenanceMiddleware } from "./maintenanceMiddleware";
 
 interface FrameValidationResult {
   isValid: boolean;
@@ -84,6 +85,7 @@ export const frames = createFrames({
   basePath,
   initialState,
   middleware: [
+    maintenanceMiddleware,
     urlBuilderMiddleware,
     validationMiddleware,
     openframes({
