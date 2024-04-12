@@ -1,6 +1,7 @@
 /* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
 import { FramesMiddleware } from "frames.js/types";
+import { baseUrl } from "../constants";
 
 export const maintenanceMiddleware: FramesMiddleware<any, any> = async (
   ctx,
@@ -20,7 +21,9 @@ export const maintenanceMiddleware: FramesMiddleware<any, any> = async (
         </div>
       ),
       buttons: [
-        <Button action="post">Try again</Button>,
+        <Button action="post" target={`${baseUrl}${ctx.basePath}`}>
+          Try again
+        </Button>,
         <Button action="link" target={"https://warpcast.com/ds8"}>
           Support
         </Button>,
