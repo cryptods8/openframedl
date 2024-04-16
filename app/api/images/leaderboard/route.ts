@@ -6,9 +6,19 @@ import { verifySignedUrl, timeCall } from "../../../utils";
 import { baseUrl } from "../../../constants";
 import { GameIdentityProvider } from "../../../game/game-repository";
 
+const allowedQueryParams = ["uid", "ip", "date", "signed"];
+
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
-  const search = url.searchParams.toString();
+  // remove extra query params
+  const urlParams = url.searchParams;
+  for (const param of urlParams.keys()) {
+    if (!allowedQueryParams.includes(param)) {
+      urlParams.delete(param);
+    }
+  }
+
+  const search = urlParams.toString();
   return `${baseUrl}${url.pathname}${search ? `?${search}` : ""}`;
 }
 
