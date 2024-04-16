@@ -101,6 +101,8 @@ export interface PublicGuessedGame {
   guesses: Guess[];
   status: "IN_PROGRESS" | "WON" | "LOST";
   isHardMode: boolean;
+  completedAt?: Date | null;
+  createdAt: Date;
   word?: string;
 }
 
@@ -349,6 +351,8 @@ export class GameServiceImpl implements GameService {
       id: game.id,
       gameKey: game.gameKey,
       isHardMode: game.isHardMode,
+      createdAt: game.createdAt,
+      completedAt: game.completedAt,
       guesses: game.guesses.map((g) => {
         return {
           characters: g.characters.map((c) => {
