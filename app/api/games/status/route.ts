@@ -35,7 +35,10 @@ export async function GET(req: NextRequest) {
       isDaily: true,
     });
     if (!game) {
-      return badRequest("No game found for the provided parameters");
+      return NextResponse.json(
+        { error: "No game found for the provided parameters" },
+        { status: 404 }
+      );
     }
     return NextResponse.json(game);
   } finally {
