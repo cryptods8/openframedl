@@ -119,6 +119,9 @@ export interface GameService {
   load(id: string): Promise<GuessedGame | null>;
   loadAllDailiesByUserKey(userKey: UserKey): Promise<GuessedGame[]>;
   loadPublic(id: string, personal: boolean): Promise<PublicGuessedGame | null>;
+  loadPublicByUserGameKey(
+    userGameKey: UserGameKey
+  ): Promise<PublicGuessedGame | null>;
   guess(game: GuessedGame, guess: string): Promise<GuessedGame>;
   isValidGuess(guess: string): boolean;
   validateGuess(guess: string | null | undefined): GuessValidationStatus;
@@ -341,6 +344,22 @@ export class GameServiceImpl implements GameService {
     return this.toGuessedGame(game);
   }
 
+  private toPublicGuessedGame(game: GuessedGame): PublicGuessedGame {
+    return {
+      id: game.id,
+      gameKey: game.gameKey,
+      isHardMode: game.isHardMode,
+      guesses: game.guesses.map((g) => {
+        return {
+          characters: g.characters.map((c) => {
+            return { status: c.status, character: "" };
+          }),
+        };
+      }),
+      status: game.status,
+    };
+  }
+
   async loadPublic(
     id: string,
     personal: boolean
@@ -353,19 +372,18 @@ export class GameServiceImpl implements GameService {
     if (personal) {
       return guessedGame;
     }
-    return {
-      id: game.id,
-      gameKey: game.gameKey,
-      isHardMode: guessedGame.isHardMode,
-      guesses: guessedGame.guesses.map((g) => {
-        return {
-          characters: g.characters.map((c) => {
-            return { status: c.status, character: "" };
-          }),
-        };
-      }),
-      status: guessedGame.status,
-    };
+    return this.toPublicGuessedGame(guessedGame);
+  }
+
+  async loadPublicByUserGameKey(
+    userGameKey: UserGameKey
+  ): Promise<PublicGuessedGame | null> {
+    const game = await gameRepo.findByUserGameKey(userGameKey);
+    if (!game) {
+      return null;
+    }
+    const guessedGame = this.toGuessedGame(game);
+    return this.toPublicGuessedGame(guessedGame);
   }
 
   private async loadOrCreateStats(game: GuessedGame): Promise<UserStatsSave> {
@@ -652,7 +670,7 @@ export class GameServiceImpl implements GameService {
   async migrateToPg(): Promise<DBGameInsert[]> {
     const games = await this.gameRepository.loadAll();
     const inserts = [];
-    console.log('Migrating games:', games.length);
+    console.log("Migrating games:", games.length);
     for (const game of games) {
       const pgGame: DBGame = {
         ...game,
@@ -686,11 +704,11 @@ export class GameServiceImpl implements GameService {
         userData: gg.userData ? JSON.stringify(gg.userData) : null,
       });
     }
-    console.log('Inserting games:', inserts.length);
+    console.log("Inserting games:", inserts.length);
     try {
       await gameRepo.insertAll(inserts);
     } catch (error) {
-      console.error('Error inserting games:', error);
+      console.error("Error inserting games:", error);
       throw new Error("Could not insert games!");
     }
     return inserts;
