@@ -8,10 +8,17 @@ function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
 }
 
+const allowedApiKeys = process.env.ALLOWED_API_KEYS?.split(",") ?? [];
+const adminApiKey = process.env.ADMIN_SECRET;
+
 // TODO rate limit
 export async function GET(req: NextRequest) {
   const start = Date.now();
   try {
+    const apiKey = req.headers.get("x-framedl-api-key");
+    if (!apiKey || ![...allowedApiKeys, adminApiKey].includes(apiKey)) {
+      return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
+    }
     const params = new URL(req.url).searchParams;
     const userIdParam = params.get("uid");
     if (!userIdParam) {
