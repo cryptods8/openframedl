@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadLeaderboard } from "../../../game/game-pg-repository";
 import { GameIdentityProvider } from "../../../game/game-repository";
+import { getDailyGameKey } from "../../../game/game-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,14 @@ export async function GET(req: NextRequest) {
 
     const ip = req.nextUrl.searchParams.get("ip") || "fc";
     const date =
-      req.nextUrl.searchParams.get("date") ||
-      new Date().toISOString().split("T")[0]!;
+      req.nextUrl.searchParams.get("date") || getDailyGameKey(new Date());
+    const daysStr = req.nextUrl.searchParams.get("days");
 
-    const data = await loadLeaderboard(ip as GameIdentityProvider, date);
+    const data = await loadLeaderboard(
+      ip as GameIdentityProvider,
+      date,
+      daysStr ? parseInt(daysStr, 10) : undefined
+    );
     return NextResponse.json({ data });
   } catch (e) {
     console.error(e);

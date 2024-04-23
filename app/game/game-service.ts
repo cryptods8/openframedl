@@ -17,6 +17,8 @@ import allWords from "../words/all-words";
 import { isPro } from "../constants";
 import { DBGame, DBGameInsert } from "../db/pg/types";
 import { v4 as uuidv4 } from "uuid";
+import { addDaysToDate, getDailyGameKey } from "./game-utils";
+import { DEFAULT_LEADERBOARD_DAYS } from "./game-constants";
 
 const startingDate = new Date("2024-02-03");
 
@@ -131,8 +133,10 @@ export interface GameService {
   loadLeaderboard(
     userId: string | null | undefined,
     identityProvider: GameIdentityProvider,
-    date?: string
+    date?: string,
+    days?: number
   ): Promise<PersonalLeaderboard>;
+  loadReplacedScore(game: GuessedGame): Promise<number | null>;
   getDailyKey(): string;
   migrateToPg(): Promise<DBGameInsert[]>;
 }
@@ -155,7 +159,7 @@ export class GameServiceImpl implements GameService {
   private readonly gameRepository: GameRepository = new GameRepositoryImpl();
 
   getDailyKey() {
-    return this.getDayString(new Date());
+    return getDailyGameKey(new Date());
   }
 
   private toGuessCharacters(
@@ -304,10 +308,6 @@ export class GameServiceImpl implements GameService {
     };
   }
 
-  private getDayString(date: Date): string {
-    return date.toISOString().split("T")[0]!;
-  }
-
   async loadOrCreate(
     key: UserGameKey,
     userData?: UserData
@@ -424,8 +424,8 @@ export class GameServiceImpl implements GameService {
 
   private isPrevGameDate(currentDate: string, prevDate: string): boolean {
     const prev = new Date(prevDate);
-    const next = new Date(prev.getTime() + 1000 * 60 * 60 * 24);
-    return this.getDayString(next) === currentDate;
+    const next = addDaysToDate(prev, 1);
+    return getDailyGameKey(next) === currentDate;
   }
 
   private updateStats(
@@ -541,7 +541,7 @@ export class GameServiceImpl implements GameService {
     }, {} as Record<string, GameResult>);
     const toDate = resultMap[lastDate]
       ? new Date(lastDate)
-      : new Date(new Date(lastDate).getTime() - 1000 * 60 * 60 * 24);
+      : addDaysToDate(new Date(lastDate), -1);
     const last14: GameResult[] = [];
     let lastPlayedDate: string | undefined = undefined;
     let wonCount = 0;
@@ -550,8 +550,8 @@ export class GameServiceImpl implements GameService {
     let wonGuessCount = 0;
     let totalGuessCount = 0;
     for (let i = 13; i >= 0; i--) {
-      const date = new Date(toDate.getTime() - 1000 * 60 * 60 * 24 * i);
-      const dateKey = this.getDayString(date);
+      const date = addDaysToDate(toDate, -i);
+      const dateKey = getDailyGameKey(date);
       const result = resultMap[dateKey];
       if (result) {
         last14.push(result);
@@ -599,7 +599,9 @@ export class GameServiceImpl implements GameService {
     ) => Promise<UserStats | null | undefined>
   ): Promise<PersonalLeaderboard> {
     const personalEntryIndex = l.entries.findIndex(
-      (e) => e.userId === userKey.userId
+      (e) =>
+        e.userId === userKey.userId &&
+        e.identityProvider === userKey.identityProvider
     );
     if (personalEntryIndex !== -1) {
       const personalEntry = l.entries[personalEntryIndex];
@@ -655,12 +657,18 @@ export class GameServiceImpl implements GameService {
   async loadLeaderboard(
     userId: string | null | undefined,
     identityProvider: GameIdentityProvider,
-    date?: string
+    date?: string,
+    days?: number
   ): Promise<PersonalLeaderboard> {
     const leaderboardDate =
-      date ||
-      new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString().split("T")[0]!;
-    const l = await gameRepo.loadLeaderboard(identityProvider, leaderboardDate);
+      date || getDailyGameKey(addDaysToDate(new Date(), -1));
+    const start = Date.now();
+    const l = await gameRepo.loadLeaderboard(
+      identityProvider,
+      leaderboardDate,
+      days
+    );
+    console.log("Loaded leaderboard in", Date.now() - start, "ms");
     if (userId == null) {
       return l;
     }
@@ -716,6 +724,23 @@ export class GameServiceImpl implements GameService {
       throw new Error("Could not insert games!");
     }
     return inserts;
+  }
+
+  async loadReplacedScore(game: GuessedGame): Promise<number | null> {
+    if (!game.isDaily) {
+      return null;
+    }
+    const userGameKey = {
+      ...game,
+      gameKey: getDailyGameKey(
+        addDaysToDate(new Date(game.gameKey), -DEFAULT_LEADERBOARD_DAYS)
+      ),
+    };
+    const prevGame = await gameRepo.findByUserGameKey(userGameKey);
+    if (!prevGame || prevGame.status !== "WON") {
+      return 6;
+    }
+    return prevGame.guessCount;
   }
 }
 

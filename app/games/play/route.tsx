@@ -200,7 +200,7 @@ export const POST = frames(async (ctx) => {
     }
     daily = variant === "daily";
     gameKey = daily
-      ? new Date().toISOString().split("T")[0]!
+      ? gameService.getDailyKey()
       : Math.random().toString(36).substring(2);
   }
 

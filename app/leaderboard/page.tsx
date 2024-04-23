@@ -19,6 +19,9 @@ export async function generateMetadata({
   if (searchParams?.date) {
     queryParams.set("date", searchParams.date as string);
   }
+  if (searchParams?.days) {
+    queryParams.set("days", searchParams.days as string);
+  }
   // backwards compatibility
   if (searchParams?.fid) {
     queryParams.set("uid", searchParams.fid as string);

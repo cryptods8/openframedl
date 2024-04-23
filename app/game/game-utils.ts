@@ -33,3 +33,17 @@ export function buildShareableResult(
   const text = buildResultText(game);
   return { title, text };
 }
+
+export function addDaysToDate(date: Date, days: number) {
+  const copy = new Date(date);
+  copy.setDate(date.getDate() + days);
+  return copy;
+}
+
+export function getDailyGameKey(date: Date): string {
+  return date.toISOString().split("T")[0]!;
+}
+
+export function getDateFromDailyGameKey(gameKey: string): Date {
+  return new Date(gameKey);
+}

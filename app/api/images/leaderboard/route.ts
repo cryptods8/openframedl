@@ -6,7 +6,7 @@ import { verifySignedUrl, timeCall } from "../../../utils";
 import { baseUrl } from "../../../constants";
 import { GameIdentityProvider } from "../../../game/game-repository";
 
-const allowedQueryParams = ["uid", "ip", "date", "signed"];
+const allowedQueryParams = ["uid", "ip", "date", "signed", "days"];
 
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
@@ -37,9 +37,10 @@ export async function GET(req: NextRequest) {
     const userIdParam = params.get("uid");
     const ipParam = (params.get("ip") ?? "fc") as GameIdentityProvider;
     const date = params.get("date") as string;
+    const days = params.get("days") as string | undefined;
 
     const leaderboard = await timeCall("loadLeaderboard", () =>
-      gameService.loadLeaderboard(userIdParam, ipParam, date)
+      gameService.loadLeaderboard(userIdParam, ipParam, date, days != null ? parseInt(days, 10) : undefined)
     );
 
     return timeCall("generateLeaderboardImage", () =>

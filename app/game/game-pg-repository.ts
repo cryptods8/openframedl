@@ -7,6 +7,12 @@ import {
   UserGameKey,
   UserKey,
 } from "./game-repository";
+import { addDaysToDate, getDailyGameKey } from "./game-utils";
+import {
+  DEFAULT_LEADERBOARD_DAYS,
+  LOST_PENALTY,
+  UNPLAYED_PENALTY,
+} from "./game-constants";
 
 export async function insert(game: DBGameInsert) {
   return pgDb
@@ -54,10 +60,7 @@ export async function insertAll(games: DBGameInsert[]) {
   await pgDb.insertInto("game").values(games).execute();
 }
 
-const LEADERBOARD_DAYS = 14;
-const LEADERBOARD_SIZE = 10;
-const UNPLAYED_PENALTY = 9;
-const LOST_PENALTY = 8;
+const LEADERBOARD_SIZE = 50;
 const EXCLUDED_USERS = (
   process.env.LEADERBOARD_BLACKLISTED_USER_KEYS || "fc:11124"
 ).split(",");
@@ -86,31 +89,36 @@ export interface LeaderboardDataItem {
 export interface Leaderboard {
   entries: LeaderboardDataItem[];
   date: string;
+  days: number;
+  final: boolean;
   identityProvider: GameIdentityProvider;
 }
 
 export async function loadLeaderboard(
   identityProvider: GameIdentityProvider,
-  date: string
+  date: string,
+  days?: number
 ): Promise<Leaderboard> {
-  const entries = await loadLeaderboardEntries(identityProvider, date);
+  const entries = await loadLeaderboardEntries(identityProvider, date, days);
   return {
     entries,
     date,
+    final: date < getDailyGameKey(new Date()),
+    days: days || DEFAULT_LEADERBOARD_DAYS,
     identityProvider,
   };
 }
 
 export async function loadLeaderboardEntries(
   identityProvider: GameIdentityProvider,
-  date: string
+  date: string,
+  days?: number
 ): Promise<LeaderboardDataItem[]> {
   const toDate = new Date(date);
-  const fromDate = new Date(
-    toDate.getTime() - 1000 * 60 * 60 * 24 * (LEADERBOARD_DAYS - 1)
-  );
-  const toDateString = toDate.toISOString().split("T")[0]!;
-  const fromDateString = fromDate.toISOString().split("T")[0]!;
+  const leaderboardDays = days || DEFAULT_LEADERBOARD_DAYS;
+  const fromDate = addDaysToDate(toDate, -leaderboardDays + 1);
+  const toDateString = getDailyGameKey(toDate);
+  const fromDateString = getDailyGameKey(fromDate);
 
   const seriesTable = sql<GameKeyCTE>`
     (select

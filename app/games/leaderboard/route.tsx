@@ -3,11 +3,13 @@ import { Button } from "frames.js/next";
 import { signUrl, createComposeUrl } from "../../utils";
 import { frames } from "../frames";
 import { getUserKeyFromContext } from "../message-utils";
+import { getDailyGameKey } from "../../game/game-utils";
 
 const constructLeaderboardSearchParams = (
   uid: string | undefined,
   ip: string | undefined,
-  date: string | undefined
+  date: string | undefined,
+  days: string | undefined
 ): URLSearchParams => {
   const params = new URLSearchParams();
   if (uid) {
@@ -18,6 +20,9 @@ const constructLeaderboardSearchParams = (
   }
   if (date) {
     params.set("date", date);
+  }
+  if (days) {
+    params.set("days", days);
   }
   return params;
 };
@@ -41,23 +46,24 @@ const handleRequest = frames(async (ctx) => {
   let uidStr: string | undefined;
   let ipStr: string | undefined;
   let dateStr: string | undefined;
+  let daysStr: string | undefined;
   const userKey = getUserKeyFromContext(ctx);
   if (userKey) {
     uidStr = userKey.userId;
     ipStr = userKey.identityProvider;
-    dateStr = new Date(Date.now() - 1000 * 60 * 60 * 24)
-      .toISOString()
-      .split("T")[0]!;
+    dateStr = getDailyGameKey(new Date());
   } else {
     uidStr = searchParams.uid as string | undefined;
     ipStr = searchParams.ip as string | undefined;
     dateStr = searchParams.date as string | undefined;
+    daysStr = searchParams.days as string | undefined;
   }
 
   const leaderboardSearchParams = constructLeaderboardSearchParams(
     uidStr,
     ipStr,
-    dateStr
+    dateStr,
+    daysStr
   );
   const imageUrl = constructImageUrl(
     ctx.createUrl("/api/images/leaderboard"),

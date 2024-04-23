@@ -9,14 +9,11 @@ import {
   GuessCharacter,
   PersonalLeaderboard,
 } from "./game/game-service";
-import {
-  UserStats,
-  GameResult,
-  LeaderboardEntry,
-} from "./game/game-repository";
+import { UserStats, GameResult } from "./game/game-repository";
 
 import { isPro } from "./constants";
 import { LeaderboardDataItem } from "./game/game-pg-repository";
+import { addDaysToDate, getDailyGameKey } from "./game/game-utils";
 
 function readFont(name: string) {
   return fs.readFileSync(path.resolve(`./public/${name}`));
@@ -99,11 +96,12 @@ const KEYS: string[][] = [
 
 function determineGameMessage(
   game: GuessedGame | undefined | null,
-  share?: boolean
+  options?: GenerateImageOptions
 ) {
   if (!game) {
     return "Let's play!";
   }
+  const share = options?.share;
   if (game.status === "WON") {
     const attempts = game.guesses.length;
     let who = "You won";
@@ -122,8 +120,19 @@ function determineGameMessage(
     }
     return `The correct word was "${game.word.toUpperCase()}"`;
   }
+  const replacedScore = options?.replacedScore;
   if (game.guesses.length === 0) {
-    return "Start guessing...";
+    if (replacedScore == null) {
+      return "Start guessing...";
+    }
+    return (
+      <div
+        tw="flex flex-wrap w-full text-center items-center justify-center"
+        style={{ gap: "0.5rem" }}
+      >
+        Win in <b>{replacedScore}</b> to keep your average!
+      </div>
+    );
   }
   // keep it like this?
   return (
@@ -212,8 +221,8 @@ function UserStatsPanel(props: UserStatsPanelProps) {
   const last7 = [];
   const startDate = new Date();
   for (let i = 6; i >= 0; i--) {
-    const currentDate = new Date(startDate.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateKey = currentDate.toISOString().split("T")[0]!;
+    const currentDate = addDaysToDate(startDate, -i);
+    const dateKey = getDailyGameKey(currentDate);
     const result = last30Map[dateKey];
     last7.push(
       <div
@@ -315,7 +324,8 @@ function OGBadge() {
 export interface GenerateImageOptions {
   overlayMessage?: string | null;
   share?: boolean;
-  userStats?: UserStats;
+  userStats?: UserStats | null;
+  replacedScore?: number | null;
 }
 
 function getGuessCharacterColorStyle(
@@ -444,7 +454,7 @@ export async function generateImage(
     );
   }
 
-  const gameMessage = determineGameMessage(game, share);
+  const gameMessage = determineGameMessage(game, options);
 
   return toImage(
     <div tw="flex w-full h-full items-center justify-center relative">
@@ -636,8 +646,8 @@ export async function generateFingerprint(
   const lastDate = new Date(lastDateStr);
   const last30Games: (GuessedGame | null)[] = [];
   for (let i = 29; i >= 0; i--) {
-    const currentDate = new Date(lastDate.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateKey = currentDate.toISOString().split("T")[0]!;
+    const currentDate = addDaysToDate(new Date(), -i);
+    const dateKey = getDailyGameKey(currentDate);
     last30Games.push(map[dateKey] || null);
   }
 
@@ -678,7 +688,8 @@ const MAX_ENTRIES = 8;
 export async function generateLeaderboardImage(
   leaderboard: PersonalLeaderboard
 ) {
-  const { entries, personalEntryIndex, personalEntry, date } = leaderboard;
+  const { entries, personalEntryIndex, personalEntry, date, days } =
+    leaderboard;
   const leaderboardEntries: (PersonalLeaderboardEntry | null)[] = [];
   const personalEntryUnranked =
     personalEntry &&
@@ -707,7 +718,7 @@ export async function generateLeaderboardImage(
   if (personalEntryUnranked) {
     leaderboardEntries.push(null);
     leaderboardEntries.push({
-      pos: "X",
+      pos: personalEntryIndex ? `${personalEntryIndex + 1}` : "X",
       isTop: false,
       highlight: true,
       avg: calculateAvg(personalEntry),
@@ -729,28 +740,37 @@ export async function generateLeaderboardImage(
         }}
       >
         <div tw="flex flex-col px-12 py-16" style={{ gap: "1rem" }}>
-          <div tw="flex text-5xl" style={{ fontFamily: "SpaceGrotesk" }}>
+          <div
+            tw="flex text-5xl"
+            style={{ fontFamily: "SpaceGrotesk", fontWeight: 700 }}
+          >
             Leaderboard
           </div>
           <div
             tw="flex text-4xl"
-            style={{ fontFamily: "Inter", color: primaryColor(0.54) }}
+            style={{ fontFamily: "Inter", color: primaryColor(0.87) }}
           >
             {date}
+            {leaderboard.final ? "" : "*"}
+          </div>
+          <div tw="flex text-3xl" style={{ color: primaryColor(0.54) }}>
+            Last {days} days
           </div>
         </div>
-        <div
-          tw="flex items-center text-5xl p-12 text-white"
-          style={{
-            fontFamily: "SpaceGrotesk",
-            fontWeight: 700,
-            color: primaryColor(0.86),
-            opacity: 0.2,
-            gap: "0.75rem",
-          }}
-        >
-          <span>Framedl</span>
-          {isPro && <span style={{ color: "green" }}>PRO</span>}
+        <div tw="flex flex-col">
+          <div
+            tw="flex items-center text-5xl p-12 text-white"
+            style={{
+              fontFamily: "SpaceGrotesk",
+              fontWeight: 700,
+              color: primaryColor(0.86),
+              opacity: 0.2,
+              gap: "0.75rem",
+            }}
+          >
+            <span>Framedl</span>
+            {isPro && <span style={{ color: "green" }}>PRO</span>}
+          </div>
         </div>
       </div>
       <div

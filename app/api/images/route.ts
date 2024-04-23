@@ -4,7 +4,7 @@ import { generateImage } from "../../generate-image";
 import { gameService, GuessedGame } from "../../game/game-service";
 import { verifySignedUrl, timeCall } from "../../utils";
 import { baseUrl } from "../../constants";
-import { UserKey } from "../../game/game-repository";
+import { UserStats } from "../../game/game-repository";
 
 const allowedQueryParams = ["gid", "msg", "shr", "signed"];
 
@@ -38,8 +38,22 @@ async function loadGame(gid: string) {
   return timeCall("loadGame", () => gameService.load(gid));
 }
 
-async function loadGameStats(userKey: UserKey) {
-  return timeCall("loadGameStats", () => gameService.loadStats(userKey));
+async function loadUserStats(
+  game: GuessedGame | null
+): Promise<UserStats | undefined | null> {
+  if (game && isGameFinished(game) && game.isDaily) {
+    return timeCall("loadGameStats", () => gameService.loadStats(game));
+  }
+  return undefined;
+}
+
+async function loadReplacedScore(game: GuessedGame | null): Promise<number | null> {
+  if (game && game.guesses.length === 0 && game.isDaily) {
+    return timeCall("loadReplacedScore", () => {
+      return gameService.loadReplacedScore(game);
+    });
+  }
+  return null;
 }
 
 export async function GET(req: NextRequest) {
@@ -59,12 +73,8 @@ export async function GET(req: NextRequest) {
     const options = {
       overlayMessage: msg,
       share: shr === "1",
-      userStats:
-        (game &&
-          isGameFinished(game) &&
-          game.isDaily &&
-          (await loadGameStats(game))) ||
-        undefined,
+      userStats: await loadUserStats(game),
+      replacedScore: await loadReplacedScore(game),
     };
     return timeCall("generateImage", () => generateImage(game, options));
   } catch (e) {
