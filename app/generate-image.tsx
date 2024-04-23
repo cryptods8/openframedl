@@ -790,7 +790,7 @@ export async function generateLeaderboardImage(
                   e.isTop
                     ? {
                         backgroundColor: primaryColor(
-                          e.highlight ? 0.64 : 0.94
+                          e.highlight ? 0.86 : 0.86
                         ),
                         color: "white",
                       }
