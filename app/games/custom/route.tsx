@@ -36,7 +36,7 @@ const handleRequest = frames(async (ctx) => {
       };
     }
     let userData;
-    if (userKey.identityProvider === "farcaster") {
+    if (userKey.identityProvider === "fc") {
       const options = { hubHttpUrl: hubHttpUrl };
       userData = await getUserDataForFid({
         fid: parseInt(userKey.userId, 10),
