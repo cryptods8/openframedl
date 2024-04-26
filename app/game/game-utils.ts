@@ -17,6 +17,13 @@ function buildResultText(game: PublicGuessedGame) {
     .join("\n");
 }
 
+function formatGameKey(gameKey: string) {
+  if (gameKey.startsWith("custom_")) {
+    return gameKey.substring(gameKey.length - 8);
+  }
+  return gameKey;
+}
+
 export function buildShareableResult(
   game: PublicGuessedGame | null | undefined
 ) {
@@ -27,7 +34,7 @@ export function buildShareableResult(
     };
   }
   const guessCount = game.status === "WON" ? `${game.guesses.length}` : "X";
-  const title = `Framedl ${isPro ? "PRO " : ""}${game.gameKey} ${guessCount}/6${
+  const title = `Framedl ${isPro ? "PRO " : ""}${formatGameKey(game.gameKey)} ${guessCount}/6${
     game.isHardMode ? "*" : ""
   }`;
   const text = buildResultText(game);
