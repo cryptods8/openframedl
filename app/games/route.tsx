@@ -42,6 +42,9 @@ const handleRequest = frames(async (ctx) => {
         >
           Play
         </Button>,
+        <Button action="post" target={ctx.createUrlWithBasePath("/custom?new=1")}>
+          Create my own
+        </Button>,
       ],
     };
   }

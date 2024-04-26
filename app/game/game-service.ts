@@ -115,6 +115,7 @@ export interface GuessedGame extends Omit<DBGame, "guesses"> {
   status: "IN_PROGRESS" | "WON" | "LOST";
   word: string;
   isHardMode: boolean;
+  isCustom: boolean;
 }
 
 export interface PublicGuessedGame {
@@ -327,6 +328,7 @@ export class GameServiceImpl implements GameService {
       status,
       word,
       isHardMode,
+      isCustom: game.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
     };
   }
 
@@ -355,6 +357,7 @@ export class GameServiceImpl implements GameService {
         guesses: [],
         originalGuesses: [],
         allGuessedCharacters: {},
+        isCustom: key.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
       };
     }
     return this.toGuessedGame(game);

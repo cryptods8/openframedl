@@ -239,12 +239,21 @@ export const POST = frames(async (ctx) => {
           <Button action="post" target={ctx.createUrlWithBasePath("/..")}>
             Play again
           </Button>,
-          <Button
-            action="post"
-            target={ctx.createUrlWithBasePath("/leaderboard")}
-          >
-            Leaderboard
-          </Button>,
+          game.isDaily ? (
+            <Button
+              action="post"
+              target={ctx.createUrlWithBasePath("/leaderboard")}
+            >
+              Leaderboard
+            </Button>
+          ) : game.isCustom ? (
+            <Button
+              action="post"
+              target={ctx.createUrlWithBasePath("/custom?new=1")}
+            >
+              Create my own
+            </Button>
+          ) : undefined,
           resultsUrl ? (
             <Button action="link" target={resultsUrl}>
               Results
