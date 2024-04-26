@@ -3,7 +3,7 @@ import signed from "signed";
 import { baseUrl } from "./constants";
 
 export function currentURL(pathname: string): URL {
-  return new URL(pathname, baseUrl)
+  return new URL(pathname, baseUrl);
   // if (process.env.NEXT_PUBLIC_HOST) {
   //   return new URL(pathname, process.env.NEXT_PUBLIC_HOST);
   // }

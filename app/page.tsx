@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import Link from "next/link";
 import { NextServerPageProps } from "frames.js/next/types";
 import { fetchMetadata } from "frames.js/next";
 
@@ -16,6 +15,9 @@ export async function generateMetadata({
   const queryParams = new URLSearchParams();
   if (searchParams?.id) {
     queryParams.set("id", searchParams.id as string);
+  }
+  if (searchParams?.cw) {
+    queryParams.set("cw", searchParams.cw as string);
   }
 
   const framesUrl = currentURL(`${basePath}?${queryParams.toString()}`);
@@ -42,15 +44,6 @@ export default async function Home({ searchParams }: NextServerPageProps) {
         game={gameById}
         shareUrl={`${baseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
       />
-      <div className="text-center mt-8 text-sm text-slate-600">
-        Framedl made by{" "}
-        <Link
-          href="https://warpcast.com/ds8"
-          className="underline hover:text-slate-700"
-        >
-          ds8
-        </Link>
-      </div>
     </div>
   );
 }

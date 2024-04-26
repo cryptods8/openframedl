@@ -11,6 +11,7 @@ import {
   GameIdentityProvider,
 } from "./game-repository";
 import * as gameRepo from "./game-pg-repository";
+import * as customGameRepo from "./custom-game-pg-repository";
 import { Leaderboard, LeaderboardDataItem } from "./game-pg-repository";
 import answers from "../words/answer-words";
 import allWords from "../words/all-words";
@@ -65,7 +66,11 @@ const getWordForDateString = (dateString: string, seed: string): string => {
   return getWordForIndex(days, seed);
 };
 
-const getWordForUserGameKey = (userGameKey: UserGameKey): string => {
+const CUSTOM_WORD_KEY_PREFIX = "custom_";
+
+const getWordForUserGameKey = async (
+  userGameKey: UserGameKey
+): Promise<string> => {
   const seed =
     userGameKey.identityProvider +
     "/" +
@@ -73,6 +78,21 @@ const getWordForUserGameKey = (userGameKey: UserGameKey): string => {
     (isPro ? `/pro/${userGameKey.userId}` : "");
   if (userGameKey.isDaily) {
     return getWordForDateString(userGameKey.gameKey, seed);
+  }
+
+  if (userGameKey.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX)) {
+    const customGameId = userGameKey.gameKey.substring(
+      CUSTOM_WORD_KEY_PREFIX.length
+    );
+    const customGame = await customGameRepo.findById(customGameId);
+    if (customGame) {
+      return customGame.word;
+    } else {
+      console.warn(
+        "Invalid custom game id, falling back to random word",
+        customGameId
+      );
+    }
   }
 
   const rng = seedrandom(seedSalt + "/" + userGameKey.gameKey);
@@ -127,8 +147,10 @@ export interface GameService {
     userGameKey: UserGameKey
   ): Promise<PublicGuessedGame | null>;
   guess(game: GuessedGame, guess: string): Promise<GuessedGame>;
-  isValidGuess(guess: string): boolean;
-  validateGuess(guess: string | null | undefined): GuessValidationStatus;
+  validateGuess(
+    game: GuessedGame,
+    guess: string | null | undefined
+  ): GuessValidationStatus;
   loadStats(userKey: UserKey): Promise<UserStats | null>;
   loadLeaderboard(
     userId: string | null | undefined,
@@ -314,7 +336,7 @@ export class GameServiceImpl implements GameService {
   ): Promise<GuessedGame> {
     const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
-      const word = getWordForUserGameKey(key);
+      const word = await getWordForUserGameKey(key);
       const newGame = {
         ...key,
         id: uuidv4(),
@@ -466,8 +488,8 @@ export class GameServiceImpl implements GameService {
   }
 
   async guess(guessedGame: GuessedGame, guess: string): Promise<GuessedGame> {
-    if (!this.isValidGuess(guess)) {
-      throw new Error("Guess must be 5 letters");
+    if (!this.isValidGuess(guessedGame, guess)) {
+      throw new Error("Guess is invalid!");
     }
     const game = await gameRepo.findByUserGameKey(guessedGame);
     if (!game) {
@@ -510,7 +532,7 @@ export class GameServiceImpl implements GameService {
     return this.gameRepository.loadStatsByUserKey(userKey);
   }
 
-  validateGuess(guess: String | null | undefined) {
+  validateGuess(game: GuessedGame, guess: String | null | undefined) {
     if (!guess) {
       return "INVALID_EMPTY";
     }
@@ -521,14 +543,14 @@ export class GameServiceImpl implements GameService {
     if (!GUESS_PATTERN.test(formattedGuess)) {
       return "INVALID_FORMAT";
     }
-    if (!allWords.includes(formattedGuess)) {
+    if (!allWords.includes(formattedGuess) && formattedGuess !== game.word) {
       return "INVALID_WORD";
     }
     return "VALID";
   }
 
-  isValidGuess(guess: string): boolean {
-    return this.validateGuess(guess) === "VALID";
+  private isValidGuess(game: GuessedGame, guess: string): boolean {
+    return this.validateGuess(game, guess) === "VALID";
   }
 
   private async toLeaderboardEntry(

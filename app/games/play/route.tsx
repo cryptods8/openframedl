@@ -49,7 +49,7 @@ async function nextGameState(
     };
   }
   const guess = inputText?.trim().toLowerCase() || "";
-  const validationResult = gameService.validateGuess(guess);
+  const validationResult = gameService.validateGuess(game, guess);
   if (validationResult !== "VALID") {
     let message = "Not a valid guess!";
     switch (validationResult) {
@@ -121,8 +121,8 @@ export const POST = frames(async (ctx) => {
       identityProvider = "fc";
       const fid = message.requesterFid;
       userId = fid.toString();
-      const options = { hubHttpUrl: hubHttpUrl };
       if (!state.gameKey) {
+        const options = { hubHttpUrl: hubHttpUrl };
         const userDataPromise = getUserDataForFid({ fid, options });
         if (isPro) {
           const [userDataRes, addressesRes] = await Promise.all([
@@ -183,10 +183,13 @@ export const POST = frames(async (ctx) => {
     passOwnership = passOwnershipResult;
   }
 
-  const { variant } = searchParams;
+  const { variant, gameKey: spGameKey } = searchParams;
   let gameKey: string;
   let daily: boolean;
-  if (state.gameKey) {
+  if (spGameKey) {
+    gameKey = spGameKey;
+    daily = false;
+  } else if (state.gameKey) {
     gameKey = state.gameKey;
     if (state.daily == null) {
       console.warn("Missing daily flag in state");

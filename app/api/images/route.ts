@@ -6,7 +6,7 @@ import { verifySignedUrl, timeCall } from "../../utils";
 import { baseUrl } from "../../constants";
 import { UserStats } from "../../game/game-repository";
 
-const allowedQueryParams = ["gid", "msg", "shr", "signed"];
+const allowedQueryParams = ["gid", "msg", "shr", "signed", "custom"];
 
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
@@ -47,7 +47,9 @@ async function loadUserStats(
   return undefined;
 }
 
-async function loadReplacedScore(game: GuessedGame | null): Promise<number | null> {
+async function loadReplacedScore(
+  game: GuessedGame | null
+): Promise<number | null> {
   if (game && game.guesses.length === 0 && game.isDaily) {
     return timeCall("loadReplacedScore", () => {
       return gameService.loadReplacedScore(game);
@@ -69,10 +71,12 @@ export async function GET(req: NextRequest) {
     const gid = params.get("gid");
     const msg = params.get("msg");
     const shr = params.get("shr");
+    const custom = params.get("custom");
     const game = gid ? await loadGame(gid) : null;
     const options = {
       overlayMessage: msg,
       share: shr === "1",
+      custom: custom === "1",
       userStats: await loadUserStats(game),
       replacedScore: await loadReplacedScore(game),
     };

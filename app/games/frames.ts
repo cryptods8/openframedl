@@ -5,6 +5,8 @@ import { baseUrl, hubHttpUrl } from "../constants";
 import { FramesMiddleware } from "frames.js/types";
 import { validateFrameMessage } from "frames.js";
 import { maintenanceMiddleware } from "./maintenanceMiddleware";
+import { signUrl } from "../utils";
+import { UserKey } from "../game/game-repository";
 
 interface FrameValidationResult {
   isValid: boolean;
@@ -15,9 +17,46 @@ type CreateUrlFunctionArgs =
   | { pathname?: string; query?: Record<string, string> };
 type CreateUrlFunction = (arg: CreateUrlFunctionArgs) => string;
 
+const userKeyMiddleware: FramesMiddleware<any, { userKey?: UserKey }> = async (
+  ctx,
+  next
+) => {
+  const { clientProtocol, message, validationResult } = ctx as any;
+  if (
+    !clientProtocol ||
+    !message ||
+    (validationResult && !validationResult.isValid)
+  ) {
+    return next();
+  }
+  switch (clientProtocol.id) {
+    case "xmtp":
+      return next({
+        userKey: {
+          identityProvider: "xmtp",
+          userId: message.verifiedWalletAddress!,
+        },
+      });
+    case "farcaster":
+      return next({
+        userKey: {
+          identityProvider: "fc",
+          userId: message.requesterFid!.toString(),
+        },
+      });
+    default:
+      console.warn("invalid clientProtocol id", clientProtocol.id);
+  }
+  return next();
+};
+
 const urlBuilderMiddleware: FramesMiddleware<
   any,
-  { createUrl: CreateUrlFunction; createUrlWithBasePath: CreateUrlFunction }
+  {
+    createUrl: CreateUrlFunction;
+    createUrlWithBasePath: CreateUrlFunction;
+    createSignedUrl: CreateUrlFunction;
+  }
 > = async (ctx, next) => {
   const provideCreateUrl = (withBasePath: boolean) => {
     return (arg: CreateUrlFunctionArgs) => {
@@ -41,6 +80,10 @@ const urlBuilderMiddleware: FramesMiddleware<
   return next({
     createUrl: provideCreateUrl(false),
     createUrlWithBasePath: provideCreateUrl(true),
+    createSignedUrl: (arg: CreateUrlFunctionArgs) => {
+      const url = provideCreateUrl(false)(arg);
+      return signUrl(url);
+    },
   });
 };
 
@@ -105,5 +148,6 @@ export const frames = createFrames({
         },
       },
     }),
+    userKeyMiddleware,
   ],
 });

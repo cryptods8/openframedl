@@ -14,6 +14,7 @@ import { UserStats, GameResult } from "./game/game-repository";
 import { isPro } from "./constants";
 import { LeaderboardDataItem } from "./game/game-pg-repository";
 import { addDaysToDate, getDailyGameKey } from "./game/game-utils";
+import { CUSTOM_WORD_KEY_PREFIX } from "./game/game-constants";
 
 function readFont(name: string) {
   return fs.readFileSync(path.resolve(`./public/${name}`));
@@ -147,10 +148,7 @@ interface UserStatsPanelProps {
 
 function StatLabel(props: { label: string }) {
   return (
-    <div
-      tw="flex flex-wrap text-3xl"
-      style={{ color: "rgba(31, 21, 55, 0.54)" }}
-    >
+    <div tw="flex flex-wrap text-3xl" style={{ color: primaryColor(0.54) }}>
       {props.label}
     </div>
   );
@@ -187,7 +185,7 @@ function StatGuessDistributionItem(props: {
           tw="flex text-white rounded px-2 py-1"
           style={{
             minWidth: `${pctg}%`,
-            backgroundColor: current ? "green" : "rgba(31, 21, 55, 0.24)",
+            backgroundColor: current ? "green" : primaryColor(0.24),
           }}
         >
           {amount}
@@ -236,7 +234,7 @@ function UserStatsPanel(props: UserStatsPanelProps) {
             ? result.won
               ? "green"
               : "red"
-            : "rgba(31, 21, 55, 0.24)",
+            : primaryColor(0.24),
         }}
       >
         {result ? (result.won ? result.guessCount : "X") : ""}
@@ -272,13 +270,13 @@ function UserStatsPanel(props: UserStatsPanelProps) {
       tw="flex flex-col w-full text-5xl"
       style={{
         fontFamily: "Inter",
-        color: "rgba(31, 21, 55, 0.87)",
-        borderColor: "rgba(31, 21, 55, 0.2)",
+        color: primaryColor(),
+        borderColor: primaryColor(0.2),
       }}
     >
       <div
         tw="flex flex-row flex-wrap border-t py-8"
-        style={{ gap: "1rem", borderColor: "rgba(33, 21, 55, 0.2)" }}
+        style={{ gap: "1rem", borderColor: primaryColor(0.2) }}
       >
         <StatItem label="Played" value={`${totalGames}`} />
         <StatItem label="Win %" value={winPctg} />
@@ -287,7 +285,7 @@ function UserStatsPanel(props: UserStatsPanelProps) {
       </div>
       <div
         tw="flex flex-row w-full items-center justify-between border-t pt-8 px-4"
-        style={{ gap: "1rem", borderColor: "rgba(33, 21, 55, 0.2)" }}
+        style={{ gap: "1rem", borderColor: primaryColor(0.2) }}
       >
         <div tw="flex">
           <StatLabel label="Last 7" />
@@ -324,6 +322,7 @@ function OGBadge() {
 export interface GenerateImageOptions {
   overlayMessage?: string | null;
   share?: boolean;
+  custom?: boolean;
   userStats?: UserStats | null;
   replacedScore?: number | null;
 }
@@ -334,9 +333,9 @@ function getGuessCharacterColorStyle(
 ) {
   if (!c) {
     return {
-      color: "rgba(31, 21, 55, 0.87)",
+      color: primaryColor(),
       backgroundColor: "white",
-      borderColor: "rgba(31, 21, 55, 0.24)",
+      borderColor: primaryColor(0.24),
     };
   }
   if (c.status === "CORRECT") {
@@ -356,10 +355,24 @@ function getGuessCharacterColorStyle(
   return {
     color: "white",
     borderColor: "transparent",
-    backgroundColor: withLetter
-      ? "rgba(31, 21, 55, 0.42)"
-      : "rgba(31, 21, 55, 0.24)",
+    backgroundColor: withLetter ? primaryColor(0.42) : primaryColor(0.24),
   };
+}
+
+function formatGameKey(
+  gameKey: string | undefined,
+  options?: GenerateImageOptions
+) {
+  if (!gameKey && !options) {
+    return "";
+  }
+  if (gameKey?.startsWith(CUSTOM_WORD_KEY_PREFIX) || options?.custom) {
+    if (gameKey) {
+      return `From a friend 💌 (${gameKey.substring(gameKey.length - 8)})`;
+    }
+    return "From a friend 💌";
+  }
+  return gameKey;
 }
 
 export async function generateImage(
@@ -422,15 +435,15 @@ export async function generateImage(
           gc.status === "WRONG_POSITION" ||
           gc.status === "INCORRECT")
           ? "white"
-          : "rgb(31, 21, 55)";
+          : primaryColor(1);
       const backgroundColor =
         gc && gc.status === "CORRECT"
           ? "green"
           : gc && gc.status === "WRONG_POSITION"
           ? "orange"
           : gc && gc.status === "INCORRECT"
-          ? "rgba(31, 21, 55, 0.42)"
-          : "rgba(31, 21, 55, 0.12)";
+          ? primaryColor(0.42)
+          : primaryColor(0.12);
       keyCells.push(
         <div
           key={j}
@@ -469,8 +482,8 @@ export async function generateImage(
           tw={"flex flex-col flex-1 px-8 border-l pt-20"}
           style={{
             gap: "3rem",
-            borderColor: "rgba(31, 21, 55, 0.2)",
-            backgroundColor: "rgba(31, 21, 55, 0.04)",
+            borderColor: primaryColor(0.2),
+            backgroundColor: primaryColor(0.04),
           }}
         >
           <div
@@ -483,36 +496,28 @@ export async function generateImage(
                 fontFamily: "SpaceGrotesk",
                 fontWeight: 700,
                 wordBreak: "break-all",
-                color: "rgba(31, 21, 55, 0.87)",
+                color: primaryColor(),
               }}
             >
-              {isPro ? (
-                <div
-                  tw="flex flex-col items-center mb-4"
-                  style={{ gap: "0.5rem" }}
-                >
-                  <div tw="flex items-center" style={{ gap: "0.75rem" }}>
-                    <span>Framedl</span>
-                    <span style={{ color: "green" }}>PRO</span>
-                  </div>
-                  {game?.gameKey && (
-                    <div
-                      tw="flex text-3xl items-center"
-                      style={{ gap: "0.5rem" }}
-                    >
-                      <div tw="flex">{game?.gameKey}</div>
-                      {(game?.userData?.passOwnership === "OG" ||
-                        game?.userData?.passOwnership === "BASIC_AND_OG") && (
-                        <div tw="flex text-2xl">
-                          <OGBadge />
-                        </div>
-                      )}
-                    </div>
-                  )}
+              <div
+                tw="flex flex-col items-center mb-4"
+                style={{ gap: "0.5rem" }}
+              >
+                <div tw="flex items-center" style={{ gap: "0.75rem" }}>
+                  <span>Framedl</span>
+                  {isPro && <span style={{ color: "green" }}>PRO</span>}
                 </div>
-              ) : (
-                <span>Framedl {game?.gameKey}</span>
-              )}
+                <div tw="flex text-3xl items-center" style={{ gap: "0.5rem" }}>
+                  <div tw="flex">{formatGameKey(game?.gameKey, options)}</div>
+                  {isPro &&
+                    (game?.userData?.passOwnership === "OG" ||
+                      game?.userData?.passOwnership === "BASIC_AND_OG") && (
+                      <div tw="flex text-2xl">
+                        <OGBadge />
+                      </div>
+                    )}
+                </div>
+              </div>
             </div>
             <div
               tw="flex text-4xl flex-wrap"
@@ -520,7 +525,7 @@ export async function generateImage(
                 fontFamily: "Inter",
                 fontWeight: 400,
                 wordBreak: "break-all",
-                color: "rgba(31, 21, 55, 0.64)",
+                color: primaryColor(0.64),
               }}
             >
               {gameMessage}
@@ -537,7 +542,7 @@ export async function generateImage(
                 <div
                   tw="flex items-center justify-center flex-wrap text-white py-4 px-8 rounded-md text-4xl"
                   style={{
-                    backgroundColor: "rgba(31, 21, 55, 0.84)",
+                    backgroundColor: primaryColor(0.84),
                     wordBreak: "break-all",
                   }}
                 >
@@ -582,7 +587,7 @@ function createGuessCharacterCell(
 ) {
   const { backgroundColor } = c
     ? getGuessCharacterColorStyle(c, false)
-    : { backgroundColor: "rgba(31, 21, 55, 0.04)" };
+    : { backgroundColor: primaryColor(0.04) };
   return (
     <div
       key={key}
@@ -668,7 +673,7 @@ export async function generateFingerprint(
   );
 }
 
-function primaryColor(opacity: number = 0.87) {
+export function primaryColor(opacity: number = 0.87) {
   return `rgba(31, 21, 55, ${opacity})`;
 }
 
@@ -763,7 +768,7 @@ export async function generateLeaderboardImage(
             style={{
               fontFamily: "SpaceGrotesk",
               fontWeight: 700,
-              color: primaryColor(0.86),
+              color: primaryColor(),
               opacity: 0.2,
               gap: "0.75rem",
             }}
@@ -789,9 +794,7 @@ export async function generateLeaderboardImage(
                 style={
                   e.isTop
                     ? {
-                        backgroundColor: primaryColor(
-                          e.highlight ? 0.86 : 0.86
-                        ),
+                        backgroundColor: primaryColor(),
                         color: "white",
                       }
                     : {
@@ -877,10 +880,6 @@ interface PassOwnershipCheckFailedImageProps {
 export function PassOwnershipCheckFailedImage({
   baseUrl,
 }: PassOwnershipCheckFailedImageProps) {
-  /*
-  borderColor: "rgba(31, 21, 55, 0.2)",
-            backgroundColor: "rgba(31, 21, 55, 0.04)",
-  */
   return (
     <div
       tw="flex flex-row w-full h-full bg-white"
