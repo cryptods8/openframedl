@@ -4,6 +4,7 @@ import { Button } from "frames.js/next";
 import { frames } from "./frames";
 import { signUrl } from "../utils";
 import { isPro } from "../constants";
+import { GuessedGame, gameService } from "../game/game-service";
 
 type GameVariant = "daily" | "random";
 
@@ -12,11 +13,14 @@ const handleRequest = frames(async (ctx) => {
   console.log("current url", ctx.url.toString());
 
   const params = new URLSearchParams();
+  let gameById: GuessedGame | null = null;
   if (searchParams.id) {
     params.set("gid", searchParams.id);
+    gameById = await gameService.load(searchParams.id);
     params.set("shr", "1");
   }
-  if (searchParams.cw) {
+  const custom = searchParams.cw || gameById?.isCustom;
+  if (custom) {
     params.set("custom", "1");
   }
   const paramString = params.toString();
@@ -25,11 +29,7 @@ const handleRequest = frames(async (ctx) => {
   );
   const signedImageUrl = signUrl(imageUrl);
 
-  function toVariantTarget(variant: GameVariant) {
-    return ctx.createUrlWithBasePath({ pathname: "/play", query: { variant } });
-  }
-
-  if (searchParams.cw) {
+  if (custom) {
     return {
       image: signedImageUrl,
       buttons: [
@@ -37,17 +37,30 @@ const handleRequest = frames(async (ctx) => {
           action="post"
           target={ctx.createUrlWithBasePath({
             pathname: "/play",
-            query: { variant: "random", gameKey: `custom_${searchParams.cw}` },
+            query: {
+              variant: "random",
+              gameKey: searchParams.cw
+                ? `custom_${searchParams.cw}`
+                : gameById?.gameKey,
+            },
           })}
         >
           Play
         </Button>,
-        <Button action="post" target={ctx.createUrlWithBasePath("/custom?new=1")}>
+        <Button
+          action="post"
+          target={ctx.createUrlWithBasePath("/custom?new=1")}
+        >
           Create my own
         </Button>,
       ],
     };
   }
+
+  function toVariantTarget(variant: GameVariant) {
+    return ctx.createUrlWithBasePath({ pathname: "/play", query: { variant } });
+  }
+
   return {
     state: {},
     image: signedImageUrl,
