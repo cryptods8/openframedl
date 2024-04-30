@@ -21,6 +21,7 @@ import {
   options as imageOptions,
   PassOwnershipCheckFailedImage,
 } from "../../generate-image";
+import { getEnsFromAddress } from "../../get-ens";
 
 interface GameState {
   finished?: boolean;
@@ -141,6 +142,15 @@ export const POST = frames(async (ctx) => {
       identityProvider = "xmtp";
       userId = message.verifiedWalletAddress!;
       walletAddresses.push(userId);
+      if (!state.gameKey) {
+        const ens = await getEnsFromAddress(userId);
+        if (ens) {
+          userData = {
+            displayName: ens,
+            username: ens,
+          };
+        }
+      }
       break;
     }
     default: {

@@ -34,7 +34,7 @@
     "node": ">=18.17.0"
   },
   "devDependencies": {
-    "@frames.js/debugger": "^0.2.1",
+    "@frames.js/debugger": "^0.2.4",
     "@types/node": "^20",
     "@types/pg": "^8.11.5",
     "@types/react": "^18",

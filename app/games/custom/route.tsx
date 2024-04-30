@@ -7,6 +7,7 @@ import * as customGameRepo from "../../game/custom-game-pg-repository";
 import { createComposeUrl } from "../../utils";
 import { hubHttpUrl } from "../../constants";
 import { getUserDataForFid } from "frames.js";
+import { getEnsFromAddress } from "../../get-ens";
 
 // 5-letter word regex
 const wordRegex = /^[a-z]{5}$/;
@@ -42,6 +43,14 @@ const handleRequest = frames(async (ctx) => {
         fid: parseInt(userKey.userId, 10),
         options,
       });
+    } else if (userKey.identityProvider === "xmtp") {
+      const ens = await getEnsFromAddress(userKey.userId);
+      if (ens) {
+        userData = {
+          displayName: ens,
+          username: ens,
+        };
+      }
     }
     const customGame = {
       id: uuid(),
