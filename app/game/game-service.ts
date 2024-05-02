@@ -399,6 +399,12 @@ export class GameServiceImpl implements GameService {
     }
     const guessedGame = this.toGuessedGame(game);
     if (personal) {
+      if (guessedGame.isCustom) {
+        return {
+          ...guessedGame,
+          word: undefined
+        };
+      }
       return guessedGame;
     }
     return this.toPublicGuessedGame(guessedGame);

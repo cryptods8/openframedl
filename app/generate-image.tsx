@@ -116,7 +116,7 @@ function determineGameMessage(
     return `🎉 ${who} in ${attempts}${game.isHardMode ? "*" : ""} attempts!`;
   }
   if (game.status === "LOST") {
-    if (share) {
+    if (share || game.isCustom) {
       return "No luck this time...";
     }
     return `The correct word was "${game.word.toUpperCase()}"`;
