@@ -5,7 +5,7 @@ import { fetchMetadata } from "frames.js/next";
 import GameResult from "./ui/game-result";
 
 import { gameService } from "./game/game-service";
-import { baseUrl } from "./constants";
+import { baseUrl, externalBaseUrl } from "./constants";
 import { currentURL, isUrlSigned } from "./utils";
 import { basePath } from "./games/frames";
 
@@ -34,7 +34,7 @@ export default async function Home({ searchParams }: NextServerPageProps) {
   const gameById = gameIdParam
     ? await gameService.loadPublic(
         gameIdParam,
-        isUrlSigned(baseUrl, searchParams)
+        isUrlSigned(externalBaseUrl, searchParams)
       )
     : null;
 
@@ -42,7 +42,7 @@ export default async function Home({ searchParams }: NextServerPageProps) {
     <div className="flex flex-col p-6 w-full justify-center items-center">
       <GameResult
         game={gameById}
-        shareUrl={`${baseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
+        shareUrl={`${externalBaseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
       />
     </div>
   );
