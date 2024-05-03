@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createComposeUrl, currentURL } from "../utils";
 import { fetchMetadata } from "frames.js/next";
 import { basePath } from "../games/frames";
+import { externalBaseUrl } from "../constants";
 
 export async function generateMetadata(): Promise<Metadata> {
   const framesUrl = currentURL(`${basePath}/custom`);
@@ -16,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  const url = currentURL("/custom");
+  const url = new URL("/custom", externalBaseUrl);
   const composeUrl = createComposeUrl("", url.toString());
 
   return (

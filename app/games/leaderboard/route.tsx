@@ -70,7 +70,7 @@ const handleRequest = frames(async (ctx) => {
     leaderboardSearchParams
   );
   const leaderboardUrl = urlWithParams(
-    ctx.createUrlWithBasePath("/leaderboard"),
+    ctx.createExternalUrl("/leaderboard"),
     leaderboardSearchParams
   );
   const shareUrl = createComposeUrl("Framedl Leaderboard", leaderboardUrl);

@@ -1,7 +1,7 @@
 import { openframes } from "frames.js/middleware";
 import { createFrames } from "frames.js/next";
 import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
-import { baseUrl, hubHttpUrl } from "../constants";
+import { baseUrl, externalBaseUrl, hubHttpUrl } from "../constants";
 import { FramesMiddleware } from "frames.js/types";
 import { validateFrameMessage } from "frames.js";
 import { maintenanceMiddleware } from "./maintenanceMiddleware";
@@ -56,19 +56,21 @@ const urlBuilderMiddleware: FramesMiddleware<
     createUrl: CreateUrlFunction;
     createUrlWithBasePath: CreateUrlFunction;
     createSignedUrl: CreateUrlFunction;
+    createExternalUrl: CreateUrlFunction;
   }
 > = async (ctx, next) => {
-  const provideCreateUrl = (withBasePath: boolean) => {
+  const provideCreateUrl = (withBasePath: boolean, customBaseUrl?: string) => {
+    const bUrl = customBaseUrl ?? baseUrl;
     return (arg: CreateUrlFunctionArgs) => {
       if (typeof arg === "string") {
         const pathname = withBasePath ? `${ctx.basePath}${arg}` : arg;
-        return `${baseUrl}${pathname}`;
+        return `${bUrl}${pathname}`;
       }
       const { pathname, query } = arg;
       const fullPathname = withBasePath
         ? `${ctx.basePath}${pathname ?? ""}`
         : pathname;
-      const url = new URL(fullPathname ?? "", baseUrl);
+      const url = new URL(fullPathname ?? "", bUrl);
       if (query) {
         for (const [key, value] of Object.entries(query)) {
           url.searchParams.set(key, value);
@@ -84,6 +86,7 @@ const urlBuilderMiddleware: FramesMiddleware<
       const url = provideCreateUrl(false)(arg);
       return signUrl(url);
     },
+    createExternalUrl: provideCreateUrl(false, externalBaseUrl),
   });
 };
 

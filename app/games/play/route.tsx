@@ -233,7 +233,7 @@ export const POST = frames(async (ctx) => {
   let resultsUrl: string | undefined;
   let shareUrl: string | undefined;
   if (finished && game) {
-    const url = ctx.createUrl(`?id=${game.id}`);
+    const url = ctx.createExternalUrl(`?id=${game.id}`);
     resultsUrl = signUrl(url);
 
     const { title, text } = buildShareableResult(game);

@@ -62,8 +62,7 @@ const handleRequest = frames(async (ctx) => {
     console.log("saving custom game", customGame);
     await customGameRepo.save(customGame);
 
-    const playUrl = ctx.createUrl({
-      pathname: "/",
+    const playUrl = ctx.createExternalUrl({
       query: { cw: customGame.id },
     });
     const shareUrl = createComposeUrl(

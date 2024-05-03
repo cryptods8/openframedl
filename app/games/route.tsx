@@ -76,7 +76,6 @@ const handleRequest = frames(async (ctx) => {
         <Button
           action="post"
           target={ctx.createUrlWithBasePath({
-            pathname: "",
             query: { ...searchParams, more: "1" },
           })}
         >
