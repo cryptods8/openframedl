@@ -3,10 +3,9 @@ import { Button } from "frames.js/next";
 
 import { frames } from "./frames";
 import { signUrl } from "../utils";
-import { isPro } from "../constants";
 import { GuessedGame, gameService } from "../game/game-service";
 
-type GameVariant = "daily" | "random";
+export type GameVariant = "daily" | "random";
 
 const handleRequest = frames(async (ctx) => {
   const { searchParams } = ctx;
@@ -28,6 +27,7 @@ const handleRequest = frames(async (ctx) => {
     `/api/images${paramString ? `?${paramString}` : ""}`
   );
   const signedImageUrl = signUrl(imageUrl);
+  const isMore = searchParams.more === "1";
 
   if (custom) {
     return {
@@ -68,17 +68,37 @@ const handleRequest = frames(async (ctx) => {
       <Button action="post" target={toVariantTarget("daily")}>
         Play
       </Button>,
-      <Button action="post" target={toVariantTarget("random")}>
-        🎲 Practice
-      </Button>,
-      isPro ? (
+      isMore ? (
+        <Button action="post" target={toVariantTarget("random")}>
+          🎲 Practice
+        </Button>
+      ) : (
+        <Button
+          action="post"
+          target={ctx.createUrlWithBasePath({
+            pathname: "/",
+            query: { ...searchParams, more: "1" },
+          })}
+        >
+          More...
+        </Button>
+      ),
+      isMore ? (
         <Button
           action="post"
           target={ctx.createUrlWithBasePath("/leaderboard")}
         >
           Leaderboard
         </Button>
-      ) : null,
+      ) : undefined,
+      isMore ? (
+        <Button
+          action="post"
+          target={ctx.createUrlWithBasePath("/custom?new=1")}
+        >
+          Create my own
+        </Button>
+      ) : undefined,
     ],
   };
 });
