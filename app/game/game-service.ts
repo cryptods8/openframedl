@@ -402,7 +402,7 @@ export class GameServiceImpl implements GameService {
       if (guessedGame.isCustom) {
         return {
           ...guessedGame,
-          word: undefined
+          word: undefined,
         };
       }
       return guessedGame;
@@ -526,13 +526,6 @@ export class GameServiceImpl implements GameService {
       const stats = await this.loadOrCreateStats(guessedGame);
       const newStats = this.updateStats(stats, resultGame);
       this.gameRepository.saveStats(newStats);
-      // update leaderboard !!! POSSIBLE RACE CONDITION !!!
-      // const l = await this.loadLeaderboard(null, guessedGame.identityProvider);
-      // const updatedLeaderboard = await this.updateLeaderboard(savedStats, l);
-      // await this.gameRepository.saveLeaderboard(
-      //   guessedGame.identityProvider,
-      //   updatedLeaderboard
-      // );
     }
     return resultGame;
   }
@@ -601,7 +594,7 @@ export class GameServiceImpl implements GameService {
     }
     let userData = stats.userData;
     if (!userData && lastPlayedDate) {
-      const lastGame = await this.gameRepository.loadByUserGameKey({
+      const lastGame = await gameRepo.findByUserGameKey({
         userId: stats.userId,
         identityProvider: stats.identityProvider,
         gameKey: lastPlayedDate,
@@ -652,38 +645,6 @@ export class GameServiceImpl implements GameService {
     }
     return l;
   }
-
-  // private sortLeaderboardEntries(
-  //   entries: LeaderboardEntry[]
-  // ): LeaderboardEntry[] {
-  //   return [...entries].sort((a, b) => b.score - a.score).slice(0, 10);
-  // }
-
-  // private async updateLeaderboard(
-  //   stats: UserStats,
-  //   l: Leaderboard
-  // ): Promise<Leaderboard> {
-  //   const entries = [...l.entries];
-  //   const personalEntryIndex = entries.findIndex(
-  //     (e) => e.userId === stats.userId
-  //   );
-  //   const personalEntry = await this.toLeaderboardEntry(stats, l.date);
-  //   if (stats.userId === "11124") {
-  //     return l;
-  //   }
-  //   if (personalEntryIndex !== -1) {
-  //     entries[personalEntryIndex] = personalEntry;
-  //   } else {
-  //     entries.push(personalEntry);
-  //   }
-  //   const lastDate = stats.last30[stats.last30.length - 1]?.date;
-  //   return {
-  //     ...l,
-  //     date: lastDate && lastDate > l.date ? lastDate : l.date,
-  //     entries: this.sortLeaderboardEntries(entries),
-  //     lastUpdatedAt: Date.now(),
-  //   };
-  // }
 
   async loadLeaderboard(
     userId: string | null | undefined,
@@ -742,14 +703,24 @@ export class GameServiceImpl implements GameService {
         isHardMode: gg.isHardMode,
         status: gg.status,
         completedAt:
-          gg.status === "WON" || gg.status === "LOST" ? new Date() : null,
+          gg.status === "WON" || gg.status === "LOST"
+            ? gg.isDaily
+              ? new Date(gg.gameKey)
+              : new Date()
+            : null,
         guesses: JSON.stringify(gg.originalGuesses),
         userData: gg.userData ? JSON.stringify(gg.userData) : null,
       });
     }
     console.log("Inserting games:", inserts.length);
     try {
-      await gameRepo.insertAll(inserts);
+      // do it in batches of 500
+      for (let i = 0; i < inserts.length; i += 500) {
+        console.log("Batch:", i, i + 500, inserts.length);
+        const batch = inserts.slice(i, i + 500);
+        await gameRepo.updateToRandom(batch);
+        await gameRepo.insertAll(batch);
+      }
     } catch (error) {
       console.error("Error inserting games:", error);
       throw new Error("Could not insert games!");

@@ -1,6 +1,7 @@
 import { FramedlProPassOwnership } from "../pro/pass-ownership";
 import { db } from "./../db/db";
 import { v4 as uuidv4 } from "uuid";
+import answers from "../words/answer-words";
 
 export interface UserData {
   displayName?: string | null | undefined;
@@ -49,21 +50,6 @@ export interface UserStats extends UserKey {
   userData?: UserData | null;
 }
 
-export interface LeaderboardEntry extends UserKey {
-  lastDate?: string;
-  userData?: UserData;
-  last14: GameResult[];
-  totalGamesWon: number;
-  totalGamesWonGuesses: number;
-  score: number;
-}
-
-export interface Leaderboard {
-  date: string;
-  entries: LeaderboardEntry[];
-  lastUpdatedAt: number;
-}
-
 export interface UserStatsSave extends Omit<UserStats, "id"> {
   id?: string;
 }
@@ -73,63 +59,44 @@ export interface GameSave extends Omit<Game, "id"> {
 }
 
 export interface GameRepository {
-  save(game: GameSave): Promise<string>;
-  loadByUserGameKey(key: UserGameKey): Promise<Game | null>;
   loadAll(): Promise<Game[]>;
-  loadAllDailiesByUserKey(userKey: UserKey): Promise<Game[]>;
-  loadById(id: string): Promise<Game | null>;
   saveStats(stats: UserStatsSave): Promise<UserStats>;
   loadStatsByUserKey(userKey: UserKey): Promise<UserStats | null>;
-  loadAllStats(identityProvider: GameIdentityProvider): Promise<UserStats[]>;
-  loadLeaderboard(
-    identityProvider: GameIdentityProvider
-  ): Promise<Leaderboard | null>;
-  saveLeaderboard(
-    identityProvider: GameIdentityProvider,
-    leaderboard: Leaderboard
-  ): Promise<Leaderboard>;
 }
 
+interface GameClassic {
+  fid: number;
+  date: string;
+  guesses: string[];
+  id: string;
+  userData?: UserData;
+}
+
+const startingDate = new Date("2024-02-03");
+const getWordForGameClassic = (game: GameClassic) => {
+  const date = new Date(game.date);
+  const days = Math.floor((date.getTime() - startingDate.getTime()) / 86400000);
+  return answers[days % answers.length]!;
+};
+
 export class GameRepositoryImpl implements GameRepository {
-  getKey(key: UserGameKey): string {
-    return `games/${key.isDaily ? "d" : "r"}/${key.identityProvider}/user_id/${
-      key.userId
-    }/${key.gameKey}`;
-  }
-
-  getAllDailiesKey(userKey: UserKey): string {
-    return `games/d/${userKey.identityProvider}/user_id/${userKey.userId}/*`;
-  }
-
-  async save(game: GameSave): Promise<string> {
-    const key = this.getKey(game);
-    const newGame: Game = { ...game, id: game.id || uuidv4() };
-    await Promise.all([
-      db.set<Game>(key, newGame),
-      db.set<string>(`games/id/${newGame.id}`, key),
-    ]);
-    return newGame.id;
-  }
-
-  async loadByUserGameKey(userGameKey: UserGameKey): Promise<Game | null> {
-    const key = this.getKey(userGameKey);
-    return await db.get<Game>(key);
-  }
-
-  async loadAllDailiesByUserKey(userKey: UserKey): Promise<Game[]> {
-    return await db.getAll<Game>(this.getAllDailiesKey(userKey));
-  }
-
   async loadAll(): Promise<Game[]> {
-    return await db.getAll<Game>("games/*/user_id/*");
-  }
-
-  async loadById(id: string): Promise<Game | null> {
-    const key = await db.get<string>(`games/id/${id}`);
-    if (!key) {
-      return null;
+    if (process.env.FRAMEDL_CLASSIC) {
+      return (await db.getAll<GameClassic>("games/fid/*")).map((game) => {
+        return {
+          id: game.id,
+          userId: game.fid.toString(),
+          identityProvider: "fc",
+          gameKey: game.date,
+          isDaily: true,
+          guesses: game.guesses,
+          userData: game.userData,
+          word: getWordForGameClassic(game),
+          createdAt: new Date(game.date).toISOString(),
+        };
+      });
     }
-    return await db.get<Game>(key);
+    return await db.getAll<Game>("games/*/user_id/*");
   }
 
   async saveStats(stats: UserStatsSave): Promise<UserStats> {
@@ -145,29 +112,5 @@ export class GameRepositoryImpl implements GameRepository {
   async loadStatsByUserKey(userKey: UserKey): Promise<UserStats | null> {
     const key = `stats/${userKey.identityProvider}/user_id/${userKey.userId}`;
     return await db.get<UserStats>(key);
-  }
-
-  async loadAllStats(
-    identityProvider: GameIdentityProvider
-  ): Promise<UserStats[]> {
-    return await db.getAll<UserStats>(`stats/${identityProvider}/user_id/*`);
-  }
-
-  async loadLeaderboard(
-    identityProvider: GameIdentityProvider
-  ): Promise<Leaderboard | null> {
-    return await db.get<Leaderboard>(`leaderboard/${identityProvider}`);
-  }
-
-  async saveLeaderboard(
-    identityProvider: GameIdentityProvider,
-    leaderboard: Leaderboard
-  ): Promise<Leaderboard> {
-    const updatedLeaderboard = { ...leaderboard, lastUpdatedAt: Date.now() };
-    await db.set<Leaderboard>(
-      `leaderboard/${identityProvider}`,
-      updatedLeaderboard
-    );
-    return updatedLeaderboard;
   }
 }

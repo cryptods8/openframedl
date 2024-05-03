@@ -56,8 +56,32 @@ export async function findAllDailyByUserKey(key: UserKey): Promise<DBGame[]> {
     .selectAll()
     .execute();
 }
+
 export async function insertAll(games: DBGameInsert[]) {
   await pgDb.insertInto("game").values(games).execute();
+}
+
+// for migration - framedl classic overwrites openframedl games, but we keep them as "random" games
+export async function updateToRandom(games: UserGameKey[]) {
+  const dailyGames = games.filter((g) => g.isDaily);
+  if (dailyGames.length === 0) {
+    return;
+  }
+  await pgDb
+    .updateTable("game")
+    .set({ isDaily: false })
+    .where((db) =>
+      db.or(
+        dailyGames.map((g) =>
+          db.and([
+            db.eb("userId", "=", g.userId),
+            db.eb("identityProvider", "=", g.identityProvider),
+            db.eb("isDaily", "=", true),
+          ])
+        )
+      )
+    )
+    .execute();
 }
 
 const LEADERBOARD_SIZE = 50;
@@ -199,6 +223,7 @@ export async function loadLeaderboardEntries(
         .select("mg.userData")
         .where("mg.userId", "=", s.ref("gk.userId"))
         .where("mg.identityProvider", "=", s.ref("gk.identityProvider"))
+        .where("mg.isDaily", "=", true)
         .where("mg.gameKey", "=", s.fn.max("g.gameKey"))
         .as("userData"),
     ])

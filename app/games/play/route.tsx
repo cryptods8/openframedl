@@ -246,7 +246,7 @@ export const POST = frames(async (ctx) => {
     textInput: finished ? undefined : "Make your guess...",
     buttons: finished
       ? [
-          <Button action="post" target={ctx.createUrlWithBasePath("/..")}>
+          <Button action="post" target={ctx.createUrlWithBasePath("/")}>
             Play again
           </Button>,
           game.isDaily ? (

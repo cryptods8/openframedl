@@ -5,7 +5,7 @@ const redis = new Redis({
   token: process.env["REDIS_API_TOKEN"]!,
 });
 
-const BATCH_SIZE = 500;
+const BATCH_SIZE = 1000;
 
 export const db = {
   get: async <V>(key: string): Promise<V | null> => redis.get<V>(key),

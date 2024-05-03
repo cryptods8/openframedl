@@ -14,6 +14,14 @@ const nextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/frames/:path*",
+        destination: "/games/:path*",
+      },
+    ];
+  },
   logging:
     process.env.NODE_ENV === "development"
       ? {
