@@ -34,17 +34,15 @@ export function buildShareableResult(
     };
   }
   const guessCount = game.status === "WON" ? `${game.guesses.length}` : "X";
-  const title = `Framedl ${isPro ? "PRO " : ""}${formatGameKey(game.gameKey)} ${guessCount}/6${
-    game.isHardMode ? "*" : ""
-  }`;
+  const title = `Framedl ${isPro ? "PRO " : ""}${formatGameKey(
+    game.gameKey
+  )} ${guessCount}/6${game.isHardMode ? "*" : ""}`;
   const text = buildResultText(game);
   return { title, text };
 }
 
 export function addDaysToDate(date: Date, days: number) {
-  const copy = new Date(date);
-  copy.setDate(date.getDate() + days);
-  return copy;
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
 export function getDailyGameKey(date: Date): string {

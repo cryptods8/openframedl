@@ -5,7 +5,7 @@ import { fetchMetadata } from "frames.js/next";
 import GameResult from "./ui/game-result";
 
 import { gameService } from "./game/game-service";
-import { baseUrl, externalBaseUrl } from "./constants";
+import { externalBaseUrl } from "./constants";
 import { currentURL, isUrlSigned } from "./utils";
 import { basePath } from "./games/frames";
 

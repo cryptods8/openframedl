@@ -433,7 +433,8 @@ export class GameServiceImpl implements GameService {
         (g) =>
           (g.status === "LOST" || g.status === "WON") &&
           g.gameKey < game.gameKey
-      );
+      )
+      .sort((a, b) => a.gameKey.localeCompare(b.gameKey));
     const emptyStats: UserStatsSave = {
       userId: game.userId,
       identityProvider: game.identityProvider,
