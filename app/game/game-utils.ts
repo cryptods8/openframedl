@@ -36,7 +36,7 @@ export function formatUsername(user: UserProfile, mention?: boolean) {
   return `@${name}`;
 }
 
-function formatGameKey(game: PublicGuessedGame) {
+export function formatGameKey(game: PublicGuessedGame) {
   const { gameKey } = game;
   if (game.isCustom && game.customMaker) {
     const username = formatUsername(game.customMaker, true);

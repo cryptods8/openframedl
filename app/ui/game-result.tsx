@@ -1,6 +1,6 @@
 "use client";
 import { PublicGuessedGame } from "../game/game-service";
-import { buildShareableResult } from "../game/game-utils";
+import { buildShareableResult, formatGameKey } from "../game/game-utils";
 
 export interface GameResultProps {
   game?: PublicGuessedGame | null;
@@ -33,7 +33,7 @@ export default function GameResult({ game, shareUrl }: GameResultProps) {
       {game && (
         <div className="w-full flex flex-col gap-1 font-space">
           <p className="w-full text-left text-2xl py-1 font-spaceBold">
-            Framedl {game.gameKey}
+            Framedl {formatGameKey(game)}
           </p>
           <p className="w-full text-left text-xl">
             {game.status === "WON" ? "You won! 🎉" : "Better luck next time!"}
