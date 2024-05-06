@@ -1,5 +1,6 @@
 import { isPro } from "../constants";
-import { PublicGuessedGame } from "./game-service";
+import { UserData, UserKey } from "./game-repository";
+import { CustomGameMaker, PublicGuessedGame } from "./game-service";
 
 function buildResultText(game: PublicGuessedGame) {
   return game.guesses
@@ -17,9 +18,36 @@ function buildResultText(game: PublicGuessedGame) {
     .join("\n");
 }
 
-function formatGameKey(gameKey: string) {
-  if (gameKey.startsWith("custom_")) {
-    return gameKey.substring(gameKey.length - 8);
+interface UserProfile extends UserKey {
+  userData?: UserData | undefined | null;
+}
+
+export function formatUsername(user: UserProfile, mention?: boolean) {
+  const { userId, userData } = user;
+  let name;
+  if (userData?.username) {
+    name = userData.username;
+  } else {
+    name = `!${userId}`;
+  }
+  if (!mention) {
+    return name;
+  }
+  return `@${name}`;
+}
+
+function formatGameKey(game: PublicGuessedGame) {
+  const { gameKey } = game;
+  if (game.isCustom && game.customMaker) {
+    const username = formatUsername(game.customMaker, true);
+    return `#${game.customMaker.number} by ${username}`;
+  }
+  if (!game.isDaily) {
+    const subKey = gameKey.substring(gameKey.length - 8);
+    if (!game.isCustom) {
+      return `Practice (${subKey})`;
+    }
+    return subKey;
   }
   return gameKey;
 }
@@ -35,7 +63,7 @@ export function buildShareableResult(
   }
   const guessCount = game.status === "WON" ? `${game.guesses.length}` : "X";
   const title = `Framedl ${isPro ? "PRO " : ""}${formatGameKey(
-    game.gameKey
+    game
   )} ${guessCount}/6${game.isHardMode ? "*" : ""}`;
   const text = buildResultText(game);
   return { title, text };

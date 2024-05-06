@@ -16,7 +16,12 @@ import { Leaderboard, LeaderboardDataItem } from "./game-pg-repository";
 import answers from "../words/answer-words";
 import allWords from "../words/all-words";
 import { isPro } from "../constants";
-import { DBGame, DBGameInsert } from "../db/pg/types";
+import {
+  DBCustomGameView,
+  DBGame,
+  DBGameInsert,
+  DBGameView,
+} from "../db/pg/types";
 import { v4 as uuidv4 } from "uuid";
 import { addDaysToDate, getDailyGameKey } from "./game-utils";
 import { DEFAULT_LEADERBOARD_DAYS } from "./game-constants";
@@ -68,16 +73,21 @@ const getWordForDateString = (dateString: string, seed: string): string => {
 
 const CUSTOM_WORD_KEY_PREFIX = "custom_";
 
+interface GameWord {
+  word: string;
+  customGame?: DBCustomGameView;
+}
+
 const getWordForUserGameKey = async (
   userGameKey: UserGameKey
-): Promise<string> => {
+): Promise<GameWord> => {
   const seed =
     userGameKey.identityProvider +
     "/" +
     shuffleSecret +
     (isPro ? `/pro/${userGameKey.userId}` : "");
   if (userGameKey.isDaily) {
-    return getWordForDateString(userGameKey.gameKey, seed);
+    return { word: getWordForDateString(userGameKey.gameKey, seed) };
   }
 
   if (userGameKey.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX)) {
@@ -86,7 +96,7 @@ const getWordForUserGameKey = async (
     );
     const customGame = await customGameRepo.findById(customGameId);
     if (customGame) {
-      return customGame.word;
+      return { word: customGame.word, customGame };
     } else {
       console.warn(
         "Invalid custom game id, falling back to random word",
@@ -96,7 +106,7 @@ const getWordForUserGameKey = async (
   }
 
   const rng = seedrandom(seedSalt + "/" + userGameKey.gameKey);
-  return getWordForIndex(Math.floor(rng() * answers.length), seed);
+  return { word: getWordForIndex(Math.floor(rng() * answers.length), seed) };
 };
 
 export interface GuessCharacter {
@@ -108,6 +118,11 @@ export interface Guess {
   characters: GuessCharacter[];
 }
 
+export interface CustomGameMaker extends UserKey {
+  number: number;
+  userData?: UserData;
+}
+
 export interface GuessedGame extends Omit<DBGame, "guesses"> {
   originalGuesses: string[];
   guesses: Guess[];
@@ -116,6 +131,7 @@ export interface GuessedGame extends Omit<DBGame, "guesses"> {
   word: string;
   isHardMode: boolean;
   isCustom: boolean;
+  customMaker?: CustomGameMaker;
 }
 
 export interface PublicGuessedGame {
@@ -124,6 +140,9 @@ export interface PublicGuessedGame {
   guesses: Guess[];
   status: "IN_PROGRESS" | "WON" | "LOST";
   isHardMode: boolean;
+  isCustom: boolean;
+  isDaily: boolean;
+  customMaker?: CustomGameMaker;
   completedAt?: Date | null;
   createdAt: Date;
   word?: string;
@@ -160,6 +179,7 @@ export interface GameService {
     days?: number
   ): Promise<PersonalLeaderboard>;
   loadReplacedScore(game: GuessedGame): Promise<number | null>;
+  loadCustomGameMaker(customId: string): Promise<CustomGameMaker | null>;
   getDailyKey(): string;
   migrateToPg(): Promise<DBGameInsert[]>;
 }
@@ -271,7 +291,11 @@ export class GameServiceImpl implements GameService {
     return true;
   }
 
-  private toGuessedGame(game: DBGame): GuessedGame {
+  private isDBGameView(game: DBGame | DBGameView): game is DBGameView {
+    return (game as DBGameView).customUserId !== undefined;
+  }
+
+  private toGuessedGame(game: DBGame | DBGameView): GuessedGame {
     const word = game.word;
     const wordCharacters = word.split("").reduce((acc, c, idx) => {
       if (!acc[c]) {
@@ -320,6 +344,18 @@ export class GameServiceImpl implements GameService {
       : game.guesses.length >= MAX_GUESSES
       ? "LOST"
       : "IN_PROGRESS";
+
+    let customMaker: CustomGameMaker | undefined;
+    if (this.isDBGameView(game)) {
+      customMaker = game.customUserId
+        ? {
+            userId: game.customUserId,
+            identityProvider: game.customIdentityProvider!,
+            number: game.customNumByUser || 1,
+            userData: game.customUserData || undefined,
+          }
+        : undefined;
+    }
     return {
       ...game,
       originalGuesses: game.guesses,
@@ -329,7 +365,25 @@ export class GameServiceImpl implements GameService {
       word,
       isHardMode,
       isCustom: game.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
+      customMaker,
     };
+  }
+
+  private toCustomGameMaker(customGame: DBCustomGameView): CustomGameMaker {
+    return {
+      userId: customGame.userId,
+      identityProvider: customGame.identityProvider,
+      number: customGame.numByUser || 1,
+      userData: customGame.userData || undefined,
+    };
+  }
+
+  async loadCustomGameMaker(customId: string): Promise<CustomGameMaker | null> {
+    const customGame = await customGameRepo.findById(customId);
+    if (!customGame) {
+      return null;
+    }
+    return this.toCustomGameMaker(customGame);
   }
 
   async loadOrCreate(
@@ -338,7 +392,11 @@ export class GameServiceImpl implements GameService {
   ): Promise<GuessedGame> {
     const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
-      const word = await getWordForUserGameKey(key);
+      const { word, customGame } = await getWordForUserGameKey(key);
+      let customMaker: CustomGameMaker | undefined;
+      if (customGame) {
+        customMaker = this.toCustomGameMaker(customGame);
+      }
       const newGame = {
         ...key,
         id: uuidv4(),
@@ -358,6 +416,7 @@ export class GameServiceImpl implements GameService {
         originalGuesses: [],
         allGuessedCharacters: {},
         isCustom: key.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
+        customMaker,
       };
     }
     return this.toGuessedGame(game);
@@ -376,6 +435,9 @@ export class GameServiceImpl implements GameService {
       id: game.id,
       gameKey: game.gameKey,
       isHardMode: game.isHardMode,
+      isCustom: game.isCustom,
+      isDaily: game.isDaily,
+      customMaker: game.customMaker,
       createdAt: game.createdAt,
       completedAt: game.completedAt,
       guesses: game.guesses.map((g) => {
@@ -514,7 +576,7 @@ export class GameServiceImpl implements GameService {
     const isGameFinished =
       resultGame.status === "LOST" || resultGame.status === "WON";
     await gameRepo.update(game.id, {
-      ...game,
+      isHardMode: resultGame.isHardMode,
       guesses: JSON.stringify(game.guesses),
       guessCount: game.guesses.length,
       userData: game.userData ? JSON.stringify(game.userData) : null,

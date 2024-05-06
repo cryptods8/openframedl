@@ -9,7 +9,9 @@ import { FramedlProPassOwnership } from "../../pro/pass-ownership";
 
 export interface Database {
   game: GameTable;
+  vGame: VGameTable;
   customGame: CustomGameTable;
+  vCustomGame: VCustomGameTable;
 }
 
 interface UserKey {
@@ -54,9 +56,21 @@ export interface CustomGameTable extends UserKey {
   userData: UserDataColumnType | null;
 }
 
+export interface VCustomGameTable extends CustomGameTable {
+  numByUser: number;
+}
+export interface VGameTable extends GameTable {
+  customNumByUser: number | null;
+  customUserId: string | null;
+  customIdentityProvider: "xmtp" | "fc" | null;
+  customUserData: UserDataColumnType | null;
+}
+
 export type DBGame = Selectable<GameTable>;
 export type DBGameInsert = Insertable<GameTable>;
 export type DBGameUpdate = Updateable<GameTable>;
+export type DBGameView = Selectable<VGameTable>;
 
 export type DBCustomGame = Selectable<CustomGameTable>;
 export type DBCustomGameInsert = Insertable<CustomGameTable>;
+export type DBCustomGameView = Selectable<VCustomGameTable>;

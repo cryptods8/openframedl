@@ -8,12 +8,17 @@ import {
   GuessedGame,
   GuessCharacter,
   PersonalLeaderboard,
+  CustomGameMaker,
 } from "./game/game-service";
 import { UserStats, GameResult } from "./game/game-repository";
 
 import { isPro } from "./constants";
 import { LeaderboardDataItem } from "./game/game-pg-repository";
-import { addDaysToDate, getDailyGameKey } from "./game/game-utils";
+import {
+  addDaysToDate,
+  formatUsername,
+  getDailyGameKey,
+} from "./game/game-utils";
 import { CUSTOM_WORD_KEY_PREFIX } from "./game/game-constants";
 
 function readFont(name: string) {
@@ -323,6 +328,7 @@ export interface GenerateImageOptions {
   overlayMessage?: string | null;
   share?: boolean;
   custom?: boolean;
+  customMaker?: CustomGameMaker | null;
   userStats?: UserStats | null;
   replacedScore?: number | null;
 }
@@ -360,17 +366,27 @@ function getGuessCharacterColorStyle(
 }
 
 function formatGameKey(
-  gameKey: string | undefined,
+  game: GuessedGame | undefined | null,
   options?: GenerateImageOptions
 ) {
-  if (!gameKey && !options) {
+  if (!game && !options) {
     return "";
   }
-  if (gameKey?.startsWith(CUSTOM_WORD_KEY_PREFIX) || options?.custom) {
+  const gameKey = game?.gameKey || "";
+  const isCustom = game?.isCustom || options?.custom;
+  const customMaker = game?.customMaker || options?.customMaker;
+  if (isCustom || customMaker) {
+    if (customMaker) {
+      const username = formatUsername(customMaker);
+      return `#${customMaker?.number} by ${username}`;
+    }
     if (gameKey) {
       return `From a friend 💌 (${gameKey.substring(gameKey.length - 8)})`;
     }
     return "From a friend 💌";
+  }
+  if (game && !game.isDaily && gameKey) {
+    return `Practice (${gameKey.substring(gameKey.length - 8)})`;
   }
   return gameKey;
 }
@@ -381,6 +397,7 @@ export async function generateImage(
 ) {
   const { guesses, allGuessedCharacters } = game || { guesses: [] };
   const { overlayMessage, share, userStats } = options || {};
+  const isCustom = game?.isCustom || options?.custom;
 
   const rows: ReactNode[] = [];
   for (let i = 0; i < MAX_GUESSES; i++) {
@@ -479,7 +496,7 @@ export async function generateImage(
           {rows}
         </div>
         <div
-          tw={"flex flex-col flex-1 px-8 border-l pt-20"}
+          tw={"flex flex-col flex-1 px-8 border-l pt-16"}
           style={{
             gap: "3rem",
             borderColor: primaryColor(0.2),
@@ -508,7 +525,7 @@ export async function generateImage(
                   {isPro && <span style={{ color: "green" }}>PRO</span>}
                 </div>
                 <div tw="flex text-3xl items-center" style={{ gap: "0.5rem" }}>
-                  <div tw="flex">{formatGameKey(game?.gameKey, options)}</div>
+                  <div tw="flex">{formatGameKey(game, options)}</div>
                   {isPro &&
                     (game?.userData?.passOwnership === "OG" ||
                       game?.userData?.passOwnership === "BASIC_AND_OG") && (
@@ -573,6 +590,18 @@ export async function generateImage(
           </div>
         </div>
       </div>
+      {isCustom && (
+        <div
+          tw="absolute top-0 right-0 text-white px-5 py-3 rounded-bl-xl text-3xl"
+          style={{
+            fontFamily: "SpaceGrotesk",
+            backgroundColor: primaryColor(),
+            fontWeight: 700,
+          }}
+        >
+          CUSTOM
+        </div>
+      )}
     </div>
   );
 }
@@ -744,7 +773,7 @@ export async function generateLeaderboardImage(
           borderColor: primaryColor(0.2),
         }}
       >
-        <div tw="flex flex-col px-12 py-16" style={{ gap: "1rem" }}>
+        <div tw="flex flex-col px-12 py-12" style={{ gap: "1rem" }}>
           <div
             tw="flex text-5xl"
             style={{ fontFamily: "SpaceGrotesk", fontWeight: 700 }}
@@ -820,7 +849,7 @@ export async function generateLeaderboardImage(
                   textOverflow: "ellipsis",
                 }}
               >
-                {e.userData?.username || e.userId}
+                {formatUsername(e)}
               </div>
               <div
                 tw="flex flex-1 pt-2"

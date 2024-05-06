@@ -1,6 +1,6 @@
 import { sql } from "kysely";
 import { pgDb } from "../db/pg/pg-db";
-import { DBGame, DBGameInsert, DBGameUpdate } from "../db/pg/types";
+import { DBGame, DBGameInsert, DBGameUpdate, DBGameView } from "../db/pg/types";
 import {
   GameIdentityProvider,
   UserData,
@@ -26,9 +26,9 @@ export async function update(id: string, game: DBGameUpdate) {
   return pgDb.updateTable("game").set(game).where("id", "=", id).execute();
 }
 
-export async function findById(id: string): Promise<DBGame | undefined> {
+export async function findById(id: string): Promise<DBGameView | undefined> {
   return pgDb
-    .selectFrom("game")
+    .selectFrom("vGame")
     .where("id", "=", id)
     .selectAll()
     .executeTakeFirst();
@@ -36,9 +36,9 @@ export async function findById(id: string): Promise<DBGame | undefined> {
 
 export async function findByUserGameKey(
   key: UserGameKey
-): Promise<DBGame | undefined> {
+): Promise<DBGameView | undefined> {
   return pgDb
-    .selectFrom("game")
+    .selectFrom("vGame")
     .where("userId", "=", key.userId)
     .where("gameKey", "=", key.gameKey)
     .where("identityProvider", "=", key.identityProvider)

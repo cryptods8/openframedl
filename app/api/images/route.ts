@@ -1,12 +1,16 @@
 import { NextRequest } from "next/server";
 
 import { generateImage } from "../../generate-image";
-import { gameService, GuessedGame } from "../../game/game-service";
+import {
+  CustomGameMaker,
+  gameService,
+  GuessedGame,
+} from "../../game/game-service";
 import { verifySignedUrl, timeCall } from "../../utils";
 import { baseUrl } from "../../constants";
 import { UserStats } from "../../game/game-repository";
 
-const allowedQueryParams = ["gid", "msg", "shr", "signed", "custom"];
+const allowedQueryParams = ["gid", "msg", "shr", "signed", "custom", "cid"];
 
 function getRequestUrl(req: NextRequest) {
   const url = new URL(req.url);
@@ -58,6 +62,17 @@ async function loadReplacedScore(
   return null;
 }
 
+async function loadCustomGameMaker(
+  cid: string | null | undefined
+): Promise<CustomGameMaker | null> {
+  if (cid) {
+    return timeCall("loadCustomGameMaker", () =>
+      gameService.loadCustomGameMaker(cid)
+    );
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   const start = Date.now();
   try {
@@ -72,11 +87,13 @@ export async function GET(req: NextRequest) {
     const msg = params.get("msg");
     const shr = params.get("shr");
     const custom = params.get("custom");
+    const cid = params.get("cid");
     const game = gid ? await loadGame(gid) : null;
     const options = {
       overlayMessage: msg,
       share: shr === "1",
       custom: custom === "1",
+      customMaker: await loadCustomGameMaker(cid),
       userStats: await loadUserStats(game),
       replacedScore: await loadReplacedScore(game),
     };

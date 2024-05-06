@@ -19,6 +19,9 @@ const handleRequest = frames(async (ctx) => {
     params.set("shr", "1");
   }
   const custom = searchParams.cw || gameById?.isCustom;
+  if (searchParams.cw) {
+    params.set("cid", searchParams.cw);    
+  }
   if (custom) {
     params.set("custom", "1");
   }
