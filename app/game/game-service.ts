@@ -78,7 +78,7 @@ interface GameWord {
   customGame?: DBCustomGameView;
 }
 
-const getWordForUserGameKey = async (
+export const getWordForUserGameKey = async (
   userGameKey: UserGameKey
 ): Promise<GameWord> => {
   const seed =

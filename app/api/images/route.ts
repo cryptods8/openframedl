@@ -6,31 +6,11 @@ import {
   gameService,
   GuessedGame,
 } from "../../game/game-service";
-import { verifySignedUrl, timeCall } from "../../utils";
-import { baseUrl } from "../../constants";
+import { timeCall } from "../../utils";
 import { UserStats } from "../../game/game-repository";
+import { verifyUrl } from "../api-utils";
 
-const allowedQueryParams = ["gid", "msg", "shr", "signed", "custom", "cid"];
-
-function getRequestUrl(req: NextRequest) {
-  const url = new URL(req.url);
-  // remove extra query params
-  const urlParams = url.searchParams;
-  for (const param of urlParams.keys()) {
-    if (!allowedQueryParams.includes(param)) {
-      urlParams.delete(param);
-    }
-  }
-
-  const search = urlParams.toString();
-  return `${baseUrl}${url.pathname}${search ? `?${search}` : ""}`;
-}
-
-function verifyUrl(req: NextRequest) {
-  const url = getRequestUrl(req);
-  const verifiedUrl = verifySignedUrl(url);
-  return new URL(verifiedUrl);
-}
+const allowedQueryParams = ["gid", "msg", "shr", "custom", "cid"];
 
 function isGameFinished(game: GuessedGame) {
   return game.status === "LOST" || game.status === "WON";
@@ -81,7 +61,7 @@ export async function GET(req: NextRequest) {
         overlayMessage: "Framedl is under maintenance",
       });
     }
-    const url = verifyUrl(req);
+    const url = verifyUrl(req, allowedQueryParams);
     const params = url.searchParams;
     const gid = params.get("gid");
     const msg = params.get("msg");
