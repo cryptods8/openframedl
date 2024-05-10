@@ -112,7 +112,9 @@ function WotdImage(props: WotdImageProps) {
               <div tw="flex">{partOfSpeech}</div>
             </div>
             <div
-              tw="flex text-5xl text-ellipsis overflow-hidden"
+              tw={`flex text-ellipsis overflow-hidden ${
+                meaning.length > 110 ? "text-4xl" : "text-5xl"
+              }`}
               style={{ lineHeight: "1.33", maxHeight: "12rem" }}
             >
               {meaning}
