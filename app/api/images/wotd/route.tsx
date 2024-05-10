@@ -16,7 +16,6 @@ function Layout({ children }: { children: React.ReactNode }) {
       style={{
         fontFamily: "Inter",
         color: primaryColor(),
-        backgroundColor: primaryColor(0.04),
       }}
     >
       {children}
@@ -60,7 +59,7 @@ function WotdImage(props: WotdImageProps) {
     <Layout>
       <div
         tw="flex flex-col text-4xl h-full w-full p-20 relative"
-        style={{ gap: "3rem" }}
+        style={{ gap: "3rem", backgroundColor: primaryColor(0.04) }}
       >
         <div
           tw="flex items-center"
