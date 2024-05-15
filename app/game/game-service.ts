@@ -136,12 +136,15 @@ export interface GuessedGame extends Omit<DBGame, "guesses"> {
 
 export interface PublicGuessedGame {
   id: string;
+  userId: string;
+  identityProvider: GameIdentityProvider;
   gameKey: string;
   guesses: Guess[];
   status: "IN_PROGRESS" | "WON" | "LOST";
   isHardMode: boolean;
   isCustom: boolean;
   isDaily: boolean;
+  userData?: UserData | null;
   customMaker?: CustomGameMaker;
   completedAt?: Date | null;
   createdAt: Date;
@@ -166,6 +169,7 @@ export interface GameService {
   loadPublicByUserGameKey(
     userGameKey: UserGameKey
   ): Promise<PublicGuessedGame | null>;
+  loadAllPublic(filter: gameRepo.GameFilter): Promise<PublicGuessedGame[]>;
   guess(game: GuessedGame, guess: string): Promise<GuessedGame>;
   validateGuess(
     game: GuessedGame,
@@ -433,6 +437,8 @@ export class GameServiceImpl implements GameService {
   private toPublicGuessedGame(game: GuessedGame): PublicGuessedGame {
     return {
       id: game.id,
+      userId: game.userId,
+      identityProvider: game.identityProvider,
       gameKey: game.gameKey,
       isHardMode: game.isHardMode,
       isCustom: game.isCustom,
@@ -440,6 +446,7 @@ export class GameServiceImpl implements GameService {
       customMaker: game.customMaker,
       createdAt: game.createdAt,
       completedAt: game.completedAt,
+      userData: game.userData,
       guesses: game.guesses.map((g) => {
         return {
           characters: g.characters.map((c) => {
@@ -481,6 +488,11 @@ export class GameServiceImpl implements GameService {
     }
     const guessedGame = this.toGuessedGame(game);
     return this.toPublicGuessedGame(guessedGame);
+  }
+
+  async loadAllPublic(filter: gameRepo.GameFilter): Promise<PublicGuessedGame[]> {
+    const games = await gameRepo.findAllByFilter(filter);
+    return games.map((g) => this.toPublicGuessedGame(this.toGuessedGame(g)));
   }
 
   private async loadOrCreateStats(game: GuessedGame): Promise<UserStatsSave> {

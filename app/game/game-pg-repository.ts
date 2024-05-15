@@ -57,6 +57,54 @@ export async function findAllDailyByUserKey(key: UserKey): Promise<DBGame[]> {
     .execute();
 }
 
+export type GameType = "DAILY" | "RANDOM" | "CUSTOM";
+
+export interface GameFilter extends Partial<UserKey> {
+  type?: GameType;
+  gameKey?: string;
+  completedOnly?: boolean;
+}
+
+export async function findAllByFilter(filter: GameFilter): Promise<DBGame[]> {
+  return pgDb
+    .selectFrom("game")
+    .where((eb) => {
+      const conditions = [];
+      if (filter.userId) {
+        conditions.push(eb.eb("userId", "=", filter.userId));
+      }
+      if (filter.identityProvider) {
+        conditions.push(
+          eb.eb("identityProvider", "=", filter.identityProvider)
+        );
+      }
+      if (filter.gameKey) {
+        conditions.push(eb.eb("gameKey", "=", filter.gameKey));
+      }
+      if (filter.type === "DAILY") {
+        conditions.push(eb.eb("isDaily", "=", true));
+      }
+      if (filter.type === "CUSTOM") {
+        conditions.push(
+          eb.eb("isDaily", "=", false).and(eb.eb("gameKey", "like", "custom_%"))
+        );
+      }
+      if (filter.type === "RANDOM") {
+        conditions.push(
+          eb
+            .eb("isDaily", "=", false)
+            .and(eb.not(eb.eb("gameKey", "like", "custom_%")))
+        );
+      }
+      if (filter.completedOnly) {
+        conditions.push(eb.eb("completedAt", "is not", null));
+      }
+      return eb.and(conditions);
+    })
+    .selectAll()
+    .execute();
+}
+
 export async function insertAll(games: DBGameInsert[]) {
   await pgDb.insertInto("game").values(games).execute();
 }

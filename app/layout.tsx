@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="w-full min-h-dvh bg-gradient-to-b from-slate-300 to-slate-200 flex flex-col items-center justify-center p-8 font-inter">
+        <div className="w-full min-h-dvh bg-primary-100 flex flex-col items-center justify-center p-8 font-inter">
           {children}
           <div className="text-center mt-8 text-sm text-slate-600">
             Framedl made by{" "}

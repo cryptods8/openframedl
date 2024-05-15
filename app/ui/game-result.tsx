@@ -1,6 +1,7 @@
 "use client";
 import { PublicGuessedGame } from "../game/game-service";
 import { buildShareableResult, formatGameKey } from "../game/game-utils";
+import { GameGuessGrid } from "./game-guess-grid";
 
 export interface GameResultProps {
   game?: PublicGuessedGame | null;
@@ -60,24 +61,7 @@ export default function GameResult({ game, shareUrl }: GameResultProps) {
       )}
       {game && (
         <div className="flex flex-col gap-1">
-          {game.guesses.map((guess, i) => (
-            <div key={i} className="flex gap-1">
-              {guess.characters.map((letter, j) => (
-                <div
-                  key={j}
-                  className={`w-12 h-12 flex items-center justify-center rounded font-bold text-2xl ${
-                    letter.status === "CORRECT"
-                      ? "bg-green-600 text-white"
-                      : letter.status === "WRONG_POSITION"
-                      ? "bg-orange-600 text-white"
-                      : "bg-primary-950/40 text-white"
-                  }`}
-                >
-                  {letter.character.toUpperCase()}
-                </div>
-              ))}
-            </div>
-          ))}
+          <GameGuessGrid guesses={game.guesses} />
         </div>
       )}
       <button
