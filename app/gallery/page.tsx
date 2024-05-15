@@ -3,6 +3,8 @@ import { PublicGuessedGame, gameService } from "../game/game-service";
 import { Gallery } from "./gallery";
 import { GameFilter, GameType } from "../game/game-pg-repository";
 import { GameIdentityProvider } from "../game/game-repository";
+import Link from "next/link";
+import { addDaysToDate, getDailyGameKey } from "../game/game-utils";
 
 function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
   const gameKey = searchParams?.gk as string | undefined;
@@ -34,11 +36,64 @@ function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
   return filter;
 }
 
+interface ArrowButtonProps extends React.ComponentProps<"button"> {
+  dir?: "left" | "right";
+}
+
+function ArrowButton({ dir = "right", ...props }: ArrowButtonProps) {
+  return (
+    <button
+      className="w-6 h-6 flex items-center justify-center rounded-full border border-primary-200 bg-white hover:opacity-75 text-primary-950 transition duration-150 ease-in-out"
+      {...props}
+    >
+      <svg
+        className="w-3 h-3"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {dir === "left" && (
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3}
+            d="M13 5l-7 7 7 7"
+          />
+        )}
+        {dir === "right" && (
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3}
+            d="M9 5l7 7-7 7"
+          />
+        )}
+      </svg>
+    </button>
+  );
+}
+
+function toUrlSearchParams(obj: Record<string, string | string[] | undefined>) {
+  const params = new URLSearchParams();
+  for (const key in obj) {
+    const value = obj[key];
+    if (typeof value === "string") {
+      params.set(key, value as string);
+    } else if (value?.length) {
+      for (const v of value) {
+        params.append(key, v);
+      }
+    }
+  }
+  return params;
+}
+
 export default async function GalleryPage(props: NextServerPageProps) {
   const filter = buildFilter(props);
 
   let games: PublicGuessedGame[] = [];
-  let subtitle: string | undefined;
+  let subtitle: React.ReactNode | undefined;
   if (filter) {
     const { gameKey } = filter;
     games = (
@@ -53,8 +108,35 @@ export default async function GalleryPage(props: NextServerPageProps) {
           customMaker.userData?.username || `!${customMaker.userId}`
         }`;
       }
-    } else {
-      subtitle = gameKey;
+    } else if (gameKey) {
+      if (filter.type === "DAILY") {
+        const params = new URLSearchParams();
+        for (const key in props.searchParams) {
+          params.set(key, props.searchParams[key] as string);
+        }
+        const date = new Date(gameKey);
+        const prevParams = toUrlSearchParams({
+          ...props.searchParams,
+          gk: getDailyGameKey(addDaysToDate(date, -1)),
+        });
+        const nextParams = toUrlSearchParams({
+          ...props.searchParams,
+          gk: getDailyGameKey(addDaysToDate(date, 1)),
+        });
+        subtitle = (
+          <div className="flex gap-3 items-center">
+            <Link href={`/gallery?${prevParams.toString()}`}>
+              <ArrowButton dir="left" />
+            </Link>
+            <div>{gameKey}</div>
+            <Link href={`/gallery?${nextParams.toString()}`}>
+              <ArrowButton />
+            </Link>
+          </div>
+        );
+      } else {
+        subtitle = gameKey;
+      }
     }
   }
   return (

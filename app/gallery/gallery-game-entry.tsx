@@ -17,7 +17,7 @@ export function GalleryGameEntry(props: {
           <div className="px-2 py-1 rounded bg-primary-950 flex items-center justify-center text-xs text-white">
             {number}
           </div>
-          <div className="text-lg">
+          <div className="text-lg break-all">
             {identityProvider === "fc" ? (
               <a
                 href={`https://warpcast.com/${

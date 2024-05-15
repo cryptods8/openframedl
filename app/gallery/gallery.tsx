@@ -31,7 +31,7 @@ export function Gallery({
   filter,
 }: {
   games: PublicGuessedGame[];
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   filter?: GameFilter | null;
 }) {
   const [textFilter, setTextFilter] = useState("");
