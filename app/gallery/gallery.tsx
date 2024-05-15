@@ -1,24 +1,40 @@
 "use client";
 
+import { GameFilter } from "../game/game-pg-repository";
 import { PublicGuessedGame } from "../game/game-service";
+import { formatGameKey } from "../game/game-utils";
 import { GalleryGameEntry } from "./gallery-game-entry";
 import { useMemo, useState } from "react";
 
-function matchesFilter(game: PublicGuessedGame, filter: string | undefined) {
+function matchesUsernameFilter(
+  game: PublicGuessedGame,
+  filter: string | undefined
+) {
   return (
     !filter ||
     game.userData?.username?.toLowerCase().includes(filter.toLowerCase())
   );
 }
 
+function matchesGameKeyFilter(
+  game: PublicGuessedGame,
+  filter: string | undefined
+) {
+  return (
+    !filter || formatGameKey(game).toLowerCase().includes(filter.toLowerCase())
+  );
+}
+
 export function Gallery({
   games,
   subtitle,
+  filter,
 }: {
   games: PublicGuessedGame[];
   subtitle?: string;
+  filter?: GameFilter | null;
 }) {
-  const [filter, setFilter] = useState("");
+  const [textFilter, setTextFilter] = useState("");
   const numberedGames = useMemo(
     () => games.map((game, index) => ({ game, number: index + 1 })),
     [games]
@@ -26,11 +42,14 @@ export function Gallery({
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFilter = e.target.value;
-    setFilter(newFilter);
+    setTextFilter(newFilter);
   };
 
+  const filterFunction = filter?.userId
+    ? matchesGameKeyFilter
+    : matchesUsernameFilter;
   const filteredGames = numberedGames.filter(({ game }) =>
-    matchesFilter(game, filter)
+    filterFunction(game, textFilter)
   );
 
   return (
@@ -44,16 +63,20 @@ export function Gallery({
         </div>
         <input
           className="w-full px-5 py-4 rounded-full border border-primary-200 focus:border-primary-500 focus:outline-none transition duration-150 ease-in-out"
-          value={filter}
+          value={textFilter}
           onChange={handleFilterChange}
           type="text"
-          placeholder="Filter by username"
+          placeholder={`Filter by ${filter?.userId ? "game key" : "username"}`}
         />
       </div>
       <div className="w-full flex-wrap gap-6 mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center">
         {filteredGames.map(({ game, number }) => (
           <div key={game.id} style={{ width: 290 }}>
-            <GalleryGameEntry game={game} number={number} />
+            <GalleryGameEntry
+              game={game}
+              number={number}
+              showGameKey={!filter?.gameKey}
+            />
           </div>
         ))}
       </div>

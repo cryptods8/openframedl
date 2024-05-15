@@ -65,9 +65,11 @@ export interface GameFilter extends Partial<UserKey> {
   completedOnly?: boolean;
 }
 
-export async function findAllByFilter(filter: GameFilter): Promise<DBGame[]> {
+export async function findAllByFilter(
+  filter: GameFilter
+): Promise<DBGameView[]> {
   return pgDb
-    .selectFrom("game")
+    .selectFrom("vGame")
     .where((eb) => {
       const conditions = [];
       if (filter.userId) {
