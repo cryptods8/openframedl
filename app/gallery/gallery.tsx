@@ -55,11 +55,11 @@ export function Gallery({
   return (
     <div className="max-w-xs md:max-w-screen-sm lg:max-w-screen-lg xl:max-w-screen-xl mx-auto flex-1">
       <div className="flex flex-col items-center md:flex-row sm:px-4">
-        <div className="w-full my-6 font-space text-center md:text-left">
-          <h1 className="w-full text-3xl">
+        <div className="w-full my-6 font-space flex flex-col items-center md:items-start">
+          <h1 className="text-3xl">
             <span className="font-spaceBold">Framedl</span> Gallery
           </h1>
-          {subtitle && <span className="text-xl">{subtitle}</span>}
+          {subtitle && <div className="text-xl">{subtitle}</div>}
         </div>
         <input
           className="w-full px-5 py-4 rounded-full border border-primary-200 focus:border-primary-500 focus:outline-none transition duration-150 ease-in-out"
