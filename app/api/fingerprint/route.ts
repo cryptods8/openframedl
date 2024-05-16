@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 
 import { generateFingerprint } from "../../generate-image";
 import { gameService } from "../../game/game-service";
-import { verifySignedUrl, timeCall } from "../../utils";
+import { timeCall } from "../../utils";
+import { verifySignedUrl } from "../../signer";
 import { baseUrl } from "../../constants";
 import { GameIdentityProvider, UserKey } from "../../game/game-repository";
 

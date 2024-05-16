@@ -5,7 +5,7 @@ import { baseUrl, externalBaseUrl, hubHttpUrl } from "../constants";
 import { FramesMiddleware } from "frames.js/types";
 import { validateFrameMessage } from "frames.js";
 import { maintenanceMiddleware } from "./maintenanceMiddleware";
-import { signUrl } from "../utils";
+import { signUrl } from "../signer";
 import { UserKey } from "../game/game-repository";
 
 interface FrameValidationResult {

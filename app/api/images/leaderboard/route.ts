@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 
 import { generateLeaderboardImage } from "../../../generate-image";
 import { gameService } from "../../../game/game-service";
-import { verifySignedUrl, timeCall } from "../../../utils";
+import { timeCall } from "../../../utils";
+import { verifySignedUrl } from "../../../signer";
 import { baseUrl } from "../../../constants";
 import { GameIdentityProvider } from "../../../game/game-repository";
 

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { baseUrl } from "../constants";
-import { verifySignedUrl } from "../utils";
+import { verifySignedUrl } from "../signer";
 
 export function getRequestUrl(req: NextRequest, allowedQueryParams: string[]) {
   const url = new URL(req.url);

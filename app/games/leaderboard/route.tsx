@@ -1,6 +1,7 @@
 /* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
-import { signUrl, createComposeUrl } from "../../utils";
+import { createComposeUrl } from "../../utils";
+import { signUrl } from "../../signer";
 import { frames } from "../frames";
 import { getUserKeyFromContext } from "../message-utils";
 import { getDailyGameKey } from "../../game/game-utils";

@@ -6,7 +6,8 @@ import GameResult from "./ui/game-result";
 
 import { gameService } from "./game/game-service";
 import { externalBaseUrl } from "./constants";
-import { currentURL, isUrlSigned } from "./utils";
+import { currentURL } from "./utils";
+import { isUrlSigned } from "./signer";
 import { basePath } from "./games/frames";
 
 export async function generateMetadata({

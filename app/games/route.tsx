@@ -2,7 +2,7 @@
 import { Button } from "frames.js/next";
 
 import { frames } from "./frames";
-import { signUrl } from "../utils";
+import { signUrl } from "../signer";
 import { GuessedGame, gameService } from "../game/game-service";
 
 export type GameVariant = "daily" | "random";

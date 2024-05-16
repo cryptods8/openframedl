@@ -5,6 +5,7 @@ import { GameFilter, GameType } from "../game/game-pg-repository";
 import { GameIdentityProvider } from "../game/game-repository";
 import Link from "next/link";
 import { addDaysToDate, getDailyGameKey } from "../game/game-utils";
+import { IconButton, IconButtonProps } from "../ui/button/icon-button";
 
 function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
   const gameKey = searchParams?.gk as string | undefined;
@@ -36,16 +37,13 @@ function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
   return filter;
 }
 
-interface ArrowButtonProps extends React.ComponentProps<"button"> {
+interface ArrowButtonProps extends IconButtonProps {
   dir?: "left" | "right";
 }
 
 function ArrowButton({ dir = "right", ...props }: ArrowButtonProps) {
   return (
-    <button
-      className="w-6 h-6 flex items-center justify-center rounded-full border border-primary-200 bg-white hover:opacity-75 text-primary-950 transition duration-150 ease-in-out"
-      {...props}
-    >
+    <IconButton size="xs" {...props}>
       <svg
         className="w-3 h-3"
         fill="none"
@@ -70,7 +68,7 @@ function ArrowButton({ dir = "right", ...props }: ArrowButtonProps) {
           />
         )}
       </svg>
-    </button>
+    </IconButton>
   );
 }
 

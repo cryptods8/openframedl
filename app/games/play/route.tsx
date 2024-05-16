@@ -14,7 +14,8 @@ import {
 } from "../../game/game-repository";
 import { GuessedGame, gameService } from "../../game/game-service";
 import { hubHttpUrl, isPro } from "../../constants";
-import { createComposeUrl, signUrl, timeCall } from "../../utils";
+import { createComposeUrl, timeCall } from "../../utils";
+import { signUrl } from "../../signer";
 import { buildShareableResult } from "../../game/game-utils";
 import { checkPassOwnership } from "../../pro/pass-ownership";
 import {
