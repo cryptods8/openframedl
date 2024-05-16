@@ -20,6 +20,7 @@ import {
   DBCustomGameView,
   DBGame,
   DBGameInsert,
+  DBGameUpdate,
   DBGameView,
 } from "../db/pg/types";
 import { v4 as uuidv4 } from "uuid";
@@ -120,7 +121,9 @@ export interface Guess {
 
 export interface CustomGameMaker extends UserKey {
   number: number;
+  isArt: boolean;
   userData?: UserData;
+  word?: string;
 }
 
 export interface GuessedGame extends Omit<DBGame, "guesses"> {
@@ -171,6 +174,8 @@ export interface GameService {
   ): Promise<PublicGuessedGame | null>;
   loadAllPublic(filter: gameRepo.GameFilter): Promise<PublicGuessedGame[]>;
   guess(game: GuessedGame, guess: string): Promise<GuessedGame>;
+  undoGuess(game: GuessedGame): Promise<GuessedGame>;
+  reset(game: GuessedGame): Promise<GuessedGame>;
   validateGuess(
     game: GuessedGame,
     guess: string | null | undefined
@@ -357,6 +362,8 @@ export class GameServiceImpl implements GameService {
             identityProvider: game.customIdentityProvider!,
             number: game.customNumByUser || 1,
             userData: game.customUserData || undefined,
+            isArt: game.customIsArt || false,
+            word: game.customIsArt ? game.word : undefined,
           }
         : undefined;
     }
@@ -379,6 +386,8 @@ export class GameServiceImpl implements GameService {
       identityProvider: customGame.identityProvider,
       number: customGame.numByUser || 1,
       userData: customGame.userData || undefined,
+      isArt: customGame.isArt || false,
+      word: customGame.isArt ? customGame.word : undefined,
     };
   }
 
@@ -490,7 +499,9 @@ export class GameServiceImpl implements GameService {
     return this.toPublicGuessedGame(guessedGame);
   }
 
-  async loadAllPublic(filter: gameRepo.GameFilter): Promise<PublicGuessedGame[]> {
+  async loadAllPublic(
+    filter: gameRepo.GameFilter
+  ): Promise<PublicGuessedGame[]> {
     const games = await gameRepo.findAllByFilter(filter);
     return games.map((g) => this.toPublicGuessedGame(this.toGuessedGame(g)));
   }
@@ -587,22 +598,123 @@ export class GameServiceImpl implements GameService {
     const resultGame = this.toGuessedGame(game);
     const isGameFinished =
       resultGame.status === "LOST" || resultGame.status === "WON";
+    const now = new Date();
     await gameRepo.update(game.id, {
       isHardMode: resultGame.isHardMode,
       guesses: JSON.stringify(game.guesses),
       guessCount: game.guesses.length,
       userData: game.userData ? JSON.stringify(game.userData) : null,
-      updatedAt: new Date(),
-      completedAt: isGameFinished ? new Date() : null,
+      updatedAt: now,
+      completedAt: isGameFinished ? now : null,
       status: resultGame.status,
     });
+    const updatedGame = {
+      ...resultGame,
+      guessCount: game.guesses.length,
+      updatedAt: now,
+      completedAt: isGameFinished ? now : null,
+    };
     if (isGameFinished && game.isDaily) {
       // update stats
       const stats = await this.loadOrCreateStats(guessedGame);
-      const newStats = this.updateStats(stats, resultGame);
+      const newStats = this.updateStats(stats, updatedGame);
       this.gameRepository.saveStats(newStats);
     }
-    return resultGame;
+    return updatedGame;
+  }
+
+  private fromGuessedGame(game: GuessedGame): DBGameView {
+    const { customMaker } = game;
+    return {
+      id: game.id,
+      userId: game.userId,
+      identityProvider: game.identityProvider,
+      gameKey: game.gameKey,
+      isDaily: game.isDaily,
+      word: game.word,
+      guesses: game.originalGuesses,
+      createdAt: game.createdAt,
+      updatedAt: game.updatedAt,
+      completedAt: game.completedAt,
+      status: game.status,
+      guessCount: game.guessCount,
+      isHardMode: game.isHardMode,
+      userData: game.userData ? game.userData : null,
+      customUserId: customMaker?.userId || null,
+      customIdentityProvider: customMaker?.identityProvider || null,
+      customNumByUser: customMaker?.number || null,
+      customUserData: customMaker?.userData
+        ? {
+            bio: customMaker.userData.bio,
+            displayName: customMaker.userData.displayName,
+            passOwnership: customMaker.userData.passOwnership,
+            profileImage: customMaker.userData.profileImage,
+            username: customMaker.userData.username,
+          }
+        : null,
+      customIsArt: game.customMaker?.isArt || null,
+    };
+  }
+
+  async undoGuess(guessedGame: GuessedGame): Promise<GuessedGame> {
+    if (!guessedGame.customMaker?.isArt) {
+      console.warn(
+        "Request to undo non-custom game. Skipping...",
+        guessedGame.id
+      );
+      return guessedGame;
+    }
+    if (guessedGame.guesses.length === 0) {
+      console.warn("Request to undo game with no guesses. Skipping...");
+      return guessedGame;
+    }
+    const updatedAt = new Date();
+    const newGuesses = guessedGame.originalGuesses.slice(0, -1);
+    const newGuessedGame = this.toGuessedGame({
+      ...this.fromGuessedGame(guessedGame),
+      guesses: newGuesses,
+      guessCount: newGuesses.length,
+    });
+    const gameUpdates: DBGameUpdate = {
+      isHardMode: newGuessedGame.isHardMode,
+      guesses: JSON.stringify(newGuessedGame.originalGuesses),
+      guessCount: newGuessedGame.guessCount,
+      updatedAt,
+      completedAt: null,
+      status: "IN_PROGRESS",
+    };
+    await gameRepo.update(guessedGame.id, gameUpdates);
+    return newGuessedGame;
+  }
+
+  async reset(guessedGame: GuessedGame): Promise<GuessedGame> {
+    if (!guessedGame.customMaker?.isArt) {
+      console.warn(
+        "Request to reset non-custom game. Skipping...",
+        guessedGame.id
+      );
+      return guessedGame;
+    }
+    const updatedAt = new Date();
+    await gameRepo.update(guessedGame.id, {
+      isHardMode: true,
+      guesses: JSON.stringify([]),
+      guessCount: 0,
+      updatedAt,
+      completedAt: null,
+      status: "IN_PROGRESS",
+    });
+    return {
+      ...guessedGame,
+      completedAt: null,
+      updatedAt,
+      guesses: [],
+      guessCount: 0,
+      originalGuesses: [],
+      allGuessedCharacters: {},
+      status: "IN_PROGRESS",
+      isHardMode: true,
+    };
   }
 
   async loadStats(userKey: UserKey): Promise<UserStats | null> {

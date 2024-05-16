@@ -7,11 +7,7 @@ import {
 } from "frames.js";
 
 import { frames } from "../frames";
-import {
-  GameIdentityProvider,
-  UserGameKey,
-  UserData,
-} from "../../game/game-repository";
+import { UserGameKey, UserData } from "../../game/game-repository";
 import { GuessedGame, gameService } from "../../game/game-service";
 import { hubHttpUrl, isPro } from "../../constants";
 import { createComposeUrl, timeCall } from "../../utils";
@@ -33,12 +29,29 @@ interface GameState {
 async function nextGameState(
   userGameKey: UserGameKey,
   // prevState: State,
+  resetType: string | undefined,
   inputText: string | undefined,
   userData: UserData | undefined
 ): Promise<GameState> {
   const game = await timeCall("loadOrCreate", () =>
     gameService.loadOrCreate(userGameKey, userData ?? undefined)
   );
+  if (resetType) {
+    console.log("resetting the game", game.id);
+    const resetGame = await timeCall("reset", async () => {
+      if (resetType === "undo") {
+        return await gameService.undoGuess(game);
+      }
+      if (resetType === "full") {
+        return await gameService.reset(game);
+      }
+      console.warn("Unknown reset type", resetType);
+      return game;
+    });
+    return {
+      game: resetGame,
+    };
+  }
   if (game.status !== "IN_PROGRESS") {
     return {
       finished: true,
@@ -70,7 +83,7 @@ async function nextGameState(
     };
   }
 
-  if (game.originalGuesses.includes(guess)) {
+  if (game.originalGuesses.includes(guess) && !game.customMaker?.isArt) {
     return {
       message: "Already guessed!",
       game,
@@ -105,8 +118,14 @@ function buildImageUrl(url: string, state: GameState): string {
 }
 
 export const POST = frames(async (ctx) => {
-  const { clientProtocol, message, validationResult, state, searchParams } =
-    ctx;
+  const {
+    clientProtocol,
+    message,
+    validationResult,
+    state,
+    searchParams,
+    userKey,
+  } = ctx;
   if (!clientProtocol || !message) {
     throw new Error("Invalid context");
   }
@@ -114,15 +133,11 @@ export const POST = frames(async (ctx) => {
     throw new Error("Invalid message");
   }
   //
-  let identityProvider: GameIdentityProvider;
-  let userId: string;
   let userData: UserDataReturnType | undefined;
   let walletAddresses: string[] = [];
   switch (clientProtocol.id) {
     case "farcaster": {
-      identityProvider = "fc";
       const fid = message.requesterFid;
-      userId = fid.toString();
       if (!state.gameKey) {
         const options = { hubHttpUrl: hubHttpUrl };
         const userDataPromise = getUserDataForFid({ fid, options });
@@ -140,11 +155,9 @@ export const POST = frames(async (ctx) => {
       break;
     }
     case "xmtp": {
-      identityProvider = "xmtp";
-      userId = message.verifiedWalletAddress!;
-      walletAddresses.push(userId);
+      walletAddresses.push(userKey.userId);
       if (!state.gameKey) {
-        const ens = await getEnsFromAddress(userId);
+        const ens = await getEnsFromAddress(userKey.userId);
         if (ens) {
           userData = {
             displayName: ens,
@@ -219,13 +232,13 @@ export const POST = frames(async (ctx) => {
   }
 
   const userGameKey: UserGameKey = {
-    userId,
+    ...userKey,
     gameKey,
-    identityProvider,
     isDaily: daily,
   };
   const inputText = message.inputText;
-  const gameState = await nextGameState(userGameKey, inputText, {
+  const resetType = searchParams.reset;
+  const gameState = await nextGameState(userGameKey, resetType, inputText, {
     ...userData,
     passOwnership,
   });
@@ -247,9 +260,18 @@ export const POST = frames(async (ctx) => {
     textInput: finished ? undefined : "Make your guess...",
     buttons: finished
       ? [
-          <Button action="post" target={ctx.createUrlWithBasePath("/")}>
-            Play again
-          </Button>,
+          game.customMaker?.isArt ? (
+            <Button
+              action="post"
+              target={ctx.createUrlWithBasePath("/play?reset=undo")}
+            >
+              Undo last guess
+            </Button>
+          ) : (
+            <Button action="post" target={ctx.createUrlWithBasePath("/")}>
+              Play
+            </Button>
+          ),
           game.isDaily ? (
             <Button
               action="post"
@@ -280,6 +302,22 @@ export const POST = frames(async (ctx) => {
           <Button action="post" target={ctx.createUrlWithBasePath("/play")}>
             Guess
           </Button>,
+          game.customMaker?.isArt && game.guessCount > 0 ? (
+            <Button
+              action="post"
+              target={ctx.createUrlWithBasePath("/play?reset=undo")}
+            >
+              Undo guess
+            </Button>
+          ) : undefined,
+          game.customMaker?.isArt && game.guessCount > 0 ? (
+            <Button
+              action="post"
+              target={ctx.createUrlWithBasePath("/play?reset=full")}
+            >
+              Start again
+            </Button>
+          ) : undefined,
         ],
   };
 });

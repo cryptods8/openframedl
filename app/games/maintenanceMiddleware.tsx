@@ -3,7 +3,7 @@ import { Button } from "frames.js/next";
 import { FramesMiddleware } from "frames.js/types";
 import { baseUrl } from "../constants";
 
-export const maintenanceMiddleware: FramesMiddleware<any, any> = async (
+export const maintenanceMiddleware: FramesMiddleware<any, {}> = async (
   ctx,
   next
 ) => {

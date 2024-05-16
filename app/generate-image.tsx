@@ -104,6 +104,10 @@ function determineGameMessage(
   game: GuessedGame | undefined | null,
   options?: GenerateImageOptions
 ) {
+  const customMaker = game?.customMaker || options?.customMaker;
+  if (customMaker?.isArt) {
+    return `Draw with the word "${customMaker.word!.toUpperCase()}"`;
+  }
   if (!game) {
     return "Let's play!";
   }
@@ -140,7 +144,6 @@ function determineGameMessage(
       </div>
     );
   }
-  // keep it like this?
   return (
     "Keep guessing..." + (game.isHardMode && game.guesses.length > 1 ? "*" : "")
   );
@@ -378,7 +381,7 @@ function formatGameKey(
   if (isCustom || customMaker) {
     if (customMaker) {
       const username = formatUsername(customMaker);
-      return `#${customMaker?.number} by ${username}`;
+      return `#${customMaker?.number} by @${username}`;
     }
     if (gameKey) {
       return `From a friend 💌 (${gameKey.substring(gameKey.length - 8)})`;
@@ -398,6 +401,7 @@ export async function generateImage(
   const { guesses, allGuessedCharacters } = game || { guesses: [] };
   const { overlayMessage, share, userStats } = options || {};
   const isCustom = game?.isCustom || options?.custom;
+  const isArt = game?.customMaker?.isArt || options?.customMaker?.isArt;
 
   const rows: ReactNode[] = [];
   for (let i = 0; i < MAX_GUESSES; i++) {
@@ -557,7 +561,7 @@ export async function generateImage(
                 }}
               >
                 <div
-                  tw="flex items-center justify-center flex-wrap text-white py-4 px-8 rounded-md text-4xl"
+                  tw="flex items-center justify-center flex-wrap text-white py-4 px-8 rounded-md text-4xl shadow-lg"
                   style={{
                     backgroundColor: primaryColor(0.84),
                     wordBreak: "break-all",
@@ -590,7 +594,7 @@ export async function generateImage(
           </div>
         </div>
       </div>
-      {isCustom && (
+      {(isCustom || isArt) && (
         <div
           tw="absolute top-0 right-0 text-white px-5 py-3 rounded-bl-xl text-3xl"
           style={{
@@ -599,7 +603,7 @@ export async function generateImage(
             fontWeight: 700,
           }}
         >
-          CUSTOM
+          {isArt ? "🎨 ART" : "CUSTOM"}
         </div>
       )}
     </div>

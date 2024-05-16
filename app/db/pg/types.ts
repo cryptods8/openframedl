@@ -54,6 +54,8 @@ export interface CustomGameTable extends UserKey {
   word: string;
 
   userData: UserDataColumnType | null;
+
+  isArt: boolean | null;
 }
 
 export interface VCustomGameTable extends CustomGameTable {
@@ -64,6 +66,7 @@ export interface VGameTable extends GameTable {
   customUserId: string | null;
   customIdentityProvider: "xmtp" | "fc" | null;
   customUserData: UserDataColumnType | null;
+  customIsArt: boolean | null;
 }
 
 export type DBGame = Selectable<GameTable>;
