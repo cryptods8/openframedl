@@ -402,10 +402,10 @@
   resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-2.1.1.tgz#b9da6a878a371829a0502c9b6c1c143ef6663f4d"
   integrity sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==
 
-"@frames.js/debugger@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@frames.js/debugger/-/debugger-0.2.5.tgz#4d34b07d63d5d19a3e4fd25724e38861946e721f"
-  integrity sha512-jPmSRSRYTKgR6WoR7IJu8H00YA33oCaUA93CupFQux62APGu9fvLyaMVBUk/AxkC9UApjKUSbzbuAp1Cufz9QQ==
+"@frames.js/debugger@^0.2.8":
+  version "0.2.8"
+  resolved "https://registry.yarnpkg.com/@frames.js/debugger/-/debugger-0.2.8.tgz#265f963d01aa1944f8d67214b29c5d85057ee8aa"
+  integrity sha512-ITYy9gMYieK4S9GonwUvSlerGU++kgW4ZvYjIw/YnhLH7scxvi+notfIEmgtfD0EjT8rwTZTzq/hS7N7dTVghQ==
   dependencies:
     "@xmtp/xmtp-js" "^11.5.0"
     is-port-reachable "^4.0.0"

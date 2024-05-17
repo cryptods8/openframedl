@@ -8,6 +8,7 @@ import { createComposeUrl } from "../../utils";
 import { hubHttpUrl } from "../../constants";
 import { getUserDataForFid } from "frames.js";
 import { getEnsFromAddress } from "../../get-ens";
+import { DBCustomGameInsert } from "../../db/pg/types";
 
 // 5-letter word regex
 const wordRegex = /^[a-z]{5}$/;
@@ -52,12 +53,13 @@ const handleRequest = frames(async (ctx) => {
         };
       }
     }
-    const customGame = {
+    const customGame: DBCustomGameInsert = {
       id: uuid(),
       word,
       createdAt: new Date(),
       ...userKey,
       userData,
+      isArt: message.buttonIndex === 2,
     };
     console.log("saving custom game", customGame);
     await customGameRepo.save(customGame);
@@ -65,10 +67,10 @@ const handleRequest = frames(async (ctx) => {
     const playUrl = ctx.createExternalUrl({
       query: { cw: customGame.id },
     });
-    const shareUrl = createComposeUrl(
-      `Play my own word in Framedl\n\n${playUrl}`,
-      playUrl
-    );
+    const castMessage = customGame.isArt
+      ? "Draw with my own word in Framedl"
+      : "Play my own word in Framedl";
+    const shareUrl = createComposeUrl(`${castMessage}\n\n${playUrl}`, playUrl);
     return {
       image: ctx.createSignedUrl({
         pathname: "/api/images/custom",
@@ -100,6 +102,9 @@ const handleRequest = frames(async (ctx) => {
     buttons: [
       <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
         Create
+      </Button>,
+      <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
+        Create for drawing 🎨
       </Button>,
     ],
   };
