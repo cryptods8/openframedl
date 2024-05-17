@@ -106,7 +106,7 @@ function determineGameMessage(
 ) {
   const customMaker = game?.customMaker || options?.customMaker;
   if (customMaker?.isArt) {
-    return `Draw with the word "${customMaker.word!.toUpperCase()}"`;
+    return "Draw with the word";
   }
   if (!game) {
     return "Let's play!";
@@ -401,7 +401,9 @@ export async function generateImage(
   const { guesses, allGuessedCharacters } = game || { guesses: [] };
   const { overlayMessage, share, userStats } = options || {};
   const isCustom = game?.isCustom || options?.custom;
-  const isArt = game?.customMaker?.isArt || options?.customMaker?.isArt;
+  const customMaker = game?.customMaker || options?.customMaker;
+  const isArt = customMaker?.isArt;
+  const artWord = customMaker?.word;
 
   const rows: ReactNode[] = [];
   for (let i = 0; i < MAX_GUESSES; i++) {
@@ -465,19 +467,27 @@ export async function generateImage(
           : gc && gc.status === "INCORRECT"
           ? primaryColor(0.42)
           : primaryColor(0.12);
+      const isArtWordLetter = artWord?.toLowerCase().includes(key);
       keyCells.push(
         <div
           key={j}
-          tw="flex justify-center items-center rounded-md text-3xl"
+          tw={"flex justify-center items-center rounded-md text-3xl relative"}
           style={{
             fontWeight: 500,
             width: KEY_CELL_W,
             height: KEY_CELL_H,
             color,
             backgroundColor,
+            borderColor: primaryColor(),
           }}
         >
           {key.toUpperCase()}
+          {isArtWordLetter && (
+            <div
+              tw="absolute -bottom-0 left-0 right-0 h-2 flex rounded-b"
+              style={{ backgroundColor: primaryColor(0.2) }}
+            />
+          )}
         </div>
       );
     }
@@ -551,6 +561,22 @@ export async function generateImage(
             >
               {gameMessage}
             </div>
+            {artWord && (
+              <div tw="flex flex-row" style={{ gap: "0.25rem" }}>
+                {artWord.split("").map((letter, idx) => (
+                  <div
+                    key={idx}
+                    tw="h-12 w-12 flex items-center justify-center text-white text-3xl"
+                    style={{
+                      backgroundColor: primaryColor(0.38),
+                      fontWeight: 600,
+                    }}
+                  >
+                    {letter.toUpperCase()}
+                  </div>
+                ))}
+              </div>
+            )}
             {overlayMessage ? (
               <div
                 tw="absolute flex items-center justify-center"
