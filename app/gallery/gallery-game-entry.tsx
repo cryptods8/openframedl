@@ -1,3 +1,5 @@
+"use client";
+
 import { PublicGuessedGame } from "../game/game-service";
 import { formatGameKey } from "../game/game-utils";
 import { IconButton } from "../ui/button/icon-button";
