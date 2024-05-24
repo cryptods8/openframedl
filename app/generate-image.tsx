@@ -752,8 +752,7 @@ const MAX_ENTRIES = 8;
 export async function generateLeaderboardImage(
   leaderboard: PersonalLeaderboard
 ) {
-  const { entries, personalEntryIndex, personalEntry, date, days } =
-    leaderboard;
+  const { entries, personalEntryIndex, personalEntry, metadata } = leaderboard;
   const leaderboardEntries: (PersonalLeaderboardEntry | null)[] = [];
   const personalEntryUnranked =
     personalEntry &&
@@ -814,12 +813,16 @@ export async function generateLeaderboardImage(
             tw="flex text-4xl"
             style={{ fontFamily: "Inter", color: primaryColor(0.87) }}
           >
-            {date}
-            {leaderboard.final ? "" : "*"}
+            {metadata.type === "DATE_RANGE"
+              ? metadata.date
+              : `Top ${metadata.topN} games`}
+            {metadata.final ? "" : "*"}
           </div>
-          <div tw="flex text-3xl" style={{ color: primaryColor(0.54) }}>
-            Last {days} days
-          </div>
+          {metadata.type === "DATE_RANGE" && (
+            <div tw="flex text-3xl" style={{ color: primaryColor(0.54) }}>
+              Last {metadata.days} days
+            </div>
+          )}
         </div>
         <div tw="flex flex-col">
           <div
@@ -841,6 +844,17 @@ export async function generateLeaderboardImage(
         tw="flex flex-col justify-center flex-1 px-12 py-12 text-4xl"
         style={{ gap: "1rem" }}
       >
+        {leaderboardEntries.length === 0 && (
+          <div
+            tw="flex flex-col w-full items-center text-center"
+            style={{ color: primaryColor(0.54), gap: "1rem" }}
+          >
+            <div>
+              {["EMPTY", "CLEAN", "BLANK"][Math.floor(Math.random() * 3)]}
+            </div>
+            <div tw="text-3xl">is a nice 5-letter word</div>
+          </div>
+        )}
         {leaderboardEntries.map((e, idx) =>
           e != null ? (
             <div

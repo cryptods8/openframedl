@@ -5,23 +5,12 @@ import { fetchMetadata } from "frames.js/next";
 import { basePath } from "../games/frames";
 import { currentURL } from "../utils";
 import { NextServerPageProps } from "frames.js/next/types";
+import { toLeaderboardSearchParams } from "./leaderboard-utils";
 
 export async function generateMetadata({
   searchParams,
 }: NextServerPageProps): Promise<Metadata> {
-  const queryParams = new URLSearchParams();
-  if (searchParams?.ip) {
-    queryParams.set("ip", searchParams.ip as string);
-  }
-  if (searchParams?.uid) {
-    queryParams.set("uid", searchParams.uid as string);
-  }
-  if (searchParams?.date) {
-    queryParams.set("date", searchParams.date as string);
-  }
-  if (searchParams?.days) {
-    queryParams.set("days", searchParams.days as string);
-  }
+  const queryParams = toLeaderboardSearchParams(searchParams || {});
   // backwards compatibility
   if (searchParams?.fid) {
     queryParams.set("uid", searchParams.fid as string);

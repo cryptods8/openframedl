@@ -156,16 +156,29 @@ export interface LeaderboardDataItem {
   wonGuessCount: number;
   totalGuessCount: number;
   //
-  maxGameKey: string | null;
   userData: UserData | null;
 }
 
-export interface Leaderboard {
-  entries: LeaderboardDataItem[];
-  date: string;
-  days: number;
+type BaseLeaderboardMetadata = {
   final: boolean;
   identityProvider: GameIdentityProvider;
+};
+export type DateRangeLeaderboardMetadata = BaseLeaderboardMetadata & {
+  type: "DATE_RANGE";
+  date: string;
+  days: number;
+};
+export type TopNLeaderboardMetadata = BaseLeaderboardMetadata & {
+  type: "TOP_N";
+  topN: number;
+};
+export type LeaderboardMetadata =
+  | DateRangeLeaderboardMetadata
+  | TopNLeaderboardMetadata;
+
+export interface Leaderboard {
+  entries: LeaderboardDataItem[];
+  metadata: LeaderboardMetadata;
 }
 
 export async function loadLeaderboard(
@@ -176,10 +189,29 @@ export async function loadLeaderboard(
   const entries = await loadLeaderboardEntries(identityProvider, date, days);
   return {
     entries,
-    date,
-    final: date < getDailyGameKey(new Date()),
-    days: days || DEFAULT_LEADERBOARD_DAYS,
-    identityProvider,
+    metadata: {
+      type: "DATE_RANGE",
+      date,
+      final: date < getDailyGameKey(new Date()),
+      days: days || DEFAULT_LEADERBOARD_DAYS,
+      identityProvider,
+    },
+  };
+}
+
+export async function loadTopNLeaderboard(
+  identityProvider: GameIdentityProvider,
+  topN: number
+): Promise<Leaderboard> {
+  const entries = await loadTopNLeaderboardEntries(identityProvider, topN);
+  return {
+    entries,
+    metadata: {
+      type: "TOP_N",
+      final: true,
+      topN,
+      identityProvider,
+    },
   };
 }
 
@@ -267,7 +299,6 @@ export async function loadLeaderboardEntries(
         )
         .$castTo<number>()
         .as("totalGuessCount"),
-      s.fn.max("g.gameKey").$notNull().as("maxGameKey"),
       s
         .selectFrom("game as mg")
         .select("mg.userData")
@@ -290,4 +321,125 @@ export async function loadLeaderboardEntries(
     .limit(LEADERBOARD_SIZE)
     .execute();
   return q;
+}
+
+export async function loadTopNLeaderboardEntries(
+  identityProvider: GameIdentityProvider,
+  topN: number
+): Promise<LeaderboardDataItem[]> {
+  const excludedUserIds: string[] = EXCLUDED_USERS.map((u) => u.split(":"))
+    .filter((u) => u[0]! === identityProvider)
+    .map((u) => u[1]!);
+
+  const cutOff = Math.floor(topN / 10);
+
+  const results = await pgDb
+    .with("guess_count", (db) =>
+      db
+        .selectFrom("game")
+        .select((db) => [
+          "userId",
+          "identityProvider",
+          "status",
+          db
+            .case()
+            .when("status", "=", "WON")
+            .then(db.ref("guessCount"))
+            .else(LOST_PENALTY)
+            .end()
+            .as("guessCount"),
+        ])
+        .where("isDaily", "=", true)
+        .where((db) =>
+          db.or([db.eb("status", "=", "WON"), db.eb("status", "=", "LOST")])
+        )
+    )
+    .with("ranked_guess_count", (db) =>
+      db
+        .selectFrom("guess_count")
+        .select((db) => [
+          "userId",
+          "identityProvider",
+          "status",
+          "guessCount",
+          sql<number>`row_number() over (partition by user_id, identity_provider order by guess_count asc)`.as(
+            "rank"
+          ),
+        ])
+    )
+    .with("last_daily_game", (db) =>
+      db
+        .selectFrom("game")
+        .select((db) => [
+          "userId",
+          "identityProvider",
+          db.fn.max("gameKey").as("gameKey"),
+        ])
+        .where("isDaily", "=", true)
+        .groupBy(["userId", "identityProvider"])
+    )
+    .with("fresh_user_data", (db) =>
+      db
+        .selectFrom("game as g")
+        .innerJoin("last_daily_game as ldg", (join) =>
+          join
+            .onRef("g.userId", "=", "ldg.userId")
+            .onRef("g.identityProvider", "=", "ldg.identityProvider")
+            .onRef("g.gameKey", "=", "ldg.gameKey")
+        )
+        .select(["g.userId", "g.identityProvider", "g.userData"])
+        .where("g.isDaily", "=", true)
+    )
+    .selectFrom("ranked_guess_count as rgc")
+    .leftJoin("fresh_user_data as fud", (join) =>
+      join
+        .onRef("rgc.userId", "=", "fud.userId")
+        .onRef("rgc.identityProvider", "=", "fud.identityProvider")
+    )
+    .select((db) => [
+      "rgc.userId",
+      "rgc.identityProvider",
+      "fud.userData",
+      db.fn
+        .sum<number>(
+          db.case().when("rgc.status", "=", "WON").then(1).else(0).end()
+        )
+        .as("wonCount"),
+      db.fn
+        .sum<number>(
+          db.case().when("rgc.status", "=", "LOST").then(1).else(0).end()
+        )
+        .as("lostCount"),
+      db.fn
+        .sum<number>(
+          db
+            .case()
+            .when("rgc.status", "=", "WON")
+            .then(db.ref("rgc.guessCount"))
+            .else(0)
+            .end()
+        )
+        .as("wonGuessCount"),
+      db.fn.sum<number>(db.ref("rgc.guessCount")).as("totalGuessCount"),
+    ])
+    .where("rgc.rank", "<=", topN + cutOff)
+    .where("rgc.rank", ">", cutOff)
+    .where((x) =>
+      excludedUserIds.length > 0
+        ? x.and([
+            x.eb("rgc.identityProvider", "=", identityProvider),
+            x.eb("rgc.userId", "not in", excludedUserIds),
+          ])
+        : x.eb("rgc.identityProvider", "=", identityProvider)
+    )
+    .groupBy(["rgc.userId", "rgc.identityProvider", "fud.userData"])
+    .having((db) => db.eb(db.fn.count("guessCount"), "=", topN))
+    .orderBy(["totalGuessCount asc", "wonCount desc", "userId asc"])
+    .limit(LEADERBOARD_SIZE)
+    .execute();
+
+  return results.map((r) => ({
+    ...r,
+    unplayedCount: 0,
+  }));
 }

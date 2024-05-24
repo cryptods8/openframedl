@@ -4,29 +4,8 @@ import { createComposeUrl } from "../../utils";
 import { signUrl } from "../../signer";
 import { frames } from "../frames";
 import { getUserKeyFromContext } from "../message-utils";
+import { toLeaderboardSearchParams } from "../../leaderboard/leaderboard-utils";
 import { getDailyGameKey } from "../../game/game-utils";
-
-const constructLeaderboardSearchParams = (
-  uid: string | undefined,
-  ip: string | undefined,
-  date: string | undefined,
-  days: string | undefined
-): URLSearchParams => {
-  const params = new URLSearchParams();
-  if (uid) {
-    params.set("uid", uid);
-  }
-  if (ip) {
-    params.set("ip", ip);
-  }
-  if (date) {
-    params.set("date", date);
-  }
-  if (days) {
-    params.set("days", days);
-  }
-  return params;
-};
 
 const urlWithParams = (url: string, params: URLSearchParams) => {
   const queryString = params.toString();
@@ -39,33 +18,46 @@ const constructImageUrl = (url: string, searchParams: URLSearchParams) => {
 };
 
 const handleRequest = frames(async (ctx) => {
-  const { searchParams, validationResult } = ctx;
+  const { searchParams, validationResult, message } = ctx;
 
   if (validationResult && !validationResult.isValid) {
     throw new Error("Invalid message");
   }
-  let uidStr: string | undefined;
-  let ipStr: string | undefined;
-  let dateStr: string | undefined;
-  let daysStr: string | undefined;
   const userKey = getUserKeyFromContext(ctx);
+  const leaderboardSearchParams = toLeaderboardSearchParams(searchParams);
+  const isTopN = searchParams.type === "TOP_N";
   if (userKey) {
-    uidStr = userKey.userId;
-    ipStr = userKey.identityProvider;
-    dateStr = getDailyGameKey(new Date());
-  } else {
-    uidStr = searchParams.uid as string | undefined;
-    ipStr = searchParams.ip as string | undefined;
-    dateStr = searchParams.date as string | undefined;
-    daysStr = searchParams.days as string | undefined;
+    leaderboardSearchParams.set("uid", userKey.userId);
+    leaderboardSearchParams.set("ip", userKey.identityProvider);
+    const inputStr = message?.inputText;
+    if (isTopN) {
+      const n = parseInt(
+        inputStr || leaderboardSearchParams.get("n") || "30",
+        10
+      );
+      if (n > 0) {
+        leaderboardSearchParams.set("n", n.toString());
+      }
+    } else if (!leaderboardSearchParams.has("date")) {
+      let dateStr: string;
+      const parts = inputStr?.trim().split(/\s*,\s*/) || [];
+      const datePart = parts[0];
+      let daysPart = parts[1];
+      if (datePart?.match(/^20\d{2}-\d{2}-\d{2}$/g)) {
+        dateStr = datePart;
+      } else {
+        daysPart = datePart;
+        dateStr = getDailyGameKey(new Date());
+      }
+      const days = Math.min(parseInt(daysPart || "0", 10), 100);
+      if (daysPart && days > 0) {
+        leaderboardSearchParams.set("days", days.toString());
+      }
+      leaderboardSearchParams.set("date", dateStr);
+    }
   }
+  console.log("SP", searchParams, leaderboardSearchParams);
 
-  const leaderboardSearchParams = constructLeaderboardSearchParams(
-    uidStr,
-    ipStr,
-    dateStr,
-    daysStr
-  );
   const imageUrl = constructImageUrl(
     ctx.createUrl("/api/images/leaderboard"),
     leaderboardSearchParams
@@ -78,7 +70,30 @@ const handleRequest = frames(async (ctx) => {
 
   return {
     image: imageUrl,
+    textInput: isTopN
+      ? "Enter number of games"
+      : "Enter date (e.g. 2024-04-01)",
     buttons: [
+      <Button
+        action="post"
+        target={ctx.createUrlWithBasePath({
+          pathname: "/leaderboard",
+          query: { type: isTopN ? "TOP_N" : "DATE_RANGE" },
+        })}
+      >
+        Confirm
+      </Button>,
+      <Button
+        action="post"
+        target={ctx.createUrlWithBasePath({
+          pathname: "/leaderboard",
+          query: {
+            type: isTopN ? "DATE_RANGE" : "TOP_N",
+          },
+        })}
+      >
+        {isTopN ? "Daily" : "Top N"}
+      </Button>,
       <Button action="post" target={ctx.createUrlWithBasePath("/..")}>
         Play Framedl
       </Button>,

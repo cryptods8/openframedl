@@ -166,6 +166,22 @@ export interface LoadOrCreateOptions {
   srcGameId?: string;
 }
 
+type BaseLoadLeaderboardOptions = {
+  userId?: string;
+};
+
+export type LoadTopNLeaderboardOptions = BaseLoadLeaderboardOptions & {
+  type: "TOP_N";
+  n: number;
+};
+export type LoadDateRangeLeaderboardOptions = BaseLoadLeaderboardOptions & {
+  type: "DATE_RANGE";
+  date?: string;
+  days?: number;
+};
+
+export type LoadLeaderboardOptions = LoadTopNLeaderboardOptions | LoadDateRangeLeaderboardOptions;
+
 export interface GameService {
   loadOrCreate(
     userGameKey: UserGameKey,
@@ -187,10 +203,8 @@ export interface GameService {
   ): GuessValidationStatus;
   loadStats(userKey: UserKey): Promise<UserStats | null>;
   loadLeaderboard(
-    userId: string | null | undefined,
     identityProvider: GameIdentityProvider,
-    date?: string,
-    days?: number
+    options: LoadLeaderboardOptions
   ): Promise<PersonalLeaderboard>;
   loadReplacedScore(game: GuessedGame): Promise<number | null>;
   loadCustomGameMaker(customId: string): Promise<CustomGameMaker | null>;
@@ -807,7 +821,6 @@ export class GameServiceImpl implements GameService {
       wonGuessCount,
       totalGuessCount,
       userData: userData || null,
-      maxGameKey: lastPlayedDate ?? null,
     };
   }
 
@@ -831,9 +844,13 @@ export class GameServiceImpl implements GameService {
         personalEntryIndex,
       };
     }
+    // TODO
+    if (l.metadata.type === "TOP_N") {
+      return l;
+    }
     const statsForFid = await loadStatsByUserKey(userKey);
     if (statsForFid) {
-      const personalEntry = await this.toLeaderboardEntry(statsForFid, l.date);
+      const personalEntry = await this.toLeaderboardEntry(statsForFid, l.metadata.date);
       return {
         ...l,
         personalEntry,
@@ -843,11 +860,22 @@ export class GameServiceImpl implements GameService {
   }
 
   async loadLeaderboard(
-    userId: string | null | undefined,
     identityProvider: GameIdentityProvider,
-    date?: string,
-    days?: number
-  ): Promise<PersonalLeaderboard> {
+    options: LoadLeaderboardOptions
+  ) {
+    // if (options.type === "TOP_N") {
+    //   l = await gameRepo.(
+    //     identityProvider,
+    //     options.n
+    //   );
+    // }
+    if (options.type === "TOP_N") {
+      return await gameRepo.loadTopNLeaderboard(
+        identityProvider,
+        options.n
+      );
+    }
+    const { date, days } = options;
     const leaderboardDate =
       date || getDailyGameKey(addDaysToDate(new Date(), -1));
     const start = Date.now();
@@ -857,6 +885,7 @@ export class GameServiceImpl implements GameService {
       days
     );
     console.log("Loaded leaderboard in", Date.now() - start, "ms");
+    const { userId } = options;
     if (userId == null) {
       return l;
     }

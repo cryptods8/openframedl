@@ -31,3 +31,23 @@ export function createComposeUrl(text: string, url: string): string {
   params.set("embeds[]", url);
   return `https://warpcast.com/~/compose?${params.toString()}`;
 }
+
+export function toUrlSearchParams(obj: Record<string, string | string[] | undefined>, options?: { allowedParams?: string[] }) {
+  const { allowedParams } = options || {};
+  const params = new URLSearchParams();
+  for (const key in obj) {
+    if (allowedParams && !allowedParams.includes(key) && key !== "signed") {
+      continue;
+    }
+    const value = obj[key];
+    if (typeof value === "string") {
+      params.set(key, value as string);
+    } else if (value?.length) {
+      for (const v of value) {
+        params.append(key, v);
+      }
+    }
+  }
+  return params;
+}
+

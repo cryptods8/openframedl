@@ -1,47 +1,49 @@
 import { NextRequest } from "next/server";
 
 import { generateLeaderboardImage } from "../../../generate-image";
-import { gameService } from "../../../game/game-service";
+import {
+  LoadLeaderboardOptions,
+  gameService,
+} from "../../../game/game-service";
 import { timeCall } from "../../../utils";
-import { verifySignedUrl } from "../../../signer";
-import { baseUrl } from "../../../constants";
 import { GameIdentityProvider } from "../../../game/game-repository";
+import { getDailyGameKey } from "../../../game/game-utils";
+import { verifyUrl } from "../../api-utils";
 
-const allowedQueryParams = ["uid", "ip", "date", "signed", "days"];
-
-function getRequestUrl(req: NextRequest) {
-  const url = new URL(req.url);
-  // remove extra query params
-  const urlParams = url.searchParams;
-  for (const param of urlParams.keys()) {
-    if (!allowedQueryParams.includes(param)) {
-      urlParams.delete(param);
-    }
-  }
-
-  const search = urlParams.toString();
-  return `${baseUrl}${url.pathname}${search ? `?${search}` : ""}`;
-}
-
-function verifyUrl(req: NextRequest) {
-  const url = getRequestUrl(req);
-  return new URL(verifySignedUrl(url));
-}
+const allowedQueryParams = ["uid", "ip", "date", "days", "type", "n"];
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const start = Date.now();
   try {
-    const url = verifyUrl(req);
+    const url = verifyUrl(req, allowedQueryParams);
     const params = url.searchParams;
-    const userIdParam = params.get("uid");
+    const userIdParam = params.get("uid") as string | undefined;
     const ipParam = (params.get("ip") ?? "fc") as GameIdentityProvider;
-    const date = params.get("date") as string;
+    const date = params.get("date") as string | undefined;
     const days = params.get("days") as string | undefined;
+    const type = params.get("type") as "TOP_N" | "DATE_RANGE" | undefined;
+    const n = params.get("n") as string | undefined;
+
+    let loadLeaderboardOptions: LoadLeaderboardOptions;
+    if (type === "TOP_N") {
+      loadLeaderboardOptions = {
+        userId: userIdParam,
+        n: parseInt(n ?? days ?? "30", 10),
+        type: "TOP_N",
+      };
+    } else {
+      loadLeaderboardOptions = {
+        userId: userIdParam,
+        date: date ?? getDailyGameKey(new Date()),
+        days: days != null ? parseInt(days, 10) : undefined,
+        type: "DATE_RANGE",
+      };
+    }
 
     const leaderboard = await timeCall("loadLeaderboard", () =>
-      gameService.loadLeaderboard(userIdParam, ipParam, date, days != null ? parseInt(days, 10) : undefined)
+      gameService.loadLeaderboard(ipParam, loadLeaderboardOptions)
     );
 
     return timeCall("generateLeaderboardImage", () =>

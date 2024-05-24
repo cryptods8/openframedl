@@ -6,6 +6,7 @@ import { GameIdentityProvider } from "../game/game-repository";
 import Link from "next/link";
 import { addDaysToDate, getDailyGameKey } from "../game/game-utils";
 import { IconButton, IconButtonProps } from "../ui/button/icon-button";
+import { toUrlSearchParams } from "../utils";
 
 function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
   const gameKey = searchParams?.gk as string | undefined;
@@ -70,21 +71,6 @@ function ArrowButton({ dir = "right", ...props }: ArrowButtonProps) {
       </svg>
     </IconButton>
   );
-}
-
-function toUrlSearchParams(obj: Record<string, string | string[] | undefined>) {
-  const params = new URLSearchParams();
-  for (const key in obj) {
-    const value = obj[key];
-    if (typeof value === "string") {
-      params.set(key, value as string);
-    } else if (value?.length) {
-      for (const v of value) {
-        params.append(key, v);
-      }
-    }
-  }
-  return params;
 }
 
 export default async function GalleryPage(props: NextServerPageProps) {
