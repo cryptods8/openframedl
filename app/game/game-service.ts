@@ -161,10 +161,15 @@ export type GuessValidationStatus =
   | "INVALID_FORMAT"
   | "INVALID_WORD";
 
+export interface LoadOrCreateOptions {
+  userData?: UserData;
+  srcGameId?: string;
+}
+
 export interface GameService {
   loadOrCreate(
     userGameKey: UserGameKey,
-    userData?: UserData
+    options?: LoadOrCreateOptions
   ): Promise<GuessedGame>;
   load(id: string): Promise<GuessedGame | null>;
   loadAllDailiesByUserKey(userKey: UserKey): Promise<GuessedGame[]>;
@@ -401,17 +406,19 @@ export class GameServiceImpl implements GameService {
 
   async loadOrCreate(
     key: UserGameKey,
-    userData?: UserData
+    options?: LoadOrCreateOptions
   ): Promise<GuessedGame> {
     const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
       const { word, customGame } = await getWordForUserGameKey(key);
+      const { userData, srcGameId } = options || {};
       let customMaker: CustomGameMaker | undefined;
       if (customGame) {
         customMaker = this.toCustomGameMaker(customGame);
       }
       const newGame = {
         ...key,
+        srcGameId: srcGameId || null,
         id: uuidv4(),
         guesses: JSON.stringify([]),
         userData: userData ? JSON.stringify(userData) : null,
@@ -422,6 +429,7 @@ export class GameServiceImpl implements GameService {
         guessCount: 0,
         isHardMode: true,
       };
+      console.debug("creating game", newGame);
       const createdGame = await gameRepo.insert(newGame);
       return {
         ...createdGame,
@@ -640,6 +648,7 @@ export class GameServiceImpl implements GameService {
       guessCount: game.guessCount,
       isHardMode: game.isHardMode,
       userData: game.userData ? game.userData : null,
+      srcGameId: game.srcGameId || null,
       customUserId: customMaker?.userId || null,
       customIdentityProvider: customMaker?.identityProvider || null,
       customNumByUser: customMaker?.number || null,
@@ -883,6 +892,8 @@ export class GameServiceImpl implements GameService {
                 : null,
             }
           : null,
+        // non-existent in old schema
+        srcGameId: null,
       };
       const gg = this.toGuessedGame(pgGame);
       inserts.push({

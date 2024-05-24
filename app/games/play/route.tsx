@@ -26,15 +26,20 @@ interface GameState {
   message?: string;
 }
 
+interface NextGameStateOptions {
+  resetType?: string;
+  userData?: UserData;
+  srcGameId?: string;
+}
+
 async function nextGameState(
   userGameKey: UserGameKey,
-  // prevState: State,
-  resetType: string | undefined,
   inputText: string | undefined,
-  userData: UserData | undefined
+  options: NextGameStateOptions
 ): Promise<GameState> {
+  const { resetType } = options;
   const game = await timeCall("loadOrCreate", () =>
-    gameService.loadOrCreate(userGameKey, userData ?? undefined)
+    gameService.loadOrCreate(userGameKey, options)
   );
   if (resetType) {
     console.log("resetting the game", game.id);
@@ -238,9 +243,13 @@ export const POST = frames(async (ctx) => {
   };
   const inputText = message.inputText;
   const resetType = searchParams.reset;
-  const gameState = await nextGameState(userGameKey, resetType, inputText, {
-    ...userData,
-    passOwnership,
+  const gameState = await nextGameState(userGameKey, inputText, {
+    resetType,
+    srcGameId: searchParams.src,
+    userData: {
+      ...userData,
+      passOwnership,
+    },
   });
   const { finished, game } = gameState;
 

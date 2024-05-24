@@ -45,6 +45,7 @@ const handleRequest = frames(async (ctx) => {
               gameKey: searchParams.cw
                 ? `custom_${searchParams.cw}`
                 : gameById?.gameKey,
+              src: searchParams.id || "",
             },
           })}
         >
@@ -61,7 +62,7 @@ const handleRequest = frames(async (ctx) => {
   }
 
   function toVariantTarget(variant: GameVariant) {
-    return ctx.createUrlWithBasePath({ pathname: "/play", query: { variant } });
+    return ctx.createUrlWithBasePath({ pathname: "/play", query: { variant, src: searchParams.id || "" } });
   }
 
   return {

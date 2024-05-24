@@ -44,6 +44,7 @@ export interface GameTable extends UserKey {
   isHardMode: boolean;
 
   userData: UserDataColumnType | null;
+  srcGameId: string | null;
 }
 
 export interface CustomGameTable extends UserKey {
