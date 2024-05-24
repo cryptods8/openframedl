@@ -1,7 +1,7 @@
 import { openframes } from "frames.js/middleware";
 import { createFrames } from "frames.js/next";
 import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
-import { baseUrl, externalBaseUrl, hubHttpUrl } from "../constants";
+import { baseUrl, externalBaseUrl, hubHttpUrl, hubRequestOptions } from "../constants";
 import { FramesMiddleware } from "frames.js/types";
 import { validateFrameMessage } from "frames.js";
 import { maintenanceMiddleware } from "./maintenanceMiddleware";
@@ -112,7 +112,7 @@ const validationMiddleware: FramesMiddleware<
 
   // ignore message
   const { message, ...validationResult } = await validateFrameMessage(payload, {
-    hubHttpUrl,
+    hubHttpUrl, hubRequestOptions
   });
 
   return next({ validationResult });

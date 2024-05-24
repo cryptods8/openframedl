@@ -9,7 +9,7 @@ import {
 import { frames } from "../frames";
 import { UserGameKey, UserData } from "../../game/game-repository";
 import { GuessedGame, gameService } from "../../game/game-service";
-import { hubHttpUrl, isPro } from "../../constants";
+import { hubHttpUrl, hubRequestOptions, isPro } from "../../constants";
 import { createComposeUrl, timeCall } from "../../utils";
 import { signUrl } from "../../signer";
 import { buildShareableResult } from "../../game/game-utils";
@@ -144,7 +144,7 @@ export const POST = frames(async (ctx) => {
     case "farcaster": {
       const fid = message.requesterFid;
       if (!state.gameKey) {
-        const options = { hubHttpUrl: hubHttpUrl };
+        const options = { hubHttpUrl, hubRequestOptions };
         const userDataPromise = getUserDataForFid({ fid, options });
         if (isPro) {
           const [userDataRes, addressesRes] = await Promise.all([

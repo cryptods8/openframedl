@@ -15,7 +15,15 @@ const fallbackHubHttpUrl = isProduction
   ? undefined
   : "http://localhost:3010/hub";
 
-export const hubHttpUrl =
-  process.env["FRAME_HUB_HTTP_URL"] || fallbackHubHttpUrl;
+const airstackApiKey = process.env["AIRSTACK_API_KEY"];
+
+export const hubHttpUrl = airstackApiKey
+  ? "https://hubs.airstack.xyz"
+  : process.env["FRAME_HUB_HTTP_URL"] || fallbackHubHttpUrl;
+export const hubRequestOptions = airstackApiKey
+  ? {
+      headers: { "x-airstack-hubs": airstackApiKey },
+    }
+  : undefined;
 
 export const isPro = process.env.FRAMEDL_PRO === "true";

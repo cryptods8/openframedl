@@ -5,7 +5,7 @@ import { v4 as uuid } from "uuid";
 import { frames } from "../frames";
 import * as customGameRepo from "../../game/custom-game-pg-repository";
 import { createComposeUrl } from "../../utils";
-import { hubHttpUrl } from "../../constants";
+import { hubHttpUrl, hubRequestOptions } from "../../constants";
 import { getUserDataForFid } from "frames.js";
 import { getEnsFromAddress } from "../../get-ens";
 import { DBCustomGameInsert } from "../../db/pg/types";
@@ -39,7 +39,7 @@ const handleRequest = frames(async (ctx) => {
     }
     let userData;
     if (userKey.identityProvider === "fc") {
-      const options = { hubHttpUrl: hubHttpUrl };
+      const options = { hubHttpUrl, hubRequestOptions };
       userData = await getUserDataForFid({
         fid: parseInt(userKey.userId, 10),
         options,
