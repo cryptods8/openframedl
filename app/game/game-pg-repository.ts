@@ -373,10 +373,11 @@ export async function loadTopNLeaderboardEntries(
         .select((db) => [
           "userId",
           "identityProvider",
+          "isDaily",
           db.fn.max("gameKey").as("gameKey"),
         ])
         .where("isDaily", "=", true)
-        .groupBy(["userId", "identityProvider"])
+        .groupBy(["userId", "identityProvider", "isDaily"])
     )
     .with("fresh_user_data", (db) =>
       db
@@ -386,20 +387,21 @@ export async function loadTopNLeaderboardEntries(
             .onRef("g.userId", "=", "ldg.userId")
             .onRef("g.identityProvider", "=", "ldg.identityProvider")
             .onRef("g.gameKey", "=", "ldg.gameKey")
+            .onRef("g.isDaily", "=", "ldg.isDaily")
         )
         .select(["g.userId", "g.identityProvider", "g.userData"])
         .where("g.isDaily", "=", true)
     )
     .selectFrom("ranked_guess_count as rgc")
-    .leftJoin("fresh_user_data as fud", (join) =>
-      join
-        .onRef("rgc.userId", "=", "fud.userId")
-        .onRef("rgc.identityProvider", "=", "fud.identityProvider")
-    )
     .select((db) => [
       "rgc.userId",
       "rgc.identityProvider",
-      "fud.userData",
+      db
+        .selectFrom("fresh_user_data as fud")
+        .select("fud.userData")
+        .where("fud.identityProvider", "=", db.ref("rgc.identityProvider"))
+        .where("fud.userId", "=", db.ref("rgc.userId"))
+        .as("userData"),
       db.fn
         .sum<number>(
           db.case().when("rgc.status", "=", "WON").then(1).else(0).end()
@@ -420,7 +422,24 @@ export async function loadTopNLeaderboardEntries(
             .end()
         )
         .as("wonGuessCount"),
-      db.fn.sum<number>(db.ref("rgc.guessCount")).as("totalGuessCount"),
+      db.eb
+        .parens(sql.val(topN), "-", db.fn.count<number>("rgc.guessCount"))
+        .as("unplayedCount"),
+      db
+        .eb(
+          db.fn.sum<number>(db.ref("rgc.guessCount")),
+          "+",
+          db.eb(
+            db.eb.parens(
+              sql.val(topN),
+              "-",
+              db.fn.count<number>("rgc.guessCount")
+            ),
+            "*",
+            UNPLAYED_PENALTY
+          )
+        )
+        .as("totalGuessCount"),
     ])
     .where("rgc.rank", "<=", topN + cutOff)
     .where("rgc.rank", ">", cutOff)
@@ -432,14 +451,11 @@ export async function loadTopNLeaderboardEntries(
           ])
         : x.eb("rgc.identityProvider", "=", identityProvider)
     )
-    .groupBy(["rgc.userId", "rgc.identityProvider", "fud.userData"])
-    .having((db) => db.eb(db.fn.count("guessCount"), "=", topN))
+    .groupBy(["rgc.userId", "rgc.identityProvider"])
+    // .having((db) => db.eb(db.fn.count("guessCount"), "=", topN))
     .orderBy(["totalGuessCount asc", "wonCount desc", "userId asc"])
     .limit(LEADERBOARD_SIZE)
     .execute();
 
-  return results.map((r) => ({
-    ...r,
-    unplayedCount: 0,
-  }));
+  return results;
 }

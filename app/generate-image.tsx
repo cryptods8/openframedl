@@ -818,11 +818,11 @@ export async function generateLeaderboardImage(
               : `Top ${metadata.topN} games`}
             {metadata.final ? "" : "*"}
           </div>
-          {metadata.type === "DATE_RANGE" && (
-            <div tw="flex text-3xl" style={{ color: primaryColor(0.54) }}>
-              Last {metadata.days} days
-            </div>
-          )}
+          <div tw="flex text-3xl" style={{ color: primaryColor(0.54) }}>
+            {metadata.type === "DATE_RANGE"
+              ? `Last ${metadata.days} days`
+              : "Best 10% are cut off"}
+          </div>
         </div>
         <div tw="flex flex-col">
           <div
