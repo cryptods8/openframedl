@@ -64,7 +64,7 @@ export function ProfileGalleryFilter() {
   return (
     <div>
       <GameTypeSelect
-        value={gameType || "DAILY"}
+        value={gameType || "ALL"}
         onChange={handleGameTypeChange}
       />
     </div>
