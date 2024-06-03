@@ -25,18 +25,33 @@ body {
 }
 
 @font-face {
-  font-family: "SpaceGrotesk-Bold";
-  src: url("../public/SpaceGrotesk-Bold.ttf");
-}
-
-@font-face {
-  font-family: "SpaceGrotesk-Regular";
+  font-family: "SpaceGrotesk";
+  font-weight: 400;
   src: url("../public/SpaceGrotesk-Regular.ttf");
 }
 
 @font-face {
+  font-family: "SpaceGrotesk";
+  font-weight: 700;
+  src: url("../public/SpaceGrotesk-Bold.ttf");
+}
+
+@font-face {
   font-family: "Inter";
+  font-weight: 400;
   src: url("../public/Inter-Regular.ttf");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-weight: 500;
+  src: url("../public/Inter-Medium.ttf");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-weight: 600;
+  src: url("../public/Inter-SemiBold.ttf");
 }
 
 @layer utilities {

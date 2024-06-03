@@ -26,8 +26,7 @@ const config: Config = {
         green: { 600: "green" },
       },
       fontFamily: {
-        space: ["SpaceGrotesk-Regular", "sans-serif"],
-        spaceBold: ["SpaceGrotesk-Bold", "sans-serif"],
+        space: ["SpaceGrotesk", "sans-serif"],
         inter: ["Inter", "sans-serif"],
       },
       backgroundImage: {

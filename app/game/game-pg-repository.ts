@@ -57,7 +57,7 @@ export async function findAllDailyByUserKey(key: UserKey): Promise<DBGame[]> {
     .execute();
 }
 
-export type GameType = "DAILY" | "RANDOM" | "CUSTOM";
+export type GameType = "DAILY" | "PRACTICE" | "CUSTOM" | "ART";
 
 export interface GameFilter extends Partial<UserKey> {
   type?: GameType;
@@ -88,10 +88,21 @@ export async function findAllByFilter(
       }
       if (filter.type === "CUSTOM") {
         conditions.push(
-          eb.eb("isDaily", "=", false).and(eb.eb("gameKey", "like", "custom_%"))
+          eb
+            .eb("isDaily", "=", false)
+            .and(eb.eb("gameKey", "like", "custom_%"))
+            .and(eb.eb("customIsArt", "=", false))
         );
       }
-      if (filter.type === "RANDOM") {
+      if (filter.type === "ART") {
+        conditions.push(
+          eb
+            .eb("isDaily", "=", false)
+            .and(eb.eb("gameKey", "like", "custom_%"))
+            .and(eb.eb("customIsArt", "=", true))
+        );
+      }
+      if (filter.type === "PRACTICE") {
         conditions.push(
           eb
             .eb("isDaily", "=", false)
@@ -459,3 +470,63 @@ export async function loadTopNLeaderboardEntries(
 
   return results;
 }
+
+export async function findUserData(key: UserKey) {
+  const res = await pgDb
+    .selectFrom("game")
+    .select("userData")
+    .where("userId", "=", key.userId)
+    .where("identityProvider", "=", key.identityProvider)
+    .where("isDaily", "=", true)
+    .orderBy("gameKey", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return res?.userData;
+}
+
+// export async function findStreaks(key: UserKey) {
+//   /**
+//    * with game_date as (
+//   select 
+//     user_id,
+//     identity_provider,
+//     game_key::date,
+//     row_number() over (partition by user_id order by game_key) as seqn
+//   from
+//     game
+//   where is_daily and status = 'WON'
+// )
+// select
+//   user_id,
+//   (select user_data->'username' from game where user_id = t.user_id and is_daily and game_key::date = max(t.game_key)) as username,
+//   max(game_key) - min(game_key) + 1 as streak,
+//   min(game_key),
+//   max(game_key)
+// from game_date t
+// group by user_id, game_key - seqn * interval '1 day'
+// order by 3 desc;
+//    */
+//   pgDb
+//     .with("game_date", (db) =>
+//       db
+//         .selectFrom("game")
+//         .select((db) => [
+//           "userId",
+//           "identityProvider",
+//           db.cast("gameKey", "date").as("gameKey"),
+//           sql<number>`row_number() over (partition by user_id order by game_key)`.as(
+//             "seqn"
+//           ),
+//         ])
+//         .where("isDaily", "=", true)
+//         .where("status", "=", "WON")
+//     )
+//     .selectFrom("game_date as gd")
+//     .select((db) => [
+//       "gd.userId",
+//       sql<number>`max(game_key) - min(game_key) + 1`.as("streak"),
+//       db.fn.min("gd.gameKey").as("streakStart"),
+//       db.fn.max("gd.gameKey").as("streakEnd"),
+//     ])
+//     .groupBy(["gd.userId", sql<Date>`gd.gameKey - gd.seqn * interval '1 day'`]);
+// }

@@ -3,8 +3,9 @@
 import { GameFilter } from "../game/game-pg-repository";
 import { PublicGuessedGame } from "../game/game-service";
 import { formatGameKey } from "../game/game-utils";
-import { GalleryGameEntry } from "./gallery-game-entry";
+import { GalleryGameEntry } from "../ui/gallery/gallery-game-entry";
 import { useMemo, useState } from "react";
+import { GamesGrid } from "../ui/gallery/games-grid";
 
 function matchesUsernameFilter(
   game: PublicGuessedGame,
@@ -54,10 +55,10 @@ export function Gallery({
 
   return (
     <div className="max-w-xs md:max-w-screen-sm lg:max-w-screen-lg xl:max-w-screen-xl mx-auto flex-1">
-      <div className="flex flex-col items-center md:flex-row sm:px-4">
+      <div className="flex flex-col items-center md:flex-row sm:px-4 mb-8">
         <div className="w-full my-6 font-space flex flex-col items-center md:items-start">
           <h1 className="text-3xl">
-            <span className="font-spaceBold">Framedl</span> Gallery
+            <span className="font-space font-bold">Framedl</span> Gallery
           </h1>
           {subtitle && <div className="text-xl">{subtitle}</div>}
         </div>
@@ -69,17 +70,7 @@ export function Gallery({
           placeholder={`Filter by ${filter?.userId ? "game key" : "username"}`}
         />
       </div>
-      <div className="w-full flex-wrap gap-6 mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center">
-        {filteredGames.map(({ game, number }) => (
-          <div key={game.id} style={{ width: 290 }}>
-            <GalleryGameEntry
-              game={game}
-              number={number}
-              showGameKey={!filter?.gameKey}
-            />
-          </div>
-        ))}
-      </div>
+      <GamesGrid games={filteredGames} />
     </div>
   );
 }

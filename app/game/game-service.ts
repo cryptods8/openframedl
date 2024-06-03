@@ -180,7 +180,9 @@ export type LoadDateRangeLeaderboardOptions = BaseLoadLeaderboardOptions & {
   days?: number;
 };
 
-export type LoadLeaderboardOptions = LoadTopNLeaderboardOptions | LoadDateRangeLeaderboardOptions;
+export type LoadLeaderboardOptions =
+  | LoadTopNLeaderboardOptions
+  | LoadDateRangeLeaderboardOptions;
 
 export interface GameService {
   loadOrCreate(
@@ -208,6 +210,7 @@ export interface GameService {
   ): Promise<PersonalLeaderboard>;
   loadReplacedScore(game: GuessedGame): Promise<number | null>;
   loadCustomGameMaker(customId: string): Promise<CustomGameMaker | null>;
+  loadUserData(userKey: UserKey): Promise<UserData | null>;
   getDailyKey(): string;
   migrateToPg(): Promise<DBGameInsert[]>;
 }
@@ -850,7 +853,10 @@ export class GameServiceImpl implements GameService {
     }
     const statsForFid = await loadStatsByUserKey(userKey);
     if (statsForFid) {
-      const personalEntry = await this.toLeaderboardEntry(statsForFid, l.metadata.date);
+      const personalEntry = await this.toLeaderboardEntry(
+        statsForFid,
+        l.metadata.date
+      );
       return {
         ...l,
         personalEntry,
@@ -870,10 +876,7 @@ export class GameServiceImpl implements GameService {
     //   );
     // }
     if (options.type === "TOP_N") {
-      return await gameRepo.loadTopNLeaderboard(
-        identityProvider,
-        options.n
-      );
+      return await gameRepo.loadTopNLeaderboard(identityProvider, options.n);
     }
     const { date, days } = options;
     const leaderboardDate =
@@ -970,6 +973,14 @@ export class GameServiceImpl implements GameService {
       return 6;
     }
     return prevGame.guessCount;
+  }
+
+  async loadUserData(userKey: UserKey): Promise<UserData | null> {
+    const data = await gameRepo.findUserData(userKey);
+    if (!data) {
+      return null;
+    }
+    return data;
   }
 }
 

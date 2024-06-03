@@ -1,13 +1,17 @@
 "use client";
 
-import { PublicGuessedGame } from "../game/game-service";
-import { formatGameKey } from "../game/game-utils";
-import { IconButton } from "../ui/button/icon-button";
-import { GameGuessGrid } from "../ui/game-guess-grid";
-import { createComposeUrl } from "../utils";
+import { PublicGuessedGame } from "../../game/game-service";
+import { formatGameKey } from "../../game/game-utils";
+import { IconButton } from "../button/icon-button";
+import { GameGuessGrid } from "../game-guess-grid";
+import { createComposeUrl } from "../../utils";
 
 function ShareIconButton({ game }: { game: PublicGuessedGame }) {
-  const url = new URL(`/?id=${game.id}`, window.location.origin);
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "http://localhost:3000";
+  const url = new URL(`/?id=${game.id}`, origin);
   const username = game.userData?.username || `${game.userId}`;
 
   const href = createComposeUrl(
