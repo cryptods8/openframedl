@@ -1,5 +1,5 @@
 import { NextServerPageProps } from "frames.js/next/types";
-import { PublicGuessedGame, gameService } from "../game/game-service";
+import { CustomGameMaker, PublicGuessedGame, gameService } from "../game/game-service";
 import { Gallery } from "./gallery";
 import { GameFilter, GameType } from "../game/game-pg-repository";
 import { GameIdentityProvider } from "../game/game-repository";
@@ -78,13 +78,14 @@ export default async function GalleryPage(props: NextServerPageProps) {
 
   let games: PublicGuessedGame[] = [];
   let subtitle: React.ReactNode | undefined;
+  let customMaker: CustomGameMaker | undefined | null;
   if (filter) {
     const { gameKey } = filter;
     games = (
       await gameService.loadAllPublic({ ...filter, completedOnly: true })
     ).sort((a, b) => (a.completedAt! > b.completedAt! ? 1 : -1));
     if (gameKey && gameKey.startsWith("custom_")) {
-      const customMaker = await gameService.loadCustomGameMaker(
+      customMaker = await gameService.loadCustomGameMaker(
         gameKey.substring(7)
       );
       if (customMaker) {
@@ -125,7 +126,7 @@ export default async function GalleryPage(props: NextServerPageProps) {
   }
   return (
     <div className="w-full h-full bg-primary-100 text-left flex-1">
-      <Gallery subtitle={subtitle} games={games} filter={filter} />
+      <Gallery subtitle={subtitle} games={games} filter={filter} customMaker={customMaker} />
     </div>
   );
 }

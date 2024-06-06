@@ -5,6 +5,7 @@ import { formatGameKey } from "../../game/game-utils";
 import { IconButton } from "../button/icon-button";
 import { GameGuessGrid } from "../game-guess-grid";
 import { createComposeUrl } from "../../utils";
+import Link from "next/link";
 
 function ShareIconButton({ game }: { game: PublicGuessedGame }) {
   const origin =
@@ -15,7 +16,7 @@ function ShareIconButton({ game }: { game: PublicGuessedGame }) {
   const username = game.userData?.username || `${game.userId}`;
 
   const href = createComposeUrl(
-    `Framedl Art ${game.gameKey.substring(
+    `Framedl ${game.gameKey.substring(
       game.gameKey.length - 8
     )} by @${username}`,
     url.toString()
@@ -37,12 +38,14 @@ function ShareIconButton({ game }: { game: PublicGuessedGame }) {
   );
 }
 
+export type GameEntryContext = "PROFILE" | "GALLERY";
+
 export function GalleryGameEntry(props: {
   game: PublicGuessedGame;
+  context?: GameEntryContext;
   number?: number;
-  showGameKey?: boolean;
 }) {
-  const { game, number, showGameKey } = props;
+  const { game, number, context } = props;
   const { identityProvider, userId, guesses, userData } = game;
   return (
     <div className="p-4 flex flex-col gap-4 bg-white rounded border border-primary-200">
@@ -54,27 +57,29 @@ export function GalleryGameEntry(props: {
               {number}
             </div>
             <div className="text-lg break-all">
-              {identityProvider === "fc" ? (
-                <a
-                  href={`https://warpcast.com/${
-                    userData?.username || `!${userId}`
+              {context === "PROFILE" ? (
+                <Link
+                  href={`/gallery?gk=${game.gameKey}${
+                    game.isDaily ? "&gt=DAILY" : ""
                   }`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-primary-900 underline hover:text-primary-700"
                 >
-                  {userData?.username ? `@${userData?.username}` : `!${userId}`}
-                </a>
+                  {formatGameKey(game)}
+                </Link>
               ) : (
-                userData?.username || userId
+                <Link
+                  href={`/profiles/${identityProvider}/${userId}`}
+                  className="text-primary-900 underline hover:text-primary-700"
+                >
+                  {identityProvider === "fc"
+                    ? userData?.username
+                      ? `@${userData?.username}`
+                      : `!${userId}`
+                    : userData?.username ?? userId}
+                </Link>
               )}
             </div>
           </div>
-          {showGameKey && (
-            <div className="text-sm text-primary-950/60">
-              {formatGameKey(game)}
-            </div>
-          )}
         </div>
         <div className="text-primary-200">
           <ShareIconButton game={game} />

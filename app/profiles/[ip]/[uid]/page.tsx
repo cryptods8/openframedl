@@ -7,6 +7,7 @@ import { GamesGrid } from "../../../ui/gallery/games-grid";
 import { GameType } from "../../../game/game-pg-repository";
 import { ProfileGalleryFilter } from "./profile-gallery-filter";
 import { GameStats } from "./game-stats";
+import { CustomGames } from "./custom-games";
 
 function TabButton({ children }: React.PropsWithChildren<{}>) {
   return (
@@ -14,6 +15,17 @@ function TabButton({ children }: React.PropsWithChildren<{}>) {
       {children}
     </Tab>
   );
+}
+
+function determineSelectedTabIndex(tab?: string) {
+  switch (tab) {
+    case "stats":
+      return 1;
+    case "words":
+      return 2;
+    default:
+      return 0;
+  }
 }
 
 export default async function ProfilePage(props: NextServerPageProps) {
@@ -35,6 +47,25 @@ export default async function ProfilePage(props: NextServerPageProps) {
   const sortedGames = games
     .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
     .map((game, index) => ({ game: { ...game, userData }, number: index + 1 }));
+
+  // const selectedTabIndex = determineSelectedTabIndex(
+  //   searchParams?.tab as string | undefined
+  // );
+  // const handleSelectedTabChange = (index: number) => {
+  // const newParams = new URLSearchParams(searchParams || {});
+  // switch (index) {
+  //   case 1:
+  //     newParams.set("tab", "stats");
+  //     break;
+  //   case 2:
+  //     newParams.set("tab", "words");
+  //     break;
+  //   default:
+  //     newParams.delete("tab");
+  //     break;
+  // }
+  // props.router.push({ search: newParams.toString() });
+  // };
   return (
     <div className="w-full h-full bg-primary-100 text-left flex-1 text-primary-900">
       <div className="max-w-xs md:max-w-screen-sm lg:max-w-screen-lg xl:max-w-screen-xl mx-auto px-2">
@@ -45,11 +76,15 @@ export default async function ProfilePage(props: NextServerPageProps) {
         />
       </div>
       <div>
-        <TabGroup>
+        <TabGroup
+        // selectedIndex={selectedTabIndex}
+        // onChange={handleSelectedTabChange}
+        >
           <TabList className="border-t border-b border-primary-200 py-4 mt-6 mb-4">
             <div className="max-w-xs md:max-w-screen-sm lg:max-w-screen-lg xl:max-w-screen-xl mx-auto flex-1 flex gap-x-3 px-2">
               <TabButton>Games</TabButton>
               <TabButton>Stats</TabButton>
+              {/* <TabButton>My words</TabButton> */}
             </div>
           </TabList>
           <TabPanels className="max-w-xs md:max-w-screen-sm lg:max-w-screen-lg xl:max-w-screen-xl mx-auto">
@@ -57,7 +92,7 @@ export default async function ProfilePage(props: NextServerPageProps) {
               <div className="py-2">
                 <ProfileGalleryFilter />
               </div>
-              <GamesGrid games={sortedGames} />
+              <GamesGrid games={sortedGames} context="PROFILE" />
             </TabPanel>
             <TabPanel>
               {stats ? (
@@ -68,6 +103,9 @@ export default async function ProfilePage(props: NextServerPageProps) {
                 </div>
               )}
             </TabPanel>
+            {/* <TabPanel>
+              <CustomGames userKey={userKey} />
+            </TabPanel> */}
           </TabPanels>
         </TabGroup>
       </div>
