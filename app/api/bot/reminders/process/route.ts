@@ -29,7 +29,14 @@ export async function GET(req: NextRequest) {
       .select(["id", "secret", "userId"])
       .where("enabledAt", "is not", null)
       .where("identityProvider", "=", "fc")
-      .where("lastSentAt", "<", maxSentAt)
+      .where(({ eb }) =>
+        eb.parens(
+          eb.or([
+            eb("lastSentAt", "<", maxSentAt),
+            eb("lastSentAt", "is", null),
+          ])
+        )
+      )
       .where((wb) =>
         wb.not(
           wb.exists(

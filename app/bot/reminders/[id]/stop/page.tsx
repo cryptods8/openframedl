@@ -30,7 +30,7 @@ export default async function Page({
   return (
     <div className="flex flex-col items-center gap-4">
       <CheckCircleIcon className="fill-green-600 size-24" />
-      <span>Your notifications have been successfully terminated 🤖</span>
+      <span>Your reminders have been successfully terminated 🤖</span>
       <div className="text-sm text-primary-900/60 leading-normal flex flex-col gap-2">
         <span>To enable them again, just cast:</span>
         <code className="bg-primary-200 rounded px-2 py-1">
