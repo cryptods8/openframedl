@@ -97,7 +97,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
   const reply = await neynarClient.publishCast(
     process.env.NEYNAR_SIGNER_UUID,
-    `Hey, ${data.author.username} 👋! Your Framedl PRO reminders have been set up :)`,
+    `Hey, @${data.author.username} 👋! Your Framedl PRO reminders have been set up :)`,
     {
       replyTo: data.hash,
     }
