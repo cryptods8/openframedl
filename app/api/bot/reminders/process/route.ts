@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
         .where("id", "=", row.id)
         .execute();
     }
+    console.log("reminders sent", toRemind.length);
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(
