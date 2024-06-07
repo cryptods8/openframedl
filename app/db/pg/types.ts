@@ -1,5 +1,6 @@
 import {
   ColumnType,
+  Generated,
   Insertable,
   JSONColumnType,
   Selectable,
@@ -12,6 +13,7 @@ export interface Database {
   vGame: VGameTable;
   customGame: CustomGameTable;
   vCustomGame: VCustomGameTable;
+  reminder: ReminderTable;
 }
 
 interface UserKey {
@@ -59,6 +61,22 @@ export interface CustomGameTable extends UserKey {
   isArt: boolean | null;
 }
 
+export interface ReminderTable extends UserKey {
+  id: Generated<number>;
+
+  createdAt: ColumnType<Date, Date, never>;
+  updatedAt: Date;
+  secret: string;
+
+  enabledAt: Date | null;
+  lastSentAt: Date | null;
+
+  log: JSONColumnType<[{
+    enabled: boolean;
+    timestamp: number;
+  }]>;
+}
+
 export interface VCustomGameTable extends CustomGameTable {
   numByUser: number;
 }
@@ -78,3 +96,7 @@ export type DBGameView = Selectable<VGameTable>;
 export type DBCustomGame = Selectable<CustomGameTable>;
 export type DBCustomGameInsert = Insertable<CustomGameTable>;
 export type DBCustomGameView = Selectable<VCustomGameTable>;
+
+export type DBReminder = Selectable<ReminderTable>;
+export type DBReminderInsert = Insertable<ReminderTable>;
+export type DBReminderUpdate = Updateable<ReminderTable>;
