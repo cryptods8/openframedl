@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/bot/reminder/process",
-      "schedule": "30 23 * * *"
+      "schedule": "30 22 * * *"
     }
   ]
 }
