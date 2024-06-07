@@ -13,7 +13,8 @@ export default async function Page({
   const secret = searchParams?.secret;
   const reminder = await findReminderById(id);
   if (!secret || isNaN(id) || !reminder || secret !== reminder.secret) {
-    return <div>Are you sure you've got the right link? 🤖</div>;
+    const message = "Are you sure you've got the right link? 🤖";
+    return <div>{message}</div>;
   }
   if (reminder.enabledAt !== null) {
     await updateReminder(id, {
