@@ -1,9 +1,6 @@
 import { NextServerPageProps } from "frames.js/next/types";
-import {
-  findReminderById,
-  updateReminder,
-} from "../../../../api/bot/reminders/reminder-pg-repository";
-import { CheckCircleIcon } from "@heroicons/react/16/solid";
+import { findReminderById } from "../../../../api/bot/reminders/reminder-pg-repository";
+import { UnsubscribeForm } from "./unsubscribe-form";
 
 export default async function Page({
   params,
@@ -16,27 +13,10 @@ export default async function Page({
     const message = "Are you sure you've got the right link? 🤖";
     return <div>{message}</div>;
   }
-  if (reminder.enabledAt !== null) {
-    await updateReminder(id, {
-      ...reminder,
-      enabledAt: null,
-      log: JSON.stringify([
-        ...reminder.log,
-        { enabled: false, timestamp: Date.now() },
-      ]),
-    });
-  }
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <CheckCircleIcon className="fill-green-600 size-24" />
-      <span>Your reminders have been successfully terminated 🤖</span>
-      <div className="text-sm text-primary-900/60 leading-normal flex flex-col gap-2">
-        <span>To enable them again, just cast:</span>
-        <code className="bg-primary-200 rounded px-2 py-1">
-          @framedl setup reminders
-        </code>{" "}
-      </div>
+      <UnsubscribeForm id={id} secret={secret} />
     </div>
   );
 }
