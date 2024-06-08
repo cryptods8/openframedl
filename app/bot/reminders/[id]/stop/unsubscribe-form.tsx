@@ -37,9 +37,9 @@ export function UnsubscribeForm({
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="leading-normal text-center">
-        Are you sure you want to stop receiving reminders?
+        {"Are you sure you want to stop receiving reminders?"}
         <br />
-        If so, hit the "Unsubscribe" button below. 👇
+        {'If so, hit the "Unsubscribe" button below. 👇'}
       </div>
       <form action={formAction}>
         <input type="hidden" name="id" value={id} />
