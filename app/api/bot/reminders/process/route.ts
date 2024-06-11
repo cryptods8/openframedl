@@ -21,9 +21,12 @@ export async function GET(req: NextRequest) {
   try {
     const gameKey = getDailyGameKey(new Date());
     const now = new Date();
-    const maxSentAt = new Date(
+    const startOfUTCDay = new Date(now);
+    startOfUTCDay.setUTCHours(0, 0, 0, 0);
+    const prevMaxSentAt = new Date(
       now.getTime() - 1000 * 60 * 60 * MIN_HOURS_BETWEEN_REMINDERS
     );
+    const maxSentAt = startOfUTCDay > prevMaxSentAt ? startOfUTCDay : prevMaxSentAt;
     const toRemind = await pgDb
       .selectFrom("reminder as r")
       .select(["id", "secret", "userId"])

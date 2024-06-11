@@ -1,4 +1,5 @@
 import { externalBaseUrl } from "../../../constants";
+import { getDailyGameKey } from "../../../game/game-utils";
 import { sendDirectCast } from "./send-direct-cast";
 
 export interface Reminder {
@@ -37,18 +38,20 @@ function getMessageForHoursRemaining(hoursRemaining: number) {
 function getHoursRemaining() {
   const now = new Date();
   const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  endOfDay.setUTCHours(23, 59, 59, 999);
   const timeRemaining = (endOfDay.getTime() - now.getTime()) / 1000;
   const hoursRemaining = timeRemaining / 60 / 60;
   return hoursRemaining;
 }
 
 export async function sendReminder(reminder: Reminder) {
-  const idempotencyKey = `${reminder.fid}-${Date.now()}`;
+  const now = new Date();
+  const idempotencyKey = `${reminder.fid}-${now.getTime()}`;
   const hoursRemaining = getHoursRemaining();
+  const gameKey = getDailyGameKey(now);
   const message = `${getMessageForHoursRemaining(
     hoursRemaining
-  )}\n\n${externalBaseUrl}\n\nTo stop receiving these reminders, click here: ${
+  )}\n\nFramedl ${gameKey}\n${externalBaseUrl}\n\nTo stop receiving these reminders, click here: ${
     reminder.unsubscribeUrl
   }`;
   const cast = {
