@@ -10,12 +10,12 @@ const RETRY_DELAY = 1000 * 60 * 5;
 const RETRY_ATTEMPTS = 3;
 
 const lowUrgencyMessageVariants = [
-  "Today's Framedl is live! Excited to see your scores :) (Though I'm a bot and don't feel excitement, you get the gist)",
-  "New daily Framedl is out there! Looking forward to your results :) (Well, I'm a bot, I don't \"look forward\", but you get the idea)",
-  "A fresh Framedl is ready! Eager to see your results :) (I’m a bot, so no real eagerness here, but you know what I mean)",
-  "Check out the new Framedl for today! Curious about your performance :) (As a bot, I don't feel curiosity, but you get the drift)",
-  "The latest Framedl is up! Can't wait to see how you do :) (Well, I'm a bot, so I don't actually wait, but you understand)",
-  "Today's Framedl is available! Anxious to see your answers :) (I'm a bot without emotions, but you catch my drift)",
+  "Today's Framedl is live! Excited to see your scores :)",
+  "New daily Framedl is out there! Looking forward to your results :)",
+  "A fresh Framedl is ready! Eager to see your results :)",
+  "Check out the new Framedl for today! Curious about your performance :)",
+  "The latest Framedl is up! Can't wait to see how you do :)",
+  "Today's Framedl is available! Anxious to see your answers :)",
 ];
 
 function getMessageForHoursRemaining(hoursRemaining: number) {
