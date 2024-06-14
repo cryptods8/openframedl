@@ -161,7 +161,9 @@ export async function CustomGames(props: CustomGamesProps) {
           ))}
         </div>
       ) : (
-        <EmptyMessage>You haven't created any custom Framedls yet</EmptyMessage>
+        <EmptyMessage>
+          {"You haven't created any custom Framedls yet"}
+        </EmptyMessage>
       )}
     </div>
   );
