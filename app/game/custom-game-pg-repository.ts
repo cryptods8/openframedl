@@ -21,7 +21,7 @@ export interface CustomGameWithStats extends DBCustomGameView {
   gameCount: number;
   winCount: number;
   lossCount: number;
-  averageGuessCount: number;
+  totalGuessCount: number;
 }
 
 export async function findAllWithStatsByUserKey(
@@ -62,8 +62,17 @@ export async function findAllWithStatsByUserKey(
         )
         .as("lossCount"),
       db.fn
-        .coalesce(db.fn.avg<number>("vg.guessCount"), db.val<number>(0))
-        .as("averageGuessCount"),
+        .sum<number>(
+          db
+            .case()
+            .when("vg.status", "=", "WON")
+            .then(db.ref("vg.guessCount"))
+            .when("vg.status", "=", "LOST")
+            .then(8)
+            .else(0)
+            .end()
+        )
+        .as("totalGuessCount"),
     ])
     .where("vcg.identityProvider", "=", userKey.identityProvider)
     .where("vcg.userId", "=", userKey.userId)

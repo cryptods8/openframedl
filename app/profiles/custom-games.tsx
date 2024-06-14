@@ -141,7 +141,12 @@ export async function CustomGames(props: CustomGamesProps) {
                   <StatItem
                     compact
                     label={"Avg guesses"}
-                    value={formatNumber(game.averageGuessCount)}
+                    value={formatNumber(
+                      game.winCount + game.lossCount > 0
+                        ? game.totalGuessCount /
+                            (game.winCount + game.lossCount)
+                        : 0
+                    )}
                   />
                 </div>
               </div>
