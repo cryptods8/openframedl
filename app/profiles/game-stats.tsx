@@ -1,7 +1,7 @@
 "use client";
 
-import { GameResult, UserStats } from "../../../game/game-repository";
-import { addDaysToDate, getDailyGameKey } from "../../../game/game-utils";
+import { GameResult, UserStats } from "@/app/game/game-repository";
+import { addDaysToDate, getDailyGameKey } from "@/app/game/game-utils";
 
 export interface GameStatsProps {
   stats: UserStats;

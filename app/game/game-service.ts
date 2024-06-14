@@ -195,7 +195,10 @@ export interface GameService {
   loadPublicByUserGameKey(
     userGameKey: UserGameKey
   ): Promise<PublicGuessedGame | null>;
-  loadAllPublic(filter: gameRepo.GameFilter): Promise<PublicGuessedGame[]>;
+  loadAllPublic(
+    filter: gameRepo.GameFilter,
+    personal: boolean
+  ): Promise<PublicGuessedGame[]>;
   guess(game: GuessedGame, guess: string): Promise<GuessedGame>;
   undoGuess(game: GuessedGame): Promise<GuessedGame>;
   reset(game: GuessedGame): Promise<GuessedGame>;
@@ -525,9 +528,13 @@ export class GameServiceImpl implements GameService {
   }
 
   async loadAllPublic(
-    filter: gameRepo.GameFilter
+    filter: gameRepo.GameFilter,
+    personal: boolean
   ): Promise<PublicGuessedGame[]> {
     const games = await gameRepo.findAllByFilter(filter);
+    if (personal) {
+      return games.map((g) => this.toGuessedGame(g));
+    }
     return games.map((g) => this.toPublicGuessedGame(this.toGuessedGame(g)));
   }
 

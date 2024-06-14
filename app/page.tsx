@@ -9,6 +9,7 @@ import { externalBaseUrl } from "./constants";
 import { currentURL } from "./utils";
 import { isUrlSigned } from "./signer";
 import { basePath } from "./games/frames";
+import { ProfileApp } from "./profiles/profile-app";
 
 export async function generateMetadata({
   searchParams,
@@ -40,11 +41,13 @@ export default async function Home({ searchParams }: NextServerPageProps) {
     : null;
 
   return (
-    <div className="flex flex-col p-6 w-full justify-center items-center">
-      <GameResult
-        game={gameById}
-        shareUrl={`${externalBaseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
-      />
-    </div>
+    <ProfileApp>
+      <div className="flex-1 flex flex-col p-6 w-full h-full justify-center items-center">
+        <GameResult
+          game={gameById}
+          shareUrl={`${externalBaseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
+        />
+      </div>
+    </ProfileApp>
   );
 }

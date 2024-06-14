@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import "./globals.css";
+import "@farcaster/auth-kit/styles.css";
 
 export const metadata: Metadata = {
   title: "Framedl by ds8",

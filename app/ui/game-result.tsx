@@ -28,13 +28,6 @@ export default function GameResult({ game, shareUrl }: GameResultProps) {
 
   return (
     <div className="w-64 flex flex-col items-center justify-center gap-6 text-primary-900">
-      {!game && (
-        <div className="w-full flex flex-col gap-1">
-          <p className="w-full text-left text-2xl font-space font-bold">
-            Framedl
-          </p>
-        </div>
-      )}
       {game && (
         <div className="w-full flex flex-col gap-1 font-space">
           <p className="w-full text-left text-2xl py-1 font-space font-bold">

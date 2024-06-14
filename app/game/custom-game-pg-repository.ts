@@ -17,13 +17,65 @@ export async function findById(
     .executeTakeFirst();
 }
 
-export async function findAllByUserKey(
+export interface CustomGameWithStats extends DBCustomGameView {
+  gameCount: number;
+  winCount: number;
+  lossCount: number;
+  averageGuessCount: number;
+}
+
+export async function findAllWithStatsByUserKey(
   userKey: UserKey
-): Promise<DBCustomGameView[]> {
+): Promise<CustomGameWithStats[]> {
   return await pgDb
-    .selectFrom("vCustomGame")
-    .where("identityProvider", "=", userKey.identityProvider)
-    .where("userId", "=", userKey.userId)
-    .selectAll()
+    .selectFrom("vCustomGame as vcg")
+    .leftJoin("vGame as vg", (db) =>
+      db.on((eb) =>
+        eb.eb(
+          "vg.gameKey",
+          "=",
+          eb.fn<string>("concat", [
+            eb.cast<string>(eb.val<string>("custom_"), "varchar"),
+            "vcg.id",
+          ])
+        )
+      )
+    )
+    .select((db) => [
+      "vcg.id",
+      "vcg.identityProvider",
+      "vcg.userId",
+      "vcg.createdAt",
+      "vcg.word",
+      "vcg.userData",
+      "vcg.isArt",
+      "vcg.numByUser",
+      db.fn.count<number>("vg.id").as("gameCount"),
+      db.fn
+        .sum<number>(
+          db.case().when("vg.status", "=", "WON").then(1).else(0).end()
+        )
+        .as("winCount"),
+      db.fn
+        .sum<number>(
+          db.case().when("vg.status", "=", "LOST").then(1).else(0).end()
+        )
+        .as("lossCount"),
+      db.fn
+        .coalesce(db.fn.avg<number>("vg.guessCount"), db.val<number>(0))
+        .as("averageGuessCount"),
+    ])
+    .where("vcg.identityProvider", "=", userKey.identityProvider)
+    .where("vcg.userId", "=", userKey.userId)
+    .groupBy([
+      "vcg.id",
+      "vcg.identityProvider",
+      "vcg.userId",
+      "vcg.createdAt",
+      "vcg.word",
+      "vcg.userData",
+      "vcg.isArt",
+      "vcg.numByUser",
+    ])
     .execute();
 }

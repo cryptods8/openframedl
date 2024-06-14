@@ -1,5 +1,9 @@
 import { NextServerPageProps } from "frames.js/next/types";
-import { CustomGameMaker, PublicGuessedGame, gameService } from "../game/game-service";
+import {
+  CustomGameMaker,
+  PublicGuessedGame,
+  gameService,
+} from "../game/game-service";
 import { Gallery } from "./gallery";
 import { GameFilter, GameType } from "../game/game-pg-repository";
 import { GameIdentityProvider } from "../game/game-repository";
@@ -7,6 +11,8 @@ import Link from "next/link";
 import { addDaysToDate, getDailyGameKey } from "../game/game-utils";
 import { IconButton, IconButtonProps } from "../ui/button/icon-button";
 import { toUrlSearchParams } from "../utils";
+import { getServerSession } from "next-auth";
+import { ProfileApp } from "../profiles/profile-app";
 
 function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
   const gameKey = searchParams?.gk as string | undefined;
@@ -75,23 +81,27 @@ function ArrowButton({ dir = "right", ...props }: ArrowButtonProps) {
 
 export default async function GalleryPage(props: NextServerPageProps) {
   const filter = buildFilter(props);
+  const session = await getServerSession();
 
   let games: PublicGuessedGame[] = [];
   let subtitle: React.ReactNode | undefined;
   let customMaker: CustomGameMaker | undefined | null;
   if (filter) {
     const { gameKey } = filter;
-    games = (
-      await gameService.loadAllPublic({ ...filter, completedOnly: true })
-    ).sort((a, b) => (a.completedAt! > b.completedAt! ? 1 : -1));
     if (gameKey && gameKey.startsWith("custom_")) {
-      customMaker = await gameService.loadCustomGameMaker(
-        gameKey.substring(7)
-      );
+      customMaker = await gameService.loadCustomGameMaker(gameKey.substring(7));
       if (customMaker) {
-        subtitle = `#${customMaker.number} by @${
-          customMaker.userData?.username || `!${customMaker.userId}`
-        }`;
+        subtitle = (
+          <span>
+            #{customMaker.number} by{" "}
+            <Link
+              className="text-primary-900 underline hover:text-primary-700"
+              href={`/profiles/${customMaker.identityProvider}/${customMaker.userId}`}
+            >
+              @{customMaker.userData?.username || `!${customMaker.userId}`}
+            </Link>
+          </span>
+        );
       }
     } else if (gameKey) {
       if (filter.type === "DAILY") {
@@ -123,10 +133,27 @@ export default async function GalleryPage(props: NextServerPageProps) {
         subtitle = gameKey;
       }
     }
+    const showWords = false;
+    // const showWords =
+    //   customMaker?.identityProvider === "fc" &&
+    //   customMaker?.userId === session?.user?.name;
+    games = (
+      await gameService.loadAllPublic(
+        { ...filter, completedOnly: true },
+        showWords
+      )
+    ).sort((a, b) => (a.completedAt! > b.completedAt! ? 1 : -1));
   }
   return (
-    <div className="w-full h-full bg-primary-100 text-left flex-1">
-      <Gallery subtitle={subtitle} games={games} filter={filter} customMaker={customMaker} />
-    </div>
+    <ProfileApp>
+      <div className="w-full h-full bg-primary-100 text-left flex-1">
+        <Gallery
+          subtitle={subtitle}
+          games={games}
+          filter={filter}
+          customMaker={customMaker}
+        />
+      </div>
+    </ProfileApp>
   );
 }
