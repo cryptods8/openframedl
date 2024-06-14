@@ -25,7 +25,7 @@ function formatRatio(value: number, total: number): string {
 
 function WonLostChart(props: { game: CustomGameWithStats }) {
   const {
-    game: { winCount, lossCount, gameCount, averageGuessCount },
+    game: { winCount, lossCount, gameCount },
   } = props;
   return (
     <div className="flex rounded-full bg-primary-900/10 h-4 overflow-hidden w-full">
