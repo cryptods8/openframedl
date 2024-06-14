@@ -91,7 +91,12 @@ export async function findAllByFilter(
           eb
             .eb("isDaily", "=", false)
             .and(eb.eb("gameKey", "like", "custom_%"))
-            .and(eb.eb("customIsArt", "=", false))
+            .and(
+              eb.or([
+                eb.eb("customIsArt", "is", null),
+                eb.eb("customIsArt", "=", false),
+              ])
+            )
         );
       }
       if (filter.type === "ART") {
@@ -487,7 +492,7 @@ export async function findUserData(key: UserKey) {
 // export async function findStreaks(key: UserKey) {
 //   /**
 //    * with game_date as (
-//   select 
+//   select
 //     user_id,
 //     identity_provider,
 //     game_key::date,
