@@ -60,7 +60,7 @@ const handle = frames(async (ctx) => {
   if (signedUp) {
     const shareUrl = createComposeUrl(
       "",
-      `${externalBaseUrl}/pro/championship/signup?sid=${signupId}`
+      `${externalBaseUrl}/games/pro/championship/signup?sid=${signupId}`
     );
     return {
       image: imageUrl,
