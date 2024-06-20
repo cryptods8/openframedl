@@ -143,9 +143,9 @@ function getSuccessText(user: User) {
 }
 
 function getSharedText(user: User) {
-  const username = user.userData?.username ?? user.userId;
+  // const username = user.userData?.username ?? user.userId;
 
-  return getTrimmedText("@", username, " is in! Are you?");
+  return getTrimmedText("I am in!", "     ", " Are   you?");
 }
 
 function getTrimmedText(prefix: string, trimmable: string, suffix: string) {

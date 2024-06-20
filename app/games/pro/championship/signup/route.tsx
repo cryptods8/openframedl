@@ -82,7 +82,7 @@ const handle = frames(async (ctx) => {
           query: srcId ? { sid: srcId.toString() } : {},
         })}
       >
-        I'm in!
+        {"I'm in!"}
       </Button>,
     ],
   };
