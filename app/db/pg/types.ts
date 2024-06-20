@@ -14,6 +14,7 @@ export interface Database {
   customGame: CustomGameTable;
   vCustomGame: VCustomGameTable;
   reminder: ReminderTable;
+  championshipSignup: ChampionshipSignupTable;
 }
 
 interface UserKey {
@@ -88,6 +89,18 @@ export interface VGameTable extends GameTable {
   customIsArt: boolean | null;
 }
 
+export interface ChampionshipSignupTable extends UserKey {
+  id: Generated<number>;
+  roundNumber: number;
+
+  createdAt: ColumnType<Date, Date, never>;
+  updatedAt: Date;
+  deletedAt: Date | null;
+
+  userData: UserDataColumnType | null;
+  srcId: number | null;
+}
+
 export type DBGame = Selectable<GameTable>;
 export type DBGameInsert = Insertable<GameTable>;
 export type DBGameUpdate = Updateable<GameTable>;
@@ -100,3 +113,6 @@ export type DBCustomGameView = Selectable<VCustomGameTable>;
 export type DBReminder = Selectable<ReminderTable>;
 export type DBReminderInsert = Insertable<ReminderTable>;
 export type DBReminderUpdate = Updateable<ReminderTable>;
+
+export type DBChampionshipSignup = Selectable<ChampionshipSignupTable>;
+export type DBChampionshipSignupInsert = Insertable<ChampionshipSignupTable>;
