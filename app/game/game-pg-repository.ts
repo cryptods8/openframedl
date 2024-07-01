@@ -231,6 +231,12 @@ export async function loadTopNLeaderboard(
   };
 }
 
+function getExcludeUserIds(identityProvider: GameIdentityProvider): string[] {
+  return EXCLUDED_USERS.map((u) => u.split(":"))
+    .filter((u) => u[0]! === identityProvider)
+    .map((u) => u[1]!);
+}
+
 export async function loadLeaderboardEntries(
   identityProvider: GameIdentityProvider,
   date: string,
@@ -251,9 +257,7 @@ export async function loadLeaderboardEntries(
       generate_series(${fromDateString}::timestamp with time zone, ${toDateString}::timestamp with time zone, '1 day'),
       (select user_id, identity_provider from game group by 1, 2) as ui)`;
 
-  const excludedUserIds: string[] = EXCLUDED_USERS.map((u) => u.split(":"))
-    .filter((u) => u[0]! === identityProvider)
-    .map((u) => u[1]!);
+  const excludedUserIds = getExcludeUserIds(identityProvider);
 
   const q = pgDb
     .with("game_key", () => seriesTable)
@@ -535,3 +539,141 @@ export async function findUserData(key: UserKey) {
 //     ])
 //     .groupBy(["gd.userId", sql<Date>`gd.gameKey - gd.seqn * interval '1 day'`]);
 // }
+
+export async function loadRanking(identityProvider: GameIdentityProvider) {
+  const excludedUserIds = getExcludeUserIds(identityProvider);
+  const ranking = await pgDb
+    .with("gc_game", (db) =>
+      db
+        .selectFrom("game")
+        .where("status", "in", ["WON", "LOST"])
+        .where("isDaily", "=", true)
+        .select((db) => [
+          "status",
+          "userId",
+          "identityProvider",
+          "gameKey",
+          db
+            .case()
+            .when("status", "=", "WON")
+            .then(db.ref("guessCount"))
+            .else(LOST_PENALTY)
+            .end()
+            .as("guessCount"),
+        ])
+    )
+    .with("ranked_game", (db) =>
+      db
+        .selectFrom("gc_game")
+        .select((db) => [
+          sql<number>`row_number() over (partition by user_id, identity_provider order by guess_count asc, game_key asc)`.as(
+            "rank"
+          ),
+          "status",
+          "userId",
+          "identityProvider",
+          "gameKey",
+          "guessCount",
+        ])
+    )
+    .with("max_rank", (db) =>
+      db
+        .selectFrom("ranked_game")
+        .groupBy(["userId", "identityProvider"])
+        .select((db) => [
+          "userId",
+          "identityProvider",
+          db.fn.max("rank").as("maxRank"),
+        ])
+    )
+    .with("filtered_ranked_game", (db) =>
+      db
+        .selectFrom("ranked_game as rg")
+        .innerJoin("max_rank as mr", (join) =>
+          join
+            .onRef("mr.userId", "=", "rg.userId")
+            .onRef("mr.identityProvider", "=", "rg.identityProvider")
+        )
+        .select([
+          "rg.rank",
+          "rg.status",
+          "rg.userId",
+          "rg.identityProvider",
+          "rg.gameKey",
+          "rg.guessCount",
+          "mr.maxRank",
+          sql<boolean>`rg.rank >= max_rank / 10 and rg.rank < (max_rank - max_rank / 10)`.as(
+            "included"
+          ),
+        ])
+    )
+    .with("last_daily_game", (db) =>
+      db
+        .selectFrom("game")
+        .select((db) => [
+          "userId",
+          "identityProvider",
+          "isDaily",
+          db.fn.max("gameKey").as("gameKey"),
+        ])
+        .where("isDaily", "=", true)
+        .groupBy(["userId", "identityProvider", "isDaily"])
+    )
+    .with("fresh_user_data", (db) =>
+      db
+        .selectFrom("game as g")
+        .innerJoin("last_daily_game as ldg", (join) =>
+          join
+            .onRef("g.userId", "=", "ldg.userId")
+            .onRef("g.identityProvider", "=", "ldg.identityProvider")
+            .onRef("g.gameKey", "=", "ldg.gameKey")
+            .onRef("g.isDaily", "=", "ldg.isDaily")
+        )
+        .select(["g.userId", "g.identityProvider", "g.userData"])
+        .where("g.isDaily", "=", true)
+    )
+    .with("signup", (db) =>
+      db
+        .selectFrom("championshipSignup")
+        .select(["userId", "identityProvider"])
+        .groupBy(["userId", "identityProvider"])
+    )
+    .selectFrom("filtered_ranked_game as frg")
+    .innerJoin("signup as s", (join) =>
+      join
+        .onRef("frg.userId", "=", "s.userId")
+        .onRef("frg.identityProvider", "=", "s.identityProvider")
+    )
+    .select((db) => [
+      "frg.userId",
+      "frg.identityProvider",
+      db.fn.sum("guessCount").as("totalGuessCount"),
+      db.fn.count("guessCount").as("gameCount"),
+      sql<number>`sum(guess_count)::decimal / count(*)`.as("averageGuessCount"),
+      sql<number>`row_number() over (order by sum(guess_count)::decimal / count(*) asc, frg.user_id asc)`.as(
+        "rank"
+      ),
+      "maxRank",
+      db
+        .selectFrom("fresh_user_data as fud")
+        .select("fud.userData")
+        .where("fud.identityProvider", "=", db.ref("frg.identityProvider"))
+        .where("fud.userId", "=", db.ref("frg.userId"))
+        .as("userData"),
+    ])
+    .where("included", "=", true)
+    .where("maxRank", ">", 30)
+    .where((x) =>
+      excludedUserIds.length > 0
+        ? x.and([
+            x.eb("frg.identityProvider", "=", identityProvider),
+            x.eb("frg.userId", "not in", excludedUserIds),
+          ])
+        : x.eb("frg.identityProvider", "=", identityProvider)
+    )
+    .groupBy(["frg.userId", "frg.identityProvider", "maxRank"])
+    .orderBy("averageGuessCount asc")
+    .limit(32)
+    .execute();
+  return ranking;
+}
