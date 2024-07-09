@@ -69,9 +69,14 @@ export async function POST(req: NextRequest, res: NextResponse) {
   let userFid: number = data.author.fid;
   let castHash: string = data.hash;
   let username: string | undefined;
-  if (/retry/i.test(text) && data.parent_author?.fid) {
-    userFid = data.parent_author.fid;
-    castHash = data.parent_hash;
+  if (/retry/i.test(text)) {
+    if (data.parent_author?.fid && userFid === 11124) {
+      userFid = data.parent_author.fid;
+      castHash = data.parent_hash;
+    } else {
+      console.log("i don't know how to react to this message:", text);
+      return NextResponse.json({});
+    }
   } else if (!/setup\ reminders?/i.test(text)) {
     console.log("i don't know how to react to this message:", text);
     return NextResponse.json({});
