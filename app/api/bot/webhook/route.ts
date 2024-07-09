@@ -22,7 +22,7 @@ type CastEventData = {
   parent_url: string | null | undefined;
   root_parent_url: string | null | undefined;
   author: CastAuthor;
-  parent_author: CastAuthor | null | undefined;
+  parent_author: { fid: number } | null | undefined;
   text: string;
   timestamp: string;
 };
@@ -66,12 +66,20 @@ export async function POST(req: NextRequest, res: NextResponse) {
   console.log("cast hash", data.hash);
 
   const text = data.text.toLowerCase();
-  if (!/setup\ reminders?/i.test(text)) {
-    console.log("i don't know how to react to this message", text);
-    return;
+  let userFid: number = data.author.fid;
+  let castHash: string = data.hash;
+  let username: string | undefined;
+  if (/retry/i.test(text) && data.parent_author?.fid) {
+    userFid = data.parent_author.fid;
+    castHash = data.parent_hash;
+  } else if (!/setup\ reminders?/i.test(text)) {
+    console.log("i don't know how to react to this message:", text);
+    return NextResponse.json({});
+  } else {
+    username = data.author.username;
   }
   const userKey: UserKey = {
-    userId: data.author.fid.toString(),
+    userId: userFid.toString(),
     identityProvider: "fc",
   };
   const existingReminder = await findReminderByUserKey(userKey);
@@ -95,11 +103,12 @@ export async function POST(req: NextRequest, res: NextResponse) {
     });
   }
 
+  const greeting = username ? `Hey, @${username} 👋! ` : "Hey 👋!";
   const reply = await neynarClient.publishCast(
     process.env.NEYNAR_SIGNER_UUID,
-    `Hey, @${data.author.username} 👋! Your Framedl PRO reminders have been set up :)`,
+    `${greeting} Your Framedl PRO reminders have been set up :)`,
     {
-      replyTo: data.hash,
+      replyTo: castHash,
     }
   );
   console.log("reply:", reply);
