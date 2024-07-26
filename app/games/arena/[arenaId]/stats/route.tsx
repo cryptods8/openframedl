@@ -32,10 +32,8 @@ const handler = createCustomFrames<ArenaStatsFrameState>({})(async (ctx) => {
   if (!arena) {
     return error("Arena not found");
   }
-  const { memberCompletionStatus } = getArenaAvailabilityProperties(
-    arena,
-    userKey
-  );
+  const { memberCompletionStatus, completionStatus } =
+    getArenaAvailabilityProperties(arena, userKey);
 
   const userKeyQuery: Record<string, string> = userKey
     ? { uid: userKey.userId, ip: userKey.identityProvider }
@@ -55,7 +53,8 @@ const handler = createCustomFrames<ArenaStatsFrameState>({})(async (ctx) => {
       >
         Refresh
       </Button>,
-      memberCompletionStatus !== "COMPLETED" ? (
+      memberCompletionStatus !== "COMPLETED" &&
+      completionStatus !== "COMPLETED" ? (
         <Button
           action="post"
           target={ctx.createUrlWithBasePath(
