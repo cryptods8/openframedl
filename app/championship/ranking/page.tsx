@@ -8,6 +8,8 @@ function formatNumber(num: number): string {
   });
 }
 
+export const fetchCache = "force-no-store";
+
 export default async function Page() {
   const ranking = await loadRanking("fc");
 

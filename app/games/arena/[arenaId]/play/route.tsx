@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { Button, error } from "frames.js/core";
 import { createCustomFrames } from "../../../frames";
 import { UserGameKey } from "@/app/game/game-repository";

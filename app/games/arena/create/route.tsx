@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { createCustomFrames } from "@/app/games/frames";
 import { Button } from "frames.js/next";
 import { error, redirect } from "frames.js/core";

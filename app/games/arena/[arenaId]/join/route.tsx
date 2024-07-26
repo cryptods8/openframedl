@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { Button, error } from "frames.js/core";
 import { createCustomFrames } from "@/app/games/frames";
 import { getUserDataForFid } from "frames.js";

@@ -27,7 +27,7 @@ interface FrameValidationResult {
 
 type CreateUrlFunctionArgs =
   | string
-  | { pathname?: string; query?: Record<string, string> };
+  | { pathname?: string; query?: Record<string, string | undefined> };
 type CreateUrlFunction = (arg: CreateUrlFunctionArgs) => string;
 
 const userKeyMiddleware: FramesMiddleware<any, { userKey?: UserKey }> = async (
@@ -87,7 +87,9 @@ const urlBuilderMiddleware: FramesMiddleware<
       const url = new URL(fullPathname ?? "", bUrl);
       if (query) {
         for (const [key, value] of Object.entries(query)) {
-          url.searchParams.set(key, value);
+          if (value != null) {
+            url.searchParams.set(key, value);
+          }
         }
       }
       return url.toString();

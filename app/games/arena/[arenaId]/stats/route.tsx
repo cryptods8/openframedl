@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import { findArenaWithGamesById } from "@/app/game/arena-pg-repository";
 import { createCustomFrames } from "@/app/games/frames";
 import { createComposeUrl } from "@/app/utils";

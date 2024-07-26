@@ -158,14 +158,16 @@ function renderParameters({ arena }: { arena: ArenaWithGames }) {
   const isFinished = endTime && Date.now() > endTime.getTime();
 
   const items: React.ReactNode[] = [
-    <div tw="flex">
+    <div key="1" tw="flex">
       {renderMessageWithHighlights([
         { text: words.length.toString(), highlighted: true },
         { text: " words to play" },
       ])}
     </div>,
-    <div tw="flex">{formatTimeRangeBoundary(startTime)}</div>,
-    <div tw="flex">
+    <div key="2" tw="flex">
+      {formatTimeRangeBoundary(startTime)}
+    </div>,
+    <div key="3" tw="flex">
       {isFinished
         ? renderMessageWithHighlights([
             { text: "Already finished!", highlighted: true },
