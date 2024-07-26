@@ -99,11 +99,11 @@ const urlBuilderMiddleware: FramesMiddleware<
     createUrl: provideCreateUrl(false),
     createUrlWithBasePath: provideCreateUrl(true),
     createSignedUrl: (arg: CreateUrlFunctionArgs) => {
-      const url = provideCreateUrl(false, externalBaseUrl)(arg);
+      const url = provideCreateUrl(false)(arg);
       return signUrl(url);
     },
     createSignedUrlWithBasePath: (arg: CreateUrlFunctionArgs) => {
-      const url = provideCreateUrl(true, externalBaseUrl)(arg);
+      const url = provideCreateUrl(true)(arg);
       return signUrl(url);
     },
     createExternalUrl: provideCreateUrl(false, externalBaseUrl),
