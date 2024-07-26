@@ -64,7 +64,14 @@ const handler = createCustomFrames<ArenaStatsFrameState>({})(async (ctx) => {
         >
           {from === "play" ? "Play" : "Join"}
         </Button>
-      ) : undefined,
+      ) : (
+        <Button
+          action="post"
+          target={ctx.createUrlWithBasePath(`/arena/create`)}
+        >
+          Create Arena
+        </Button>
+      ),
       <Button
         action="link"
         target={createComposeUrl(
