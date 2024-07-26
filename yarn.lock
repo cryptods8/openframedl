@@ -474,10 +474,10 @@
   resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.2.2.tgz#d8bae93ac8b815b2bd7a98078cf91e2724ef11e5"
   integrity sha512-J4yDIIthosAsRZ5CPYP/jQvUAQtlZTTD/4suA08/FEnlxqW3sKS9iAhgsa9VYLZ6vDHn/ixJgIqRQPotoBjxIw==
 
-"@frames.js/debugger@^0.2.8":
-  version "0.2.8"
-  resolved "https://registry.yarnpkg.com/@frames.js/debugger/-/debugger-0.2.8.tgz#265f963d01aa1944f8d67214b29c5d85057ee8aa"
-  integrity sha512-ITYy9gMYieK4S9GonwUvSlerGU++kgW4ZvYjIw/YnhLH7scxvi+notfIEmgtfD0EjT8rwTZTzq/hS7N7dTVghQ==
+"@frames.js/debugger@0.2.10":
+  version "0.2.10"
+  resolved "https://registry.yarnpkg.com/@frames.js/debugger/-/debugger-0.2.10.tgz#35f9a65aad8992a6d93ea3bb1718cafa4c289483"
+  integrity sha512-h45I9UojlWsVM1BJdrXhw2RLVksxnNMuX01cchYxp0n4WqhMQtwR8s5iIJ65LhAgRBvZzpFirR1FscO3dGuVvA==
   dependencies:
     "@xmtp/xmtp-js" "^11.5.0"
     is-port-reachable "^4.0.0"

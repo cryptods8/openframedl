@@ -1,12 +1,25 @@
-import { openframes } from "frames.js/middleware";
-import { createFrames } from "frames.js/next";
+import { CoreMiddleware, openframes } from "frames.js/middleware";
+import { createFrames as coreCreateFrames } from "frames.js/core";
 import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
-import { baseUrl, externalBaseUrl, hubHttpUrl, hubRequestOptions } from "../constants";
-import { FramesMiddleware } from "frames.js/types";
+import {
+  baseUrl,
+  externalBaseUrl,
+  hubHttpUrl,
+  hubRequestOptions,
+} from "../constants";
+import {
+  CreateFramesFunctionDefinition,
+  FrameHandlerFunction,
+  FramesMiddleware,
+  FramesOptions,
+  FramesRequestHandlerFunctionOptions,
+  JsonValue,
+} from "frames.js/types";
 import { validateFrameMessage } from "frames.js";
 import { maintenanceMiddleware } from "./maintenanceMiddleware";
 import { signUrl } from "../signer";
 import { UserKey } from "../game/game-repository";
+import { NextRequest, NextResponse } from "next/server";
 
 interface FrameValidationResult {
   isValid: boolean;
@@ -56,6 +69,7 @@ const urlBuilderMiddleware: FramesMiddleware<
     createUrl: CreateUrlFunction;
     createUrlWithBasePath: CreateUrlFunction;
     createSignedUrl: CreateUrlFunction;
+    createSignedUrlWithBasePath: CreateUrlFunction;
     createExternalUrl: CreateUrlFunction;
   }
 > = async (ctx, next) => {
@@ -83,7 +97,11 @@ const urlBuilderMiddleware: FramesMiddleware<
     createUrl: provideCreateUrl(false),
     createUrlWithBasePath: provideCreateUrl(true),
     createSignedUrl: (arg: CreateUrlFunctionArgs) => {
-      const url = provideCreateUrl(false)(arg);
+      const url = provideCreateUrl(false, externalBaseUrl)(arg);
+      return signUrl(url);
+    },
+    createSignedUrlWithBasePath: (arg: CreateUrlFunctionArgs) => {
+      const url = provideCreateUrl(true, externalBaseUrl)(arg);
       return signUrl(url);
     },
     createExternalUrl: provideCreateUrl(false, externalBaseUrl),
@@ -112,7 +130,8 @@ const validationMiddleware: FramesMiddleware<
 
   // ignore message
   const { message, ...validationResult } = await validateFrameMessage(payload, {
-    hubHttpUrl, hubRequestOptions
+    hubHttpUrl,
+    hubRequestOptions,
   });
 
   return next({ validationResult });
@@ -127,30 +146,88 @@ const initialState: FrameState = {};
 
 export const basePath = "/games";
 
-export const frames = createFrames({
-  basePath,
-  initialState,
-  middleware: [
-    maintenanceMiddleware,
-    urlBuilderMiddleware,
-    validationMiddleware,
-    openframes({
-      clientProtocol: {
-        id: "xmtp",
-        version: "2024-02-09",
-      },
-      handler: {
-        isValidPayload: (body: JSON) => isXmtpFrameActionPayload(body),
-        getFrameMessage: async (body: JSON) => {
-          if (!isXmtpFrameActionPayload(body)) {
-            return undefined;
-          }
-          const result = await getXmtpFrameMessage(body);
+export class NextRequestWithContext extends NextRequest {
+  ctx: NextContext;
+  constructor(input: URL | RequestInfo, ctx: NextContext, init?: RequestInit) {
+    super(
+      input,
+      init ? { ...init, signal: init?.signal || undefined } : undefined
+    );
+    this.ctx = ctx;
+  }
 
-          return { ...result };
+  get nextContext(): NextContext {
+    return this.ctx;
+  }
+}
+
+interface NextContext {
+  params: Record<string, string | undefined>;
+}
+
+type CreateFramesForNextJS = CreateFramesFunctionDefinition<
+  CoreMiddleware,
+  (req: NextRequest, ctx: NextContext) => Promise<NextResponse>
+>;
+
+// @ts-expect-error -- this is correct but the function does not satisfy the type
+const createFrames: CreateFramesForNextJS = function createFramesNJS(
+  options?: FramesOptions<any, any>
+) {
+  const frames = coreCreateFrames(options);
+
+  return function createHandler<
+    TPerRouteMiddleware extends FramesMiddleware<any, any>[]
+  >(
+    handler: FrameHandlerFunction<any, any>,
+    handlerOptions?: FramesRequestHandlerFunctionOptions<TPerRouteMiddleware>
+  ) {
+    const handleRequest = frames(handler, handlerOptions);
+
+    return (req: NextRequest, ctx: NextContext) => {
+      return handleRequest(new NextRequestWithContext(req, ctx));
+    };
+  };
+};
+
+const customRequestMiddleware: FramesMiddleware<
+  any,
+  { request: NextRequestWithContext }
+> = async (ctx, next) => {
+  const { request } = ctx;
+  return next({ request: request as NextRequestWithContext });
+};
+
+export const createCustomFrames = <T extends JsonValue>(
+  customInitialState: T
+) =>
+  createFrames({
+    basePath,
+    initialState: customInitialState,
+    middleware: [
+      customRequestMiddleware,
+      maintenanceMiddleware,
+      urlBuilderMiddleware,
+      validationMiddleware,
+      openframes({
+        clientProtocol: {
+          id: "xmtp",
+          version: "2024-02-09",
         },
-      },
-    }),
-    userKeyMiddleware,
-  ],
-});
+        handler: {
+          isValidPayload: (body: JSON) => isXmtpFrameActionPayload(body),
+          getFrameMessage: async (body: JSON) => {
+            if (!isXmtpFrameActionPayload(body)) {
+              return undefined;
+            }
+            const result = await getXmtpFrameMessage(body);
+
+            return { ...result };
+          },
+        },
+      }),
+      userKeyMiddleware,
+    ],
+  });
+
+export const frames = createCustomFrames(initialState);

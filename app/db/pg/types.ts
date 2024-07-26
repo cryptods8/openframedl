@@ -7,6 +7,7 @@ import {
   Updateable,
 } from "kysely";
 import { FramedlProPassOwnership } from "../../pro/pass-ownership";
+import { GameIdentityProvider } from "@/app/game/game-repository";
 
 export interface Database {
   game: GameTable;
@@ -15,6 +16,7 @@ export interface Database {
   vCustomGame: VCustomGameTable;
   reminder: ReminderTable;
   championshipSignup: ChampionshipSignupTable;
+  arena: ArenaTable;
 }
 
 interface UserKey {
@@ -22,13 +24,17 @@ interface UserKey {
   identityProvider: "xmtp" | "fc";
 }
 
-type UserDataColumnType = JSONColumnType<{
+export interface UserDataColumn {
   displayName: string | null | undefined;
   username: string | null | undefined;
   profileImage: string | null | undefined;
   bio: string | null | undefined;
   passOwnership: FramedlProPassOwnership | null | undefined;
-}>;
+}
+
+type UserDataColumnType = JSONColumnType<UserDataColumn>;
+
+export type GameStatus = "WON" | "LOST" | "IN_PROGRESS";
 
 export interface GameTable extends UserKey {
   id: string;
@@ -42,12 +48,15 @@ export interface GameTable extends UserKey {
   updatedAt: Date;
   completedAt: Date | null;
 
-  status: "WON" | "LOST" | "IN_PROGRESS";
+  status: GameStatus;
   guessCount: number;
   isHardMode: boolean;
 
   userData: UserDataColumnType | null;
   srcGameId: string | null;
+
+  arenaId: number | null;
+  arenaWordIndex: number | null;
 }
 
 export interface CustomGameTable extends UserKey {
@@ -72,10 +81,14 @@ export interface ReminderTable extends UserKey {
   enabledAt: Date | null;
   lastSentAt: Date | null;
 
-  log: JSONColumnType<[{
-    enabled: boolean;
-    timestamp: number;
-  }]>;
+  log: JSONColumnType<
+    [
+      {
+        enabled: boolean;
+        timestamp: number;
+      }
+    ]
+  >;
 }
 
 export interface VCustomGameTable extends CustomGameTable {
@@ -89,16 +102,52 @@ export interface VGameTable extends GameTable {
   customIsArt: boolean | null;
 }
 
-export interface ChampionshipSignupTable extends UserKey {
-  id: Generated<number>;
-  roundNumber: number;
-
+interface DatedTable {
   createdAt: ColumnType<Date, Date, never>;
   updatedAt: Date;
   deletedAt: Date | null;
+}
 
+interface AuthoredTable extends DatedTable, UserKey {
   userData: UserDataColumnType | null;
+}
+
+export interface ChampionshipSignupTable extends AuthoredTable {
+  id: Generated<number>;
+  roundNumber: number;
+
   srcId: number | null;
+}
+
+export type ArenaStart =
+  | { type: "immediate" }
+  | { type: "scheduled"; date: string };
+export type ArenaDuration =
+  | { type: "unlimited" }
+  | { type: "interval"; minutes: number };
+export type ArenaAudienceMember = {
+  userId?: string;
+  username?: string;
+  identityProvider: GameIdentityProvider;
+};
+export interface ArenaMember extends UserKey {
+  username?: string;
+}
+
+export type ArenaConfig = {
+  start: ArenaStart;
+  duration: ArenaDuration;
+  audience: ArenaAudienceMember[];
+  audienceSize: number;
+  words: string[];
+};
+
+export interface ArenaTable extends AuthoredTable {
+  id: Generated<number>;
+
+  config: JSONColumnType<ArenaConfig>;
+  members: JSONColumnType<ArenaMember[]>;
+  startedAt: Date | null;
 }
 
 export type DBGame = Selectable<GameTable>;
@@ -116,3 +165,7 @@ export type DBReminderUpdate = Updateable<ReminderTable>;
 
 export type DBChampionshipSignup = Selectable<ChampionshipSignupTable>;
 export type DBChampionshipSignupInsert = Insertable<ChampionshipSignupTable>;
+
+export type DBArena = Selectable<ArenaTable>;
+export type DBArenaInsert = Insertable<ArenaTable>;
+export type DBArenaUpdate = Updateable<ArenaTable>;

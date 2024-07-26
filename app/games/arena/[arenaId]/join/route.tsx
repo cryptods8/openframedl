@@ -1,0 +1,186 @@
+import { Button, error } from "frames.js/core";
+import { createCustomFrames } from "@/app/games/frames";
+import { getUserDataForFid } from "frames.js";
+import { hubHttpUrl, hubRequestOptions } from "@/app/constants";
+import {
+  findArenaWithGamesById,
+  updateArena,
+} from "@/app/game/arena-pg-repository";
+import {
+  checkMembership,
+  getArenaAvailabilityProperties,
+} from "../../arena-utils";
+import { createComposeUrl } from "@/app/utils";
+
+const frames = createCustomFrames({});
+
+export const GET = frames(async (ctx) => {
+  const { request } = ctx;
+  const arenaId = request.nextContext?.params?.arenaId;
+  if (!arenaId) {
+    return error("Arena ID not found!");
+  }
+  const numArenaId = parseInt(arenaId, 10);
+  if (isNaN(numArenaId)) {
+    return error("Invalid arena ID");
+  }
+
+  return {
+    image: ctx.createSignedUrlWithBasePath(`/arena/${arenaId}/join/image`),
+    buttons: [
+      <Button
+        action="post"
+        target={ctx.createUrlWithBasePath(
+          `/arena/${arenaId}/join?id=${arenaId}`
+        )}
+      >
+        Join
+      </Button>,
+      <Button
+        action="post"
+        target={ctx.createUrlWithBasePath(`/arena/${arenaId}/stats`)}
+      >
+        Results
+      </Button>,
+      <Button action="post" target={ctx.createUrlWithBasePath(`/arena/create`)}>
+        Create
+      </Button>,
+      <Button
+        action="link"
+        target={createComposeUrl(
+          "",
+          ctx.createExternalUrl(`/games/arena/${arenaId}/join`)
+        )}
+      >
+        Share
+      </Button>,
+    ],
+  };
+});
+
+type ArenaJoinFrameState = {
+  arenaId?: string;
+};
+
+export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
+  const { request, userKey, state } = ctx;
+  const arenaId = state.arenaId || request.nextContext?.params.arenaId;
+
+  if (!arenaId) {
+    return error("Arena ID not found!");
+  }
+  const numArenaId = parseInt(arenaId, 10);
+  if (isNaN(numArenaId)) {
+    return error("Invalid arena ID");
+  }
+  if (!userKey) {
+    return error("User ID not found!");
+  }
+
+  // check if arena exists
+  const [arena, userData] = await Promise.all([
+    findArenaWithGamesById(numArenaId),
+    getUserDataForFid({
+      fid: parseInt(userKey.userId, 10),
+      options: { hubHttpUrl, hubRequestOptions },
+    }),
+  ]);
+  if (!arena) {
+    return error("Arena not found");
+  }
+  const now = new Date();
+  // check arena is open -- join should be allowed, play should be blocked
+  // if (arena.start.type === "scheduled" && new Date(arena.start.date) > now) {
+  //   return error("Arena not yet open");
+  // }
+  if (arena.startedAt && arena.config.duration.type === "interval") {
+    const duration = arena.config.duration.minutes * 60 * 1000;
+    if (now.getTime() - arena.startedAt.getTime() > duration) {
+      return error("Arena already closed");
+    }
+  }
+  // check arena members list
+  const { membership, status: availabilityStatus } =
+    getArenaAvailabilityProperties(arena, {
+      ...userKey,
+      username: userData?.username,
+    });
+  if (!membership || !membership.success) {
+    return error("You can't join the arena - there are no free slots");
+  }
+  let added = false;
+  if (membership.type === "audience" || membership.type === "free_slot") {
+    // add user to members
+    arena.members.push({
+      userId: userKey.userId,
+      identityProvider: userKey.identityProvider,
+      username: userData?.username,
+    });
+    const { games, ...rest } = arena;
+    await updateArena(arena.id, {
+      ...rest,
+      startedAt: arena.startedAt || new Date(),
+      config: JSON.stringify(arena.config),
+      members: JSON.stringify(arena.members),
+      userData: JSON.stringify(arena.userData),
+    });
+    added = true;
+  }
+
+  return {
+    state: {
+      arenaId,
+    },
+    image: ctx.createSignedUrlWithBasePath({
+      pathname: `/arena/${arenaId}/join/image`,
+      query: {
+        msg: `${availabilityStatus === "OPEN" ? "Perfect, you" : "You"} ${
+          added ? "joined the arena!" : "are in the arena."
+        } ${
+          availabilityStatus === "OPEN"
+            ? "Now it's time to play!"
+            : availabilityStatus === "ENDED"
+            ? "It has already closed though."
+            : "Wait for it to open!"
+        }`,
+        uid: userKey.userId,
+        ip: userKey.identityProvider,
+      },
+    }),
+    buttons: [
+      availabilityStatus === "OPEN" ? (
+        <Button
+          action="post"
+          target={ctx.createUrlWithBasePath(`/arena/${arenaId}/play`)}
+        >
+          Play
+        </Button>
+      ) : (
+        <Button
+          action="post"
+          target={ctx.createUrlWithBasePath(`/arena/${arenaId}/join`)}
+        >
+          Refresh
+        </Button>
+      ),
+      <Button
+        action="post"
+        target={ctx.createUrlWithBasePath(`/arena/${arenaId}/stats`)}
+      >
+        Results
+      </Button>,
+      <Button action="post" target={ctx.createUrlWithBasePath(`/arena/create`)}>
+        Create
+      </Button>,
+      <Button
+        action="link"
+        target={createComposeUrl(
+          "",
+          ctx.createExternalUrl(`/games/arena/${arenaId}/join`)
+        )}
+      >
+        Share
+      </Button>,
+    ],
+  };
+});

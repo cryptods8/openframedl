@@ -1,9 +1,9 @@
 /* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
-import { FramesMiddleware } from "frames.js/types";
+import { FramesContext, FramesMiddleware } from "frames.js/types";
 import { baseUrl } from "../constants";
 
-export const maintenanceMiddleware: FramesMiddleware<any, {}> = async (
+export const maintenanceMiddleware: FramesMiddleware<any, FramesContext<any>> = async (
   ctx,
   next
 ) => {
@@ -30,5 +30,5 @@ export const maintenanceMiddleware: FramesMiddleware<any, {}> = async (
       ],
     };
   }
-  return next();
+  return next(ctx);
 };

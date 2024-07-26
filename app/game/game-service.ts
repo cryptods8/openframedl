@@ -17,6 +17,7 @@ import answers from "../words/answer-words";
 import allWords from "../words/all-words";
 import { isPro } from "../constants";
 import {
+  DBArena,
   DBCustomGameView,
   DBGame,
   DBGameInsert,
@@ -77,6 +78,8 @@ const CUSTOM_WORD_KEY_PREFIX = "custom_";
 interface GameWord {
   word: string;
   customGame?: DBCustomGameView;
+  arena?: DBArena;
+  arenaWordIndex?: number;
 }
 
 export const getWordForUserGameKey = async (
@@ -135,6 +138,7 @@ export interface GuessedGame extends Omit<DBGame, "guesses"> {
   isHardMode: boolean;
   isCustom: boolean;
   customMaker?: CustomGameMaker;
+  arena?: DBArena;
 }
 
 export interface PublicGuessedGame {
@@ -161,9 +165,11 @@ export type GuessValidationStatus =
   | "INVALID_FORMAT"
   | "INVALID_WORD";
 
+export type PreCreateFunction = () => Promise<GameWord>;
 export interface LoadOrCreateOptions {
   userData?: UserData;
   srcGameId?: string;
+  preCreate?: PreCreateFunction;
 }
 
 type BaseLoadLeaderboardOptions = {
@@ -206,6 +212,7 @@ export interface GameService {
     game: GuessedGame,
     guess: string | null | undefined
   ): GuessValidationStatus;
+  generateRandomWords(count: number): string[];
   loadStats(userKey: UserKey): Promise<UserStats | null>;
   loadLeaderboard(
     identityProvider: GameIdentityProvider,
@@ -325,11 +332,21 @@ export class GameServiceImpl implements GameService {
     return true;
   }
 
-  private isDBGameView(game: DBGame | DBGameView): game is DBGameView {
+  private isDBGameView(
+    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
+  ): game is DBGameView {
     return (game as DBGameView).customUserId !== undefined;
   }
 
-  private toGuessedGame(game: DBGame | DBGameView): GuessedGame {
+  private isDBGameViewWithArena(
+    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
+  ): game is gameRepo.DBGameViewWithArena {
+    return (game as gameRepo.DBGameViewWithArena).arenaUserId != null;
+  }
+
+  private toGuessedGame(
+    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
+  ): GuessedGame {
     const word = game.word;
     const wordCharacters = word.split("").reduce((acc, c, idx) => {
       if (!acc[c]) {
@@ -392,6 +409,23 @@ export class GameServiceImpl implements GameService {
           }
         : undefined;
     }
+    let arena: DBArena | undefined;
+    if (this.isDBGameViewWithArena(game)) {
+      arena = game.arenaId
+        ? {
+            id: game.arenaId,
+            config: game.arenaConfig!,
+            userId: game.arenaUserId!,
+            identityProvider: game.arenaIdentityProvider!,
+            createdAt: game.arenaCreatedAt!,
+            updatedAt: game.arenaUpdatedAt!,
+            deletedAt: game.arenaDeletedAt,
+            members: game.arenaMembers!,
+            startedAt: game.arenaStartedAt,
+            userData: game.arenaUserData,
+          }
+        : undefined;
+    }
     return {
       ...game,
       originalGuesses: game.guesses,
@@ -402,6 +436,7 @@ export class GameServiceImpl implements GameService {
       isHardMode,
       isCustom: game.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
       customMaker,
+      arena,
     };
   }
 
@@ -430,8 +465,10 @@ export class GameServiceImpl implements GameService {
   ): Promise<GuessedGame> {
     const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
-      const { word, customGame } = await getWordForUserGameKey(key);
-      const { userData, srcGameId } = options || {};
+      const { userData, srcGameId, preCreate } = options || {};
+      const { word, customGame, arena, arenaWordIndex } = preCreate
+        ? await preCreate()
+        : await getWordForUserGameKey(key);
       let customMaker: CustomGameMaker | undefined;
       if (customGame) {
         customMaker = this.toCustomGameMaker(customGame);
@@ -448,8 +485,9 @@ export class GameServiceImpl implements GameService {
         status: "IN_PROGRESS" as const,
         guessCount: 0,
         isHardMode: true,
+        arenaId: arena?.id,
+        arenaWordIndex,
       };
-      console.debug("creating game", newGame);
       const createdGame = await gameRepo.insert(newGame);
       return {
         ...createdGame,
@@ -458,6 +496,7 @@ export class GameServiceImpl implements GameService {
         allGuessedCharacters: {},
         isCustom: key.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
         customMaker,
+        arena,
       };
     }
     return this.toGuessedGame(game);
@@ -650,7 +689,7 @@ export class GameServiceImpl implements GameService {
       // update stats
       const stats = await this.loadOrCreateStats(guessedGame);
       const newStats = this.updateStats(stats, updatedGame);
-      this.gameRepository.saveStats(newStats);
+      await this.gameRepository.saveStats(newStats);
     }
     return updatedGame;
   }
@@ -673,6 +712,9 @@ export class GameServiceImpl implements GameService {
       isHardMode: game.isHardMode,
       userData: game.userData ? game.userData : null,
       srcGameId: game.srcGameId || null,
+      arenaId: game.arenaId || null,
+      arenaWordIndex: game.arenaWordIndex || null,
+      // TODO: arena
       customUserId: customMaker?.userId || null,
       customIdentityProvider: customMaker?.identityProvider || null,
       customNumByUser: customMaker?.number || null,
@@ -748,6 +790,13 @@ export class GameServiceImpl implements GameService {
       status: "IN_PROGRESS",
       isHardMode: true,
     };
+  }
+
+  generateRandomWords(count: number): string[] {
+    const rng = seedrandom();
+    return Array.from({ length: count }, (_, i) =>
+      getWordForIndex(Math.floor(rng() * answers.length), shuffleSecret!)
+    );
   }
 
   async loadStats(userKey: UserKey): Promise<UserStats | null> {
@@ -933,6 +982,8 @@ export class GameServiceImpl implements GameService {
           : null,
         // non-existent in old schema
         srcGameId: null,
+        arenaId: null,
+        arenaWordIndex: null,
       };
       const gg = this.toGuessedGame(pgGame);
       inserts.push({

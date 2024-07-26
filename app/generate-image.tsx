@@ -19,7 +19,10 @@ import {
   formatUsername,
   getDailyGameKey,
 } from "./game/game-utils";
-import { CUSTOM_WORD_KEY_PREFIX } from "./game/game-constants";
+import { GameBoard } from "./image-ui/game-board";
+import { GameKeyboard } from "./image-ui/game-keyboard";
+import { OGBadge } from "./image-ui/og-badge";
+import { GameTitle } from "./image-ui/game-title";
 
 function readFont(name: string) {
   return fs.readFileSync(path.resolve(`./public/${name}`));
@@ -88,17 +91,6 @@ async function toImage(
 }
 
 const MAX_GUESSES = 6;
-const CELL_W = 84;
-const CELL_H = 84;
-
-const KEY_CELL_W = 48;
-const KEY_CELL_H = 58;
-
-const KEYS: string[][] = [
-  ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-  ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-  ["z", "x", "c", "v", "b", "n", "m"],
-];
 
 function determineGameMessage(
   game: GuessedGame | undefined | null,
@@ -309,24 +301,6 @@ function UserStatsPanel(props: UserStatsPanelProps) {
   );
 }
 
-function OGBadge() {
-  return (
-    <div
-      tw="flex rounded"
-      style={{
-        color: "white",
-        backgroundColor: "green",
-        lineHeight: "1",
-        padding: "0.1em 0.25em",
-        fontWeight: 700,
-        fontFamily: "SpaceGrotesk",
-      }}
-    >
-      OG
-    </div>
-  );
-}
-
 export interface GenerateImageOptions {
   overlayMessage?: string | null;
   share?: boolean;
@@ -368,147 +342,22 @@ function getGuessCharacterColorStyle(
   };
 }
 
-function formatGameKey(
-  game: GuessedGame | undefined | null,
-  options?: GenerateImageOptions
-) {
-  if (!game && !options) {
-    return "";
-  }
-  const gameKey = game?.gameKey || "";
-  const isCustom = game?.isCustom || options?.custom;
-  const customMaker = game?.customMaker || options?.customMaker;
-  if (isCustom || customMaker) {
-    if (customMaker) {
-      const username = formatUsername(customMaker);
-      return `#${customMaker?.number} by @${username}`;
-    }
-    if (gameKey) {
-      return `From a friend 💌 (${gameKey.substring(gameKey.length - 8)})`;
-    }
-    return "From a friend 💌";
-  }
-  if (game && !game.isDaily && gameKey) {
-    return `Practice (${gameKey.substring(gameKey.length - 8)})`;
-  }
-  return gameKey;
-}
-
 export async function generateImage(
   game: GuessedGame | undefined | null,
   options?: GenerateImageOptions
 ) {
-  const { guesses, allGuessedCharacters } = game || { guesses: [] };
   const { overlayMessage, share, userStats } = options || {};
   const isCustom = game?.isCustom || options?.custom;
   const customMaker = game?.customMaker || options?.customMaker;
   const isArt = customMaker?.isArt;
   const artWord = customMaker?.word;
 
-  const rows: ReactNode[] = [];
-  for (let i = 0; i < MAX_GUESSES; i++) {
-    const guess = guesses[i];
-    const cells: ReactNode[] = [];
-    for (let j = 0; j < 5; j++) {
-      const letter = guess ? guess.characters[j] : undefined;
-      const char = letter ? letter.character : "";
-      const { color, backgroundColor, borderColor } =
-        getGuessCharacterColorStyle(letter, !share);
-      cells.push(
-        <div
-          key={j}
-          tw="flex justify-center items-center text-5xl"
-          style={{
-            lineHeight: 1,
-            fontWeight: 600,
-            width: CELL_W,
-            height: CELL_H,
-            color,
-            backgroundColor,
-            border: "4px solid",
-            borderColor,
-          }}
-        >
-          {share ? "" : char.toUpperCase()}
-        </div>
-      );
-    }
-    rows.push(
-      <div
-        key={i}
-        tw="flex justify-center items-center"
-        style={{ gap: "0.5rem" }}
-      >
-        {cells}
-      </div>
-    );
-  }
-
-  // keyboard
-  const keyboardRows = [];
-  for (let i = 0; i < KEYS.length; i++) {
-    const keys = KEYS[i]!;
-    const keyCells: ReactNode[] = [];
-    for (let j = 0; j < keys.length; j++) {
-      const key = keys[j]!;
-      const gc = allGuessedCharacters?.[key];
-      const color =
-        gc &&
-        (gc.status === "CORRECT" ||
-          gc.status === "WRONG_POSITION" ||
-          gc.status === "INCORRECT")
-          ? "white"
-          : primaryColor(1);
-      const backgroundColor =
-        gc && gc.status === "CORRECT"
-          ? "green"
-          : gc && gc.status === "WRONG_POSITION"
-          ? "orange"
-          : gc && gc.status === "INCORRECT"
-          ? primaryColor(0.42)
-          : primaryColor(0.12);
-      const isArtWordLetter = artWord?.toLowerCase().includes(key);
-      keyCells.push(
-        <div
-          key={j}
-          tw={"flex justify-center items-center rounded-md text-3xl relative"}
-          style={{
-            fontWeight: 500,
-            width: KEY_CELL_W,
-            height: KEY_CELL_H,
-            color,
-            backgroundColor,
-            borderColor: primaryColor(),
-          }}
-        >
-          {key.toUpperCase()}
-          {isArtWordLetter && (
-            <div
-              tw="absolute -bottom-0 left-0 right-0 h-2 flex rounded-b"
-              style={{ backgroundColor: primaryColor(0.2) }}
-            />
-          )}
-        </div>
-      );
-    }
-    keyboardRows.push(
-      <div key={i} tw="flex flex-row" style={{ gap: "0.5rem" }}>
-        {keyCells}
-      </div>
-    );
-  }
-
   const gameMessage = determineGameMessage(game, options);
 
   return toImage(
     <div tw="flex w-full h-full items-center justify-center relative">
       <div tw="flex w-full h-full items-stretch justify-between">
-        <div
-          tw="flex flex-col items-center justify-center p-12"
-          style={{ gap: "0.5rem" }}
-        >
-          {rows}
-        </div>
+        <GameBoard game={game} isPublic={share} />
         <div
           tw={"flex flex-col flex-1 px-8 border-l pt-16"}
           style={{
@@ -521,35 +370,7 @@ export async function generateImage(
             tw="flex flex-col flex-1 items-center relative"
             style={{ gap: "1rem" }}
           >
-            <div
-              tw="flex items-center text-5xl flex-wrap"
-              style={{
-                fontFamily: "SpaceGrotesk",
-                fontWeight: 700,
-                wordBreak: "break-all",
-                color: primaryColor(),
-              }}
-            >
-              <div
-                tw="flex flex-col items-center mb-4"
-                style={{ gap: "0.5rem" }}
-              >
-                <div tw="flex items-center" style={{ gap: "0.75rem" }}>
-                  <span>Framedl</span>
-                  {isPro && <span style={{ color: "green" }}>PRO</span>}
-                </div>
-                <div tw="flex text-3xl items-center" style={{ gap: "0.5rem" }}>
-                  <div tw="flex">{formatGameKey(game, options)}</div>
-                  {isPro &&
-                    (game?.userData?.passOwnership === "OG" ||
-                      game?.userData?.passOwnership === "BASIC_AND_OG") && (
-                      <div tw="flex text-2xl">
-                        <OGBadge />
-                      </div>
-                    )}
-                </div>
-              </div>
-            </div>
+            <GameTitle game={game} customMaker={customMaker} />
             <div
               tw="flex text-4xl flex-wrap"
               style={{
@@ -608,14 +429,7 @@ export async function generateImage(
                 }
               />
             ) : (
-              !share && (
-                <div
-                  tw="flex flex-col items-center justify-center pb-8"
-                  style={{ gap: "0.5rem" }}
-                >
-                  {keyboardRows}
-                </div>
-              )
+              !share && <div tw="flex pb-8"><GameKeyboard game={game} customMaker={customMaker} /></div>
             )}
           </div>
         </div>

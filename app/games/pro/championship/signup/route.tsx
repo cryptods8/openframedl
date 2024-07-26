@@ -1,10 +1,6 @@
 /* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
-import {
-  UserDataReturnType,
-  getAddressesForFid,
-  getUserDataForFid,
-} from "frames.js";
+import { getUserDataForFid } from "frames.js";
 import { frames } from "../../../frames";
 import {
   externalBaseUrl,

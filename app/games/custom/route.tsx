@@ -27,7 +27,7 @@ const handleRequest = frames(async (ctx) => {
       return {
         image: ctx.createSignedUrl({
           pathname: "/api/images/custom",
-          query: { msg: "Invalid word. Try again!", error: true },
+          query: { msg: "Invalid word. Try again!", error: "true" },
         }),
         textInput: "Enter a 5-letter word...",
         buttons: [
@@ -58,7 +58,7 @@ const handleRequest = frames(async (ctx) => {
       word,
       createdAt: new Date(),
       ...userKey,
-      userData,
+      userData: JSON.stringify(userData),
       isArt: message.buttonIndex === 2,
     };
     console.log("saving custom game", customGame);
@@ -90,21 +90,15 @@ const handleRequest = frames(async (ctx) => {
     };
   }
 
-  const query = new URLSearchParams();
-  const imageUrl = ctx.createSignedUrl({
-    pathname: "/api/images/custom",
-    query,
-  });
-
   return {
-    image: imageUrl,
+    image: ctx.createSignedUrl("/api/images/custom"),
     textInput: "Enter a 5-letter word...",
     buttons: [
       <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
         Create
       </Button>,
       <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
-        Create for drawing 🎨
+        Create for drawing 🎨imageUrl
       </Button>,
     ],
   };

@@ -1,6 +1,14 @@
 import { sql } from "kysely";
 import { pgDb } from "../db/pg/pg-db";
-import { DBGame, DBGameInsert, DBGameUpdate, DBGameView } from "../db/pg/types";
+import {
+  ArenaConfig,
+  ArenaMember,
+  DBGame,
+  DBGameInsert,
+  DBGameUpdate,
+  DBGameView,
+  UserDataColumn,
+} from "../db/pg/types";
 import {
   GameIdentityProvider,
   UserData,
@@ -26,24 +34,72 @@ export async function update(id: string, game: DBGameUpdate) {
   return pgDb.updateTable("game").set(game).where("id", "=", id).execute();
 }
 
-export async function findById(id: string): Promise<DBGameView | undefined> {
+export interface DBGameViewWithArena extends DBGameView {
+  arenaConfig: ArenaConfig | null;
+  arenaMembers: ArenaMember[] | null;
+  arenaCreatedAt: Date | null;
+  arenaUpdatedAt: Date | null;
+  arenaDeletedAt: Date | null;
+  arenaUserId: string | null;
+  arenaIdentityProvider: GameIdentityProvider | null;
+  arenaUserData: UserDataColumn | null;
+  arenaStartedAt: Date | null;
+}
+
+function gameViewQuery() {
   return pgDb
-    .selectFrom("vGame")
-    .where("id", "=", id)
-    .selectAll()
-    .executeTakeFirst();
+    .selectFrom("vGame as g")
+    .leftJoin("arena as a", "a.id", "g.arenaId")
+    .select([
+      "g.id",
+      "g.userId",
+      "g.identityProvider",
+      "g.gameKey",
+      "g.isDaily",
+      "g.word",
+      "g.guesses",
+      "g.createdAt",
+      "g.updatedAt",
+      "g.completedAt",
+      "g.status",
+      "g.guessCount",
+      "g.isHardMode",
+      "g.userData",
+      "g.srcGameId",
+      "g.arenaId",
+      "g.customUserId",
+      "g.customIdentityProvider",
+      "g.customIsArt",
+      "g.customNumByUser",
+      "g.customUserData",
+      "g.arenaId",
+      "g.arenaWordIndex",
+      "a.config as arenaConfig",
+      "a.members as arenaMembers",
+      "a.createdAt as arenaCreatedAt",
+      "a.updatedAt as arenaUpdatedAt",
+      "a.deletedAt as arenaDeletedAt",
+      "a.userId as arenaUserId",
+      "a.identityProvider as arenaIdentityProvider",
+      "a.userData as arenaUserData",
+      "a.startedAt as arenaStartedAt",
+    ]);
+}
+
+export async function findById(
+  id: string
+): Promise<DBGameViewWithArena | undefined> {
+  return gameViewQuery().where("g.id", "=", id).executeTakeFirst();
 }
 
 export async function findByUserGameKey(
   key: UserGameKey
-): Promise<DBGameView | undefined> {
-  return pgDb
-    .selectFrom("vGame")
-    .where("userId", "=", key.userId)
-    .where("gameKey", "=", key.gameKey)
-    .where("identityProvider", "=", key.identityProvider)
-    .where("isDaily", "=", key.isDaily)
-    .selectAll()
+): Promise<DBGameViewWithArena | undefined> {
+  return gameViewQuery()
+    .where("g.userId", "=", key.userId)
+    .where("g.gameKey", "=", key.gameKey)
+    .where("g.identityProvider", "=", key.identityProvider)
+    .where("g.isDaily", "=", key.isDaily)
     .executeTakeFirst();
 }
 
