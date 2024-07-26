@@ -85,7 +85,6 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
           guessCount: game.guessCount,
           status: game.status,
         });
-        playerStats.score += game.guessCount;
         return acc;
       },
       {
@@ -96,7 +95,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
   const players = Object.values(map)
     .map((p) => {
       const totalGuessCount =
-        (gamesTotal - p.gamesPlayed) * UNPLAYED_PENALTY +
+        (gamesTotal - p.gamesCompleted) * UNPLAYED_PENALTY +
         (p.gamesCompleted - p.gamesWon) * LOST_PENALTY +
         p.wonGuessCount;
       const score = totalGuessCount / gamesTotal;
