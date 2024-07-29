@@ -596,7 +596,10 @@ export async function findUserData(key: UserKey) {
 //     .groupBy(["gd.userId", sql<Date>`gd.gameKey - gd.seqn * interval '1 day'`]);
 // }
 
-export async function loadRanking(identityProvider: GameIdentityProvider) {
+export async function loadRanking(
+  identityProvider: GameIdentityProvider,
+  { limit, signedUpOnly }: { limit: number; signedUpOnly?: boolean }
+) {
   const excludedUserIds = getExcludeUserIds(identityProvider);
   const ranking = await pgDb
     .with("gc_game", (db) =>
@@ -695,7 +698,7 @@ export async function loadRanking(identityProvider: GameIdentityProvider) {
         .groupBy(["userId", "identityProvider"])
     )
     .selectFrom("filtered_ranked_game as frg")
-    .innerJoin("signup as s", (join) =>
+    .leftJoin("signup as s", (join) =>
       join
         .onRef("frg.userId", "=", "s.userId")
         .onRef("frg.identityProvider", "=", "s.identityProvider")
@@ -710,6 +713,7 @@ export async function loadRanking(identityProvider: GameIdentityProvider) {
         "rank"
       ),
       "maxRank",
+      sql<boolean>`s.user_id is not null`.as("signedUp"),
       db
         .selectFrom("fresh_user_data as fud")
         .select("fud.userData")
@@ -727,9 +731,10 @@ export async function loadRanking(identityProvider: GameIdentityProvider) {
           ])
         : x.eb("frg.identityProvider", "=", identityProvider)
     )
-    .groupBy(["frg.userId", "frg.identityProvider", "maxRank"])
-    .orderBy("averageGuessCount asc")
-    .limit(32)
+    .where((x) => (signedUpOnly ? x.eb("s.userId", "is not", null) : x.and([])))
+    .groupBy(["frg.userId", "frg.identityProvider", "maxRank", "s.userId"])
+    .orderBy(["averageGuessCount asc", "gameCount desc"])
+    .limit(limit)
     .execute();
   return ranking;
 }
