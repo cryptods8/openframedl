@@ -12,6 +12,7 @@ import {
   getArenaAvailabilityProperties,
 } from "../../arena-utils";
 import { createComposeUrl } from "@/app/utils";
+import { GameIdentityProvider } from "@/app/game/game-repository";
 
 const frames = createCustomFrames({});
 
@@ -63,6 +64,16 @@ type ArenaJoinFrameState = {
   arenaId?: string;
 };
 
+const ARENA_BLACKLIST =
+  process.env.ARENA_BLACKLIST ||
+  "xmtp/0x8009eC9AAC8Cdebc896ecBf5Abb6fC5aAafcc4a7";
+
+function isOnBlacklist(userKey: { userId: string; identityProvider: string }) {
+  return ARENA_BLACKLIST.split(",").includes(
+    `${userKey.identityProvider}/${userKey.userId}`
+  );
+}
+
 export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
   const { request, userKey, state } = ctx;
   const arenaId = state.arenaId || request.nextContext?.params.arenaId;
@@ -76,6 +87,9 @@ export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
   }
   if (!userKey) {
     return error("User ID not found!");
+  }
+  if (isOnBlacklist(userKey)) {
+    return error("You are not allowed to join this arena!");
   }
 
   // check if arena exists

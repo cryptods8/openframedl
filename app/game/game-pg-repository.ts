@@ -621,7 +621,7 @@ export async function loadRanking(identityProvider: GameIdentityProvider) {
     .with("ranked_game", (db) =>
       db
         .selectFrom("gc_game")
-        .select((db) => [
+        .select([
           sql<number>`row_number() over (partition by user_id, identity_provider order by guess_count asc, game_key asc)`.as(
             "rank"
           ),
