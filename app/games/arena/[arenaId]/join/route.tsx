@@ -134,7 +134,9 @@ export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
     const { games, ...rest } = arena;
     await updateArena(arena.id, {
       ...rest,
-      startedAt: arena.startedAt || new Date(),
+      startedAt:
+        arena.startedAt ||
+        (arena.config.start.type === "immediate" ? new Date() : null),
       config: JSON.stringify(arena.config),
       members: JSON.stringify(arena.members),
       userData: JSON.stringify(arena.userData),
