@@ -598,7 +598,11 @@ export async function findUserData(key: UserKey) {
 
 export async function loadRanking(
   identityProvider: GameIdentityProvider,
-  { limit, signedUpOnly }: { limit: number; signedUpOnly?: boolean }
+  {
+    limit,
+    signedUpOnly,
+    cutOffDate,
+  }: { limit: number; signedUpOnly?: boolean; cutOffDate?: string }
 ) {
   const excludedUserIds = getExcludeUserIds(identityProvider);
   const ranking = await pgDb
@@ -607,6 +611,9 @@ export async function loadRanking(
         .selectFrom("game")
         .where("status", "in", ["WON", "LOST"])
         .where("isDaily", "=", true)
+        .where((x) =>
+          cutOffDate ? x.eb("gameKey", "<", cutOffDate) : x.and([])
+        )
         .select((db) => [
           "status",
           "userId",
@@ -709,11 +716,14 @@ export async function loadRanking(
       db.fn.sum("guessCount").as("totalGuessCount"),
       db.fn.count("guessCount").as("gameCount"),
       sql<number>`sum(guess_count)::decimal / count(*)`.as("averageGuessCount"),
-      sql<number>`row_number() over (order by sum(guess_count)::decimal / count(*) asc, frg.user_id asc)`.as(
+      sql<number>`row_number() over (order by sum(guess_count)::decimal / (log(max_rank) * count(*)) asc, frg.user_id asc)`.as(
         "rank"
       ),
       "maxRank",
       sql<boolean>`s.user_id is not null`.as("signedUp"),
+      sql<number>`sum(guess_count)::decimal / (log(max_rank) * count(*))`.as(
+        "score"
+      ),
       db
         .selectFrom("fresh_user_data as fud")
         .select("fud.userData")
@@ -722,7 +732,7 @@ export async function loadRanking(
         .as("userData"),
     ])
     .where("included", "=", true)
-    .where("maxRank", ">", 30)
+    .where("maxRank", ">", 1)
     .where((x) =>
       excludedUserIds.length > 0
         ? x.and([
@@ -733,7 +743,8 @@ export async function loadRanking(
     )
     .where((x) => (signedUpOnly ? x.eb("s.userId", "is not", null) : x.and([])))
     .groupBy(["frg.userId", "frg.identityProvider", "maxRank", "s.userId"])
-    .orderBy(["averageGuessCount asc", "gameCount desc"])
+    // .orderBy(["averageGuessCount asc", "gameCount desc"])
+    .orderBy(["score asc", "gameCount desc"])
     .limit(limit)
     .execute();
   return ranking;

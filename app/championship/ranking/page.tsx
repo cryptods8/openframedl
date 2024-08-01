@@ -12,12 +12,14 @@ function formatNumber(num: number): string {
 export const fetchCache = "force-no-store";
 
 export default async function Page({ searchParams }: NextServerPageProps) {
-  const { mr, suo, ruc } = searchParams || {};
+  const { mr, suo, ruc, cod } = searchParams || {};
   const maxResults = (mr && parseInt(mr as string, 10)) || 64;
   const runnerUpCoeficient = (ruc && parseFloat(ruc as string)) || 0.5;
+  const cutOffDate = cod ? (cod as string) : "2024-07-31";
   const ranking = await loadRanking("fc", {
     limit: maxResults * (1 + runnerUpCoeficient),
     signedUpOnly: suo == null || suo === "1",
+    cutOffDate,
   });
 
   return (
