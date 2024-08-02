@@ -512,5 +512,15 @@ export async function GET(
     return NextResponse.json({ error: "Arena not found" }, { status: 404 });
   }
 
-  return new ImageResponse(<Image arena={arena} userKey={userKey} />, options);
+  const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
+
+  return new ImageResponse(<Image arena={arena} userKey={userKey} />, {
+    ...options,
+    headers:
+      completionStatus === "COMPLETED"
+        ? undefined
+        : {
+            "Cache-Control": "public, max-age=300",
+          },
+  });
 }

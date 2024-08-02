@@ -11,16 +11,42 @@ function formatNumber(num: number): string {
 
 export const fetchCache = "force-no-store";
 
+function CheckIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="1.5"
+      stroke="currentColor"
+      width="100%"
+      height="100%"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+      />
+    </svg>
+  );
+}
+
 export default async function Page({ searchParams }: NextServerPageProps) {
-  const { mr, suo, ruc, cod } = searchParams || {};
+  const { mr, suo, ruc, cod, s } = searchParams || {};
   const maxResults = (mr && parseInt(mr as string, 10)) || 64;
-  const runnerUpCoeficient = (ruc && parseFloat(ruc as string)) || 0.5;
+  const runnerUpCoeficient = (ruc && parseFloat(ruc as string)) || 1;
   const cutOffDate = cod ? (cod as string) : "2024-07-31";
   const ranking = await loadRanking("fc", {
     limit: maxResults * (1 + runnerUpCoeficient),
     signedUpOnly: suo == null || suo === "1",
     cutOffDate,
   });
+  let finalRanking = ranking;
+  if (s === "final") {
+    finalRanking = ranking.filter((p) => p.hasTicket);
+  } else if (s === "subs") {
+    finalRanking = ranking.filter((p) => p.hasTicket || p.rank > maxResults);
+  }
 
   return (
     <Container>
@@ -40,7 +66,7 @@ export default async function Page({ searchParams }: NextServerPageProps) {
           <div className="text-right">Games</div>
           <div className="w-8 text-right">Avg</div>
         </div>
-        {ranking.map((p, idx) => [
+        {finalRanking.map((p, idx) => [
           idx === maxResults ? (
             <div key="separator" className="my-6">
               <div className="text-sm p-4 border-y border-primary-900">
@@ -57,10 +83,15 @@ export default async function Page({ searchParams }: NextServerPageProps) {
             key={`${p.identityProvider}/${p.userId}`}
           >
             <div className="w-8 text-right">{p.rank}</div>
-            <div className="flex-1 text-left">
-              {p.userData?.username
-                ? `@${p.userData.username}`
-                : `!${p.userId}`}
+            <div className="flex-1 text-left flex gap-2 items-center">
+              <span>
+                {p.userData?.username ? p.userData.username : `!${p.userId}`}
+              </span>
+              {p.hasTicket && (
+                <span className="text-green-600 size-5">
+                  <CheckIcon />
+                </span>
+              )}
             </div>
             <div className="text-right">{p.gameCount}</div>
             <div className="w-8 text-right">

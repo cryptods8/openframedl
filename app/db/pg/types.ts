@@ -117,6 +117,7 @@ export interface ChampionshipSignupTable extends AuthoredTable {
   roundNumber: number;
 
   srcId: number | null;
+  hasTicket: boolean | null;
 }
 
 export type ArenaStart =

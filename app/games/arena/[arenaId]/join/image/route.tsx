@@ -11,6 +11,7 @@ import {
 import { GameIdentityProvider, UserKey } from "@/app/game/game-repository";
 import {
   determineAwaitingAudience,
+  getArenaAvailabilityProperties,
   getArenaGamesForUser,
   isAudienceMember,
 } from "../../../arena-utils";
@@ -373,12 +374,22 @@ export async function GET(
     return NextResponse.json({ error: "Arena not found" }, { status: 404 });
   }
 
+  const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
+
   return new ImageResponse(
     (
       <BasicLayout>
         <ArenaImage arena={arena} currentUser={userKey} message={message} />
       </BasicLayout>
     ),
-    options
+    {
+      ...options,
+      headers:
+        completionStatus === "COMPLETED"
+          ? undefined
+          : {
+              "Cache-Control": "public, max-age=300",
+            },
+    }
   );
 }

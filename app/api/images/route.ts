@@ -80,9 +80,7 @@ export async function GET(req: NextRequest) {
     return timeCall("generateImage", () => generateImage(game, options));
   } catch (e) {
     console.error(e);
-    return await generateImage(undefined, {
-      overlayMessage: "Error occured: " + (e as any).message,
-    });
+    return Response.json({ error: "Error ocurred." }, { status: 500 });
   } finally {
     console.log(`Time for GET /api/images: ${Date.now() - start}ms`);
   }
