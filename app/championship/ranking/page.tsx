@@ -88,7 +88,7 @@ export default async function Page({ searchParams }: NextServerPageProps) {
                 {p.userData?.username ? p.userData.username : `!${p.userId}`}
               </span>
               {p.hasTicket && (
-                <span className="text-green-600 size-5">
+                <span className={`text-green-600 ${idx >= maxResults ? 'size-4' : 'size-5'}`}>
                   <CheckIcon />
                 </span>
               )}

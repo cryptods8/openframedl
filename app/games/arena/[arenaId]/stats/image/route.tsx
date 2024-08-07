@@ -32,6 +32,7 @@ interface ArenaPlayerStats {
   gamesCompleted: number;
   gamesWon: number;
   wonGuessCount: number;
+  completedGuessCount: number;
   score: number;
   pos?: number;
   lastGameCompletedAt?: Date;
@@ -63,6 +64,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
             gamesCompleted: 0,
             gamesWon: 0,
             wonGuessCount: 0,
+            completedGuessCount: 0,
             score: 0,
           };
           acc.map[playerKey] = playerStats;
@@ -71,6 +73,9 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
         if (game.status === "WON") {
           playerStats.gamesWon++;
           playerStats.wonGuessCount += game.guessCount;
+          playerStats.completedGuessCount += game.guessCount;
+        } else if (game.status === "LOST") {
+          playerStats.completedGuessCount += LOST_PENALTY;
         }
         if (game.completedAt) {
           playerStats.gamesCompleted++;
@@ -144,6 +149,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
         gamesCompleted: 0,
         gamesWon: 0,
         wonGuessCount: 0,
+        completedGuessCount: 0,
         score: 0,
       })),
       ...audience.map((a) => ({
@@ -153,6 +159,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
         gamesCompleted: 0,
         gamesWon: 0,
         wonGuessCount: 0,
+        completedGuessCount: 0,
         score: 0,
       })),
       ...Array.from({ length: freeSlots }).map(() => ({
@@ -161,6 +168,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
         gamesCompleted: 0,
         gamesWon: 0,
         wonGuessCount: 0,
+        completedGuessCount: 0,
         score: 0,
       })),
     ], //.slice(0, 3),
@@ -481,7 +489,9 @@ function Image({
                 {p.user && (
                   <div tw="flex justify-end" style={{ width: "80px" }}>
                     <Score
-                      value={p.gamesWon > 0 ? p.wonGuessCount / p.gamesWon : 0}
+                      value={
+                        p.gamesCompleted > 0 ? p.completedGuessCount / p.gamesCompleted : 0
+                      }
                     />
                   </div>
                 )}

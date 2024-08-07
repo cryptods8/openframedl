@@ -1,5 +1,5 @@
 // import { headers } from "next/headers";
-import { baseUrl } from "./constants";
+import { baseUrl, isPro } from "./constants";
 
 export function currentURL(pathname: string): URL {
   return new URL(pathname, baseUrl);
@@ -29,10 +29,14 @@ export function createComposeUrl(text: string, url: string): string {
   const params = new URLSearchParams();
   params.set("text", text);
   params.set("embeds[]", url);
+  params.set("channelKey", isPro ? "framedl-pro" : "framedl");
   return `https://warpcast.com/~/compose?${params.toString()}`;
 }
 
-export function toUrlSearchParams(obj: Record<string, string | string[] | undefined>, options?: { allowedParams?: string[] }) {
+export function toUrlSearchParams(
+  obj: Record<string, string | string[] | undefined>,
+  options?: { allowedParams?: string[] }
+) {
   const { allowedParams } = options || {};
   const params = new URLSearchParams();
   for (const key in obj) {
@@ -50,4 +54,3 @@ export function toUrlSearchParams(obj: Record<string, string | string[] | undefi
   }
   return params;
 }
-

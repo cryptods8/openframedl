@@ -701,7 +701,11 @@ export async function loadRanking(
     .with("signup", (db) =>
       db
         .selectFrom("championshipSignup")
-        .select(["userId", "identityProvider", sql<boolean>`bool_or(has_ticket)`.as("hasTicket")])
+        .select([
+          "userId",
+          "identityProvider",
+          sql<boolean>`bool_or(has_ticket)`.as("hasTicket"),
+        ])
         .groupBy(["userId", "identityProvider"])
     )
     .selectFrom("filtered_ranked_game as frg")
@@ -721,7 +725,7 @@ export async function loadRanking(
       ),
       "maxRank",
       sql<boolean>`s.user_id is not null`.as("signedUp"),
-      's.hasTicket',
+      "s.hasTicket",
       sql<number>`sum(guess_count)::decimal / (log(max_rank) * count(*))`.as(
         "score"
       ),
@@ -743,7 +747,13 @@ export async function loadRanking(
         : x.eb("frg.identityProvider", "=", identityProvider)
     )
     .where((x) => (signedUpOnly ? x.eb("s.userId", "is not", null) : x.and([])))
-    .groupBy(["frg.userId", "frg.identityProvider", "maxRank", "s.userId", "s.hasTicket"])
+    .groupBy([
+      "frg.userId",
+      "frg.identityProvider",
+      "maxRank",
+      "s.userId",
+      "s.hasTicket",
+    ])
     // .orderBy(["averageGuessCount asc", "gameCount desc"])
     .orderBy(["score asc", "gameCount desc"])
     .limit(limit)
