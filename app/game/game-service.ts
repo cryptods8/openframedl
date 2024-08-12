@@ -423,6 +423,7 @@ export class GameServiceImpl implements GameService {
             members: game.arenaMembers!,
             startedAt: game.arenaStartedAt,
             userData: game.arenaUserData,
+            lastNotifiedAt: game.arenaLastNotifiedAt,
           }
         : undefined;
     }

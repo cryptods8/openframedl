@@ -44,6 +44,7 @@ export interface DBGameViewWithArena extends DBGameView {
   arenaIdentityProvider: GameIdentityProvider | null;
   arenaUserData: UserDataColumn | null;
   arenaStartedAt: Date | null;
+  arenaLastNotifiedAt: Date | null;
 }
 
 function gameViewQuery() {
@@ -83,6 +84,7 @@ function gameViewQuery() {
       "a.identityProvider as arenaIdentityProvider",
       "a.userData as arenaUserData",
       "a.startedAt as arenaStartedAt",
+      "a.lastNotifiedAt as arenaLastNotifiedAt",
     ]);
 }
 
