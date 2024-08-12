@@ -1,14 +1,11 @@
 import { externalBaseUrl } from "../../../constants";
 import { getDailyGameKey } from "../../../game/game-utils";
-import { sendDirectCast } from "./send-direct-cast";
+import { sendDirectCastWithRetries } from "./send-direct-cast";
 
 export interface Reminder {
   fid: number;
   unsubscribeUrl: string;
 }
-
-const RETRY_DELAY = 1000 * 60 * 5;
-const RETRY_ATTEMPTS = 3;
 
 const lowUrgencyMessageVariants = [
   "Today's Framedl is live! Excited to see your scores :)",
@@ -59,21 +56,6 @@ export async function sendReminder(reminder: Reminder) {
     message,
     recipientFid: reminder.fid,
   };
-  for (let i = 0; i < RETRY_ATTEMPTS; i++) {
-    try {
-      if (i > 0) {
-        console.log(`Retrying reminder send attempt ${i + 1}`, cast);
-      }
-      await sendDirectCast(cast);
-      return;
-    } catch (e) {
-      console.error("Failed to send reminder", e);
-      if (i < RETRY_ATTEMPTS - 1) {
-        const retryDelay = RETRY_DELAY / 2 + Math.random() * RETRY_DELAY;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-      }
-    }
-  }
-  console.error(`Failed to send reminder after ${RETRY_ATTEMPTS} attempts`);
+  await sendDirectCastWithRetries(cast);
   return;
 }

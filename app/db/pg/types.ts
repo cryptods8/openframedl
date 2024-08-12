@@ -149,6 +149,8 @@ export interface ArenaTable extends AuthoredTable {
   config: JSONColumnType<ArenaConfig>;
   members: JSONColumnType<ArenaMember[]>;
   startedAt: Date | null;
+
+  lastNotifiedAt: Date | null;
 }
 
 export type DBGame = Selectable<GameTable>;

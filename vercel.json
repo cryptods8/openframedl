@@ -7,6 +7,10 @@
     {
       "path": "/api/bot/reminders/process",
       "schedule": "30 22 * * *"
+    },
+    {
+      "path": "/api/bot/reminders/arena/process",
+      "schedule": "5/10 * * * *"
     }
   ]
 }

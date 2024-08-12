@@ -4,9 +4,10 @@ import { Button } from "frames.js/next";
 import { error, redirect } from "frames.js/core";
 import { ArenaAudienceMember, ArenaConfig } from "@/app/db/pg/types";
 import { insertArena } from "@/app/game/arena-pg-repository";
-import { loadUserData, loadUsername } from "@/app/games/user-data";
+import { loadUserData, loadUsername, loadFid } from "@/app/games/user-data";
 import { gameService } from "@/app/game/game-service";
 import { createComposeUrl } from "@/app/utils";
+import { notifyArenaMembers } from "../arena-utils";
 
 export function formatDuration(minutes: number): string {
   const d = Math.floor(minutes / 1440);
@@ -31,7 +32,16 @@ const parseAudience = async (input: string): Promise<ArenaAudienceMember[]> => {
     .map((a) => a.trim())
     .map(async (a) => {
       if (a.startsWith("@")) {
-        return { username: a.substring(1), identityProvider: "fc" as const };
+        const username = a.substring(1);
+        const fid = await loadFid(username);
+        if (!fid) {
+          throw new Error(`User ${username} not found.`);
+        }
+        return {
+          username: username,
+          userId: fid.toString(),
+          identityProvider: "fc" as const,
+        };
       }
       const fid = parseInt(a, 10);
       if (isNaN(fid)) {
@@ -116,14 +126,15 @@ const handle = frames(async (ctx) => {
       words: gameService.generateRandomWords(state.wordCount ?? 1),
     } satisfies ArenaConfig;
     const userData = await loadUserData(userKey);
-    const id = await insertArena({
+    const arena = {
       createdAt: new Date(),
       updatedAt: new Date(),
       config: JSON.stringify(config),
       ...userKey,
       members: "[]",
       userData: JSON.stringify(userData),
-    });
+    };
+    const id = await insertArena(arena);
     const arenaUrl = ctx.createExternalUrl(`/games/arena/${id}/join`);
     const shareUrl = buildRedirectUrl(config, arenaUrl);
     return redirect(shareUrl);

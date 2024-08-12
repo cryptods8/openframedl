@@ -1,3 +1,8 @@
+import {
+  DirectCast,
+  sendDirectCastWithRetries,
+} from "@/app/api/bot/reminders/send-direct-cast";
+import { externalBaseUrl, isPro } from "@/app/constants";
 import { ArenaAudienceMember, ArenaMember, DBArena } from "@/app/db/pg/types";
 import { ArenaWithGames } from "@/app/game/arena-pg-repository";
 import { UserKey } from "@/app/game/game-repository";
@@ -152,4 +157,49 @@ export function getArenaAvailabilityProperties(
     memberCompletionStatus,
     membership,
   };
+}
+
+export async function notifyArenaMembers(arena: ArenaWithGames) {
+  if (!isPro) {
+    return;
+  }
+  const { userId, identityProvider, config, members } = arena;
+  if (identityProvider !== "fc" || userId !== "11124") {
+    // only notify arenas created by me for now
+    return;
+  }
+  const { status, end } = getArenaAvailabilityProperties(arena);
+  const notifications: DirectCast[] = [];
+  const fids = [...members, ...config.audience].reduce((acc, m) => {
+    if (m.identityProvider === "fc" && m.userId) {
+      const fid = parseInt(m.userId, 10);
+      if (acc.includes(fid)) {
+        return acc;
+      }
+      acc.push(fid);
+    }
+    return acc;
+  }, [] as number[]);
+  fids.forEach((fid) => {
+    const arenaUrl = `${externalBaseUrl}/games/arena/${arena.id}/join`;
+    let introMsg;
+    if (status === "PENDING") {
+      introMsg = `Framedl Arena was created. Join now!`;
+    } else if (status === "ENDED") {
+      introMsg = `Framedl Arena has ended! Thanks for playing!`;
+    } else {
+      if (end && end < new Date(Date.now() + 1000 * 60 * 60)) {
+        introMsg = `Framedl Arena is ending soon. Don't miss out!`;
+      } else {
+        introMsg = `Framedl Arena has started. Good luck!`;
+      }
+    }
+    let msg = `${introMsg}\n\n${arenaUrl}`;
+    notifications.push({
+      recipientFid: fid,
+      message: msg,
+      idempotencyKey: `arena-${arena.id}-${fid}-${Date.now()}`,
+    });
+  });
+  await Promise.all(notifications.map((n) => sendDirectCastWithRetries(n)));
 }

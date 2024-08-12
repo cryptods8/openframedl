@@ -12,7 +12,17 @@ import {
 import { hubHttpUrl, hubRequestOptions, isPro } from "@/app/constants";
 import { getEnsFromAddress } from "@/app/get-ens";
 
-export async function loadUsername(userKey: UserKey): Promise<string | undefined> {
+export async function loadFid(username: string): Promise<number | undefined> {
+  const resp = await fetch(
+    `https://fnames.farcaster.xyz/transfers?name=${username}`
+  );
+  const { transfers } = (await resp.json()) as { transfers: { to: number }[] };
+  return transfers[0]?.to;
+}
+
+export async function loadUsername(
+  userKey: UserKey
+): Promise<string | undefined> {
   switch (userKey.identityProvider) {
     case "fc": {
       const fid = parseInt(userKey.userId, 10);

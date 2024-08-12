@@ -30,10 +30,8 @@ export interface ArenaWithGames extends DBArena {
   games: DBGame[];
 }
 
-export async function findArenaWithGamesById(
-  id: number
-): Promise<ArenaWithGames | undefined> {
-  const res = await pgDb
+export function createArenasWithGamesQuery() {
+  return pgDb
     .selectFrom("arena as a")
     .leftJoin("game as g", "a.id", "g.arenaId")
     .select([
@@ -47,6 +45,7 @@ export async function findArenaWithGamesById(
       "a.members",
       "a.startedAt",
       "a.userData",
+      "a.lastNotifiedAt",
       "g.id as gameId",
       "g.userId as gameUserId",
       "g.identityProvider as gameIdentityProvider",
@@ -64,44 +63,75 @@ export async function findArenaWithGamesById(
       "g.srcGameId as gameSrcGameId",
       "g.arenaId as gameArenaId",
       "g.arenaWordIndex as gameArenaWordIndex",
-    ])
-    .where("a.id", "=", id)
-    .execute();
-  if (!res || !res[0]) {
-    return undefined;
-  }
-  const arena: ArenaWithGames = {
-    id: res[0].id,
-    config: res[0].config,
-    createdAt: res[0].createdAt,
-    updatedAt: res[0].updatedAt,
-    deletedAt: res[0].deletedAt,
-    userId: res[0].userId,
-    identityProvider: res[0].identityProvider,
-    members: res[0].members,
-    startedAt: res[0].startedAt,
-    userData: res[0].userData,
-    games: res
-      .filter((gr) => gr.gameId)
-      .map((gr) => ({
-        id: gr.gameId!,
-        userId: gr.gameUserId!,
-        identityProvider: gr.gameIdentityProvider!,
-        createdAt: gr.gameCreatedAt!,
-        updatedAt: gr.gameUpdatedAt!,
-        completedAt: gr.gameCompletedAt,
-        word: gr.gameWord!,
-        guesses: gr.gameGuesses!,
-        status: gr.gameStatus!,
-        userData: gr.gameUserData,
-        gameKey: gr.gameGameKey!,
-        isDaily: gr.gameIsDaily!,
-        guessCount: gr.gameGuessCount!,
-        isHardMode: gr.gameIsHardMode!,
-        srcGameId: gr.gameSrcGameId,
-        arenaId: gr.gameArenaId,
-        arenaWordIndex: gr.gameArenaWordIndex,
-      })),
-  };
-  return arena;
+    ]);
+}
+
+export type ArenaWithGamesQuery = ReturnType<typeof createArenasWithGamesQuery>;
+export type ArenaWithGamesQueryModifier = (
+  q: ArenaWithGamesQuery
+) => ArenaWithGamesQuery;
+
+export async function findArenasWithGames(
+  queryModifier: ArenaWithGamesQueryModifier
+): Promise<ArenaWithGames[]> {
+  let q = createArenasWithGamesQuery();
+  q = queryModifier(q);
+  q = q.orderBy("a.id", "asc");
+  const result = await q.execute();
+
+  const groupedResults = result.reduce((acc, r) => {
+    if (!acc[r.id]) {
+      acc[r.id] = [];
+    }
+    acc[r.id]!.push(r);
+    return acc;
+  }, {} as Record<number, typeof result>);
+
+  return Object.values(groupedResults).map((res) => {
+    if (!res || !res[0]) {
+      throw new Error("Unexpected empty result");
+    }
+    const arena: ArenaWithGames = {
+      id: res[0].id,
+      config: res[0].config,
+      createdAt: res[0].createdAt,
+      updatedAt: res[0].updatedAt,
+      deletedAt: res[0].deletedAt,
+      userId: res[0].userId,
+      identityProvider: res[0].identityProvider,
+      members: res[0].members,
+      startedAt: res[0].startedAt,
+      userData: res[0].userData,
+      lastNotifiedAt: res[0].lastNotifiedAt,
+      games: res
+        .filter((gr) => gr.gameId)
+        .map((gr) => ({
+          id: gr.gameId!,
+          userId: gr.gameUserId!,
+          identityProvider: gr.gameIdentityProvider!,
+          createdAt: gr.gameCreatedAt!,
+          updatedAt: gr.gameUpdatedAt!,
+          completedAt: gr.gameCompletedAt,
+          word: gr.gameWord!,
+          guesses: gr.gameGuesses!,
+          status: gr.gameStatus!,
+          userData: gr.gameUserData,
+          gameKey: gr.gameGameKey!,
+          isDaily: gr.gameIsDaily!,
+          guessCount: gr.gameGuessCount!,
+          isHardMode: gr.gameIsHardMode!,
+          srcGameId: gr.gameSrcGameId,
+          arenaId: gr.gameArenaId,
+          arenaWordIndex: gr.gameArenaWordIndex,
+        })),
+    };
+    return arena;
+  });
+}
+
+export async function findArenaWithGamesById(
+  id: number
+): Promise<ArenaWithGames | undefined> {
+  const res = await findArenasWithGames((q) => q.where("a.id", "=", id));
+  return res[0];
 }
