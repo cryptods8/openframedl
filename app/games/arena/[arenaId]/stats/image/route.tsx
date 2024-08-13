@@ -433,7 +433,7 @@ function Image({
                     <div tw="flex w-full items-center">
                       <Score
                         value={
-                          p.gamesWon > 0 ? p.wonGuessCount / p.gamesWon : 0
+                          p.gamesCompleted > 0 ? p.completedGuessCount / p.gamesCompleted : 0
                         }
                       />
                       <Filler />
