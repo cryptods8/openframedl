@@ -124,6 +124,7 @@ const handle = frames(async (ctx) => {
       duration: state.duration ?? { type: "unlimited" },
       start: state.start ?? { type: "immediate" },
       words: gameService.generateRandomWords(state.wordCount ?? 1),
+      suddenDeath: null,
     } satisfies ArenaConfig;
     const userData = await loadUserData(userKey);
     const arena = {
