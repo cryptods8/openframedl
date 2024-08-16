@@ -146,7 +146,7 @@ function formatTimeRangeBoundary(timestamp: Date | undefined, end?: boolean) {
 
 function renderParameters({ arena }: { arena: ArenaWithGames }) {
   const {
-    config: { words, duration, start },
+    config: { words, duration, start, suddenDeath },
     startedAt,
   } = arena;
   const startTime =
@@ -181,17 +181,24 @@ function renderParameters({ arena }: { arena: ArenaWithGames }) {
           ])}
     </div>,
   ];
+  if (suddenDeath) {
+    items.push(
+      <div key="4" tw="flex">
+        🔥 Sudden Death
+      </div>
+    );
+  }
   return (
     <div tw="flex flex-col items-center w-full" style={{ gap: "1rem" }}>
       {items.map((item, idx) => (
         <div key={idx} tw="flex items-center w-full" style={{ gap: "2rem" }}>
           <div
-            tw="flex flex-1 pt-2"
+            tw="flex flex-1 h-2"
             style={{ backgroundColor: primaryColor(0.12) }}
           />
           {item}
           <div
-            tw="flex flex-1 pt-2"
+            tw="flex flex-1 h-2"
             style={{ backgroundColor: primaryColor(0.12) }}
           />
         </div>

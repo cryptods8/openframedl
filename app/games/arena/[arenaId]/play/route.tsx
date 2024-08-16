@@ -10,17 +10,34 @@ import {
   PassOwnershipCheckFailedImage,
 } from "@/app/generate-image";
 import { findArenaWithGamesById } from "@/app/game/arena-pg-repository";
-import { PreCreateFunction } from "@/app/game/game-service";
+import { GuessedGame, PreCreateFunction } from "@/app/game/game-service";
 import {
-  checkMembership,
   getArenaAvailabilityProperties,
   getArenaGamesForUser,
+  checkSuddenDeath,
 } from "../../arena-utils";
 
 type ArenaPlayFrameState = {
   arenaId?: string;
   gameKey?: string;
 };
+
+async function hasNextGame(game: GuessedGame): Promise<boolean> {
+  const { arena } = game;
+  if (!arena) {
+    return false;
+  }
+  const { config } = arena;
+  if (config.suddenDeath && config.audienceSize === 2) {
+    // check whether the opponent has better score
+    const arenaWithGames = (await findArenaWithGamesById(arena.id))!;
+    const suddenDeathStatus = checkSuddenDeath(arenaWithGames);
+    if (suddenDeathStatus?.isOver) {
+      return false;
+    }
+  }
+  return config.words.length > game.arenaWordIndex! + 1;
+}
 
 export const POST = createCustomFrames<ArenaPlayFrameState>({})(async (ctx) => {
   const { request, userKey, state, message, validationResult, searchParams } =
@@ -74,10 +91,8 @@ export const POST = createCustomFrames<ArenaPlayFrameState>({})(async (ctx) => {
     if (!arena) {
       return error("Arena not found");
     }
-    const { membership, status } = getArenaAvailabilityProperties(
-      arena,
-      userKey
-    );
+    const { membership, status, completionStatus } =
+      getArenaAvailabilityProperties(arena, userKey);
     if (!membership?.success) {
       return error("You are not a member of the arena");
     }
@@ -89,7 +104,10 @@ export const POST = createCustomFrames<ArenaPlayFrameState>({})(async (ctx) => {
     const lastGame = games[games.length - 1];
     if (lastGame && lastGame.status === "IN_PROGRESS") {
       gameKey = lastGame.gameKey;
-    } else if (games.length < arena.config.words.length) {
+    } else if (
+      games.length < arena.config.words.length &&
+      completionStatus !== "COMPLETED"
+    ) {
       gameKey = `arena_${arenaId}_${games.length + 1}`;
       preCreateLoader = async () => {
         const arenaWordIndex = games.length;
@@ -118,18 +136,8 @@ export const POST = createCustomFrames<ArenaPlayFrameState>({})(async (ctx) => {
   });
   const { finished, game } = gameState;
 
-  // let resultsUrl: string | undefined;
-  // let shareUrl: string | undefined;
-  // if (finished && game) {
-  //   const url = ctx.createExternalUrl(`?id=${game.id}`);
-  //   resultsUrl = signUrl(url);
-
-  //   const { title, text } = buildShareableResult(game);
-  //   shareUrl = createComposeUrl(`${title}\n\n${text}`, url);
-  // }
-  // console.log("GAME", game);
   const { arena } = game;
-  const hasNext = arena && arena.config.words.length > game.arenaWordIndex! + 1;
+  const hasNext = await hasNextGame(game);
 
   return {
     state: { gameKey: finished ? undefined : game.gameKey, arenaId },

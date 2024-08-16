@@ -141,6 +141,7 @@ export type ArenaConfig = {
   audience: ArenaAudienceMember[];
   audienceSize: number;
   words: string[];
+  suddenDeath: boolean | null | undefined;
 };
 
 export interface ArenaTable extends AuthoredTable {

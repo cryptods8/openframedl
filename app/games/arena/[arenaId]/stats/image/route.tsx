@@ -45,7 +45,15 @@ interface ArenaStats {
 
 function getArenaStats(arena: ArenaWithGames): ArenaStats {
   const gamesTotal = arena.config.words.length;
-  const { map } = arena.games
+  const { suddenDeathStatus } = getArenaAvailabilityProperties(arena);
+  let games = arena.games;
+  if (suddenDeathStatus?.isOver) {
+    const { wordIndex } = suddenDeathStatus;
+    games = games.filter(
+      (g) => wordIndex == null || g.arenaWordIndex! <= wordIndex
+    );
+  }
+  const { map } = games
     .sort((a, b) => a.arenaWordIndex! - b.arenaWordIndex!)
     .reduce(
       (acc, game) => {
@@ -361,7 +369,10 @@ function Image({
         tw="flex flex-col items-center w-full h-full relative"
         style={{ backgroundColor: primaryColor(0.04), color: primaryColor() }}
       >
-        <div tw="flex w-full items-center px-20" style={{ gap: "2rem" }}>
+        <div
+          tw="flex w-full items-center px-20 relative"
+          style={{ gap: "2rem" }}
+        >
           <ArenaTitle size="md" />
           <div tw="flex">
             {status === "ENDED" || completionStatus === "COMPLETED" ? (
@@ -433,7 +444,9 @@ function Image({
                     <div tw="flex w-full items-center">
                       <Score
                         value={
-                          p.gamesCompleted > 0 ? p.completedGuessCount / p.gamesCompleted : 0
+                          p.gamesCompleted > 0
+                            ? p.completedGuessCount / p.gamesCompleted
+                            : 0
                         }
                       />
                       <Filler />
@@ -490,13 +503,31 @@ function Image({
                   <div tw="flex justify-end" style={{ width: "80px" }}>
                     <Score
                       value={
-                        p.gamesCompleted > 0 ? p.completedGuessCount / p.gamesCompleted : 0
+                        p.gamesCompleted > 0
+                          ? p.completedGuessCount / p.gamesCompleted
+                          : 0
                       }
                     />
                   </div>
                 )}
               </div>
             ))}
+          </div>
+        )}
+        {arena.config.suddenDeath && (
+          <div
+            tw="flex items-center absolute bottom-12 left-20 right-20"
+            style={{ gap: "2rem" }}
+          >
+            <div
+              tw="flex flex-1 w-full h-2"
+              style={{ backgroundColor: primaryColor(0.12) }}
+            />
+            <div>🔥 Sudden Death</div>
+            <div
+              tw="flex flex-1 w-full h-2"
+              style={{ backgroundColor: primaryColor(0.12) }}
+            />
           </div>
         )}
       </div>

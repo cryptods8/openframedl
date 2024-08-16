@@ -3,9 +3,15 @@ import {
   sendDirectCastWithRetries,
 } from "@/app/api/bot/reminders/send-direct-cast";
 import { externalBaseUrl, isPro } from "@/app/constants";
-import { ArenaAudienceMember, ArenaMember, DBArena } from "@/app/db/pg/types";
+import {
+  ArenaAudienceMember,
+  ArenaMember,
+  DBArena,
+  DBGame,
+} from "@/app/db/pg/types";
 import { ArenaWithGames } from "@/app/game/arena-pg-repository";
 import { UserKey } from "@/app/game/game-repository";
+import { GuessedGame } from "@/app/game/game-service";
 
 export function getArenaGamesForUser(arena: ArenaWithGames, userKey: UserKey) {
   const allUserGames = arena.games.filter(
@@ -91,6 +97,11 @@ export function determineAwaitingAudience(arena: DBArena) {
 export type ArenaAvailabilityStatus = "PENDING" | "OPEN" | "ENDED";
 export type ArenaCompletionStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 
+interface SuddenDeathCheckResult {
+  isOver: boolean;
+  wordIndex?: number;
+}
+
 type ArenaAvailabilityProperties = {
   start?: Date;
   end?: Date;
@@ -98,7 +109,33 @@ type ArenaAvailabilityProperties = {
   membership?: ArenaMembership;
   completionStatus: ArenaCompletionStatus;
   memberCompletionStatus?: ArenaCompletionStatus;
+  suddenDeathStatus?: SuddenDeathCheckResult;
 };
+
+export function checkSuddenDeath(arena: ArenaWithGames) {
+  const {
+    config: { suddenDeath, audienceSize, words },
+    games,
+  } = arena;
+  if (!suddenDeath || audienceSize !== 2) {
+    return null;
+  }
+  for (let i = 0; i < words.length; i++) {
+    const gamesByWordIndex = games.filter((g) => g.arenaWordIndex === i);
+    if (gamesByWordIndex.length !== 2) {
+      return { isOver: false };
+    }
+    const g0 = gamesByWordIndex[0]!;
+    const g1 = gamesByWordIndex[1]!;
+    if (g0.completedAt == null || g1.completedAt == null) {
+      return { isOver: false };
+    }
+    if (g0.guessCount !== g1.guessCount) {
+      return { isOver: true, wordIndex: i };
+    }
+  }
+  return { isOver: false };
+}
 
 export function getArenaAvailabilityProperties(
   arena: ArenaWithGames,
@@ -127,13 +164,16 @@ export function getArenaAvailabilityProperties(
   const membership = member ? checkMembership(arena, member) : undefined;
 
   let memberCompletionStatus: ArenaCompletionStatus = "NOT_STARTED";
+  const suddenDeathStatus = checkSuddenDeath(arena);
+
   if (member) {
     const memberGames = getArenaGamesForUser(arena, member);
     if (memberGames.length === 0) {
       memberCompletionStatus = "NOT_STARTED";
     } else if (
-      memberGames.length === words.length &&
-      memberGames[memberGames.length - 1]?.completedAt != null
+      (memberGames.length === words.length &&
+        memberGames[memberGames.length - 1]?.completedAt != null) ||
+      suddenDeathStatus?.isOver
     ) {
       memberCompletionStatus = "COMPLETED";
     } else {
@@ -144,8 +184,9 @@ export function getArenaAvailabilityProperties(
   let completionStatus: ArenaCompletionStatus =
     games.length === 0
       ? "NOT_STARTED"
-      : games.filter((g) => g.completedAt != null).length ===
-        words.length * audienceSize
+      : suddenDeathStatus?.isOver ||
+        games.filter((g) => g.completedAt != null).length ===
+          words.length * audienceSize
       ? "COMPLETED"
       : "IN_PROGRESS";
 
@@ -156,6 +197,7 @@ export function getArenaAvailabilityProperties(
     completionStatus,
     memberCompletionStatus,
     membership,
+    suddenDeathStatus: suddenDeathStatus ?? undefined,
   };
 }
 
