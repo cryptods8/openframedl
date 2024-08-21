@@ -21,6 +21,7 @@ import {
   LOST_PENALTY,
   UNPLAYED_PENALTY,
 } from "./game-constants";
+import { isPro } from "../constants";
 
 export async function insert(game: DBGameInsert) {
   return pgDb
@@ -137,6 +138,10 @@ export async function findAllByFilter(
         conditions.push(
           eb.eb("identityProvider", "=", filter.identityProvider)
         );
+      }
+      // TODO
+      if (isPro) {
+        conditions.push(eb.eb("arenaId", "is", null));
       }
       if (filter.gameKey) {
         conditions.push(eb.eb("gameKey", "=", filter.gameKey));
