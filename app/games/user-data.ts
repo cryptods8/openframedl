@@ -12,7 +12,17 @@ import {
 import { hubHttpUrl, hubRequestOptions, isPro } from "@/app/constants";
 import { getEnsFromAddress } from "@/app/get-ens";
 
-export async function loadFid(username: string): Promise<number | undefined> {
+async function loadFidFromWc(username: string): Promise<number | undefined> {
+  const resp = await fetch(
+    `https://api.warpcast.com/v2/user-by-username?username=${username}`
+  );
+  const { result } = (await resp.json()) as {
+    result: { user: { fid: number } };
+  };
+  return result?.user?.fid || undefined;
+}
+
+async function loadFidFromVasco(username: string): Promise<number | undefined> {
   const resp = await fetch(`https://vasco.wtf/${username}`, {
     redirect: "manual",
   });
@@ -20,6 +30,14 @@ export async function loadFid(username: string): Promise<number | undefined> {
   const fidStr = location?.split("/").pop();
   const fid = fidStr ? parseInt(fidStr, 10) : undefined;
   return fid;
+}
+
+export async function loadFid(username: string): Promise<number | undefined> {
+  const fid = await loadFidFromWc(username);
+  if (fid != null) {
+    return fid;
+  }
+  return await loadFidFromVasco(username);
 }
 
 // vasco.wtf handles *.eth names too
