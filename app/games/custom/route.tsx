@@ -97,9 +97,9 @@ const handleRequest = frames(async (ctx) => {
       <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
         Create
       </Button>,
-      <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
-        Create for drawing 🎨imageUrl
-      </Button>,
+      // <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
+      //   Create for drawing 🎨
+      // </Button>,
     ],
   };
 });
