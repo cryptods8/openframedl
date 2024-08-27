@@ -384,23 +384,17 @@ export async function GET(
 
   const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
 
-  return new ImageResponse(
+  const resp = new ImageResponse(
     (
       <BasicLayout>
         <ArenaImage arena={arena} currentUser={userKey} message={message} />
       </BasicLayout>
     ),
-    {
-      ...options,
-      headers:
-        completionStatus === "COMPLETED"
-          ? {
-              "Cache-Control":
-                "public, immutable, no-transform, max-age=31536000",
-            }
-          : {
-              "Cache-Control": "public, max-age=300",
-            },
-    }
+    options
   );
+
+  if (completionStatus !== "COMPLETED") {
+    resp.headers.set("cache-control", "public, max-age=300");
+  }
+  return resp;
 }
