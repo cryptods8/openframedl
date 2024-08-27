@@ -21,6 +21,7 @@ import { CheckIcon } from "@/app/image-ui/icons/CheckIcon";
 import { ClockIcon } from "@/app/image-ui/icons/ClockIcon";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function AudienceMemberLabel({
   status,
@@ -393,7 +394,10 @@ export async function GET(
       ...options,
       headers:
         completionStatus === "COMPLETED"
-          ? undefined
+          ? {
+              "Cache-Control":
+                "public, immutable, no-transform, max-age=31536000",
+            }
           : {
               "Cache-Control": "public, max-age=300",
             },
