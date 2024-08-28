@@ -393,8 +393,10 @@ export async function GET(
     options
   );
 
-  if (completionStatus !== "COMPLETED") {
-    resp.headers.set("cache-control", "public, max-age=300");
+  if (completionStatus === "IN_PROGRESS") {
+    resp.headers.set("cache-control", "public, max-age=60");
+  } else if (completionStatus === "NOT_STARTED") {
+    resp.headers.set("cache-control", "public, max-age=600");
   }
   return resp;
 }

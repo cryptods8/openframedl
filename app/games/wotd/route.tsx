@@ -39,11 +39,6 @@ const handleRequest = frames(async (ctx) => {
 
   return {
     image: imageUrl,
-    imageOptions: {
-      headers: {
-        "max-age": "3600",
-      },
-    },
     buttons: [
       <Button
         action="post"

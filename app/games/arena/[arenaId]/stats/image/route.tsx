@@ -555,13 +555,15 @@ export async function GET(
 
   const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
 
-  return new ImageResponse(<Image arena={arena} userKey={userKey} />, {
-    ...options,
-    headers:
-      completionStatus === "COMPLETED"
-        ? undefined
-        : {
-            "Cache-Control": "public, max-age=300",
-          },
-  });
+  const resp = new ImageResponse(
+    <Image arena={arena} userKey={userKey} />,
+    options
+  );
+
+  if (completionStatus === "IN_PROGRESS") {
+    resp.headers.set("cache-control", "public, max-age=60");
+  } else if (completionStatus === "NOT_STARTED") {
+    resp.headers.set("cache-control", "public, max-age=600");
+  }
+  return resp;
 }

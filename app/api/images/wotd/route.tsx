@@ -184,5 +184,7 @@ export async function GET(req: NextRequest) {
     };
   }
 
-  return new ImageResponse(<WotdImage {...imageProps} />, options);
+  const resp = new ImageResponse(<WotdImage {...imageProps} />, options);
+  resp.headers.set("cache-control", "public, max-age=3600");
+  return resp;
 }
