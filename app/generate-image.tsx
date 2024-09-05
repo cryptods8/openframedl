@@ -101,7 +101,7 @@ function determineGameMessage(
     return "Draw with the word";
   }
   if (!game) {
-    return "Let's play!";
+    return "Guess a 5-letter word!";
   }
   const share = options?.share;
   if (game.status === "WON") {
@@ -429,7 +429,11 @@ export async function generateImage(
                 }
               />
             ) : (
-              !share && <div tw="flex pb-8"><GameKeyboard game={game} customMaker={customMaker} /></div>
+              !share && (
+                <div tw="flex pb-8">
+                  <GameKeyboard game={game} customMaker={customMaker} />
+                </div>
+              )
             )}
           </div>
         </div>
