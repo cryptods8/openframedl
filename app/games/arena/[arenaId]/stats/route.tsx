@@ -44,6 +44,9 @@ const handler = createCustomFrames<ArenaStatsFrameState>({})(async (ctx) => {
       pathname: `/arena/${arenaId}/stats/image`,
       query: userKeyQuery,
     }),
+    imageOptions: {
+      aspectRatio: arena.config.audienceSize > 6 ? "1:1" : "1.91:1",
+    },
     buttons: [
       <Button
         action="post"

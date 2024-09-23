@@ -384,13 +384,22 @@ export async function GET(
 
   const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
 
+  let imageOptions = options;
+  if (arena.config.audienceSize > 6) {
+    imageOptions = {
+      ...options,
+      width: 1200,
+      height: 1200,
+    };
+  }
+
   const resp = new ImageResponse(
     (
       <BasicLayout>
         <ArenaImage arena={arena} currentUser={userKey} message={message} />
       </BasicLayout>
     ),
-    options
+    imageOptions
   );
 
   if (completionStatus === "IN_PROGRESS") {

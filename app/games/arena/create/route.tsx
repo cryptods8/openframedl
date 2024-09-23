@@ -146,8 +146,8 @@ const handle = frames(async (ctx) => {
   if (state.step === 1 && step === 2) {
     if (input) {
       const size = parseInt(input, 10);
-      if (isNaN(size) || size < 2 || size > 6) {
-        return error("Invalid audience size, must be between 2 and 6.");
+      if (isNaN(size) || size < 2 || size > 14) {
+        return error("Invalid audience size, must be between 2 and 14.");
       }
       nextState.audienceSize = size;
     } else {
@@ -175,7 +175,7 @@ const handle = frames(async (ctx) => {
       }
       nextState.wordCount = words;
     } else {
-      nextState.wordCount = 1;
+      nextState.wordCount = 5;
     }
   }
   // start date

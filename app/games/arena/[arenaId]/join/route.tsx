@@ -7,12 +7,8 @@ import {
   findArenaWithGamesById,
   updateArena,
 } from "@/app/game/arena-pg-repository";
-import {
-  checkMembership,
-  getArenaAvailabilityProperties,
-} from "../../arena-utils";
+import { getArenaAvailabilityProperties } from "../../arena-utils";
 import { createComposeUrl } from "@/app/utils";
-import { GameIdentityProvider } from "@/app/game/game-repository";
 
 const frames = createCustomFrames({});
 
@@ -26,9 +22,16 @@ export const GET = frames(async (ctx) => {
   if (isNaN(numArenaId)) {
     return error("Invalid arena ID");
   }
+  const arena = await findArenaWithGamesById(numArenaId);
+  if (!arena) {
+    return error("Arena not found");
+  }
 
   return {
     image: ctx.createSignedUrlWithBasePath(`/arena/${arenaId}/join/image`),
+    imageOptions: {
+      aspectRatio: arena.config.audienceSize > 6 ? "1:1" : "1.91:1",
+    },
     buttons: [
       <Button
         action="post"
@@ -164,6 +167,9 @@ export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
         ip: userKey.identityProvider,
       },
     }),
+    imageOptions: {
+      aspectRatio: arena.config.audienceSize > 6 ? "1:1" : "1.91:1",
+    },
     buttons: [
       availabilityStatus === "OPEN" ? (
         <Button
