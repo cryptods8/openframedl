@@ -53,9 +53,9 @@ const handleRequest = frames(async (ctx) => {
         </Button>,
         <Button
           action="post"
-          target={ctx.createUrlWithBasePath("/custom?new=1")}
+          target={ctx.createUrlWithBasePath("/create")}
         >
-          Create my own
+          Create
         </Button>,
       ],
     };
@@ -97,9 +97,9 @@ const handleRequest = frames(async (ctx) => {
       isMore ? (
         <Button
           action="post"
-          target={ctx.createUrlWithBasePath("/custom?new=1")}
+          target={ctx.createUrlWithBasePath("/create")}
         >
-          Create my own
+          Create
         </Button>
       ) : undefined,
     ],

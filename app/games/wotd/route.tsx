@@ -57,6 +57,14 @@ const handleRequest = frames(async (ctx) => {
           ? "Play Framedl"
           : "Show today's word"}
       </Button>,
+      <Button
+        action="post"
+        target={ctx.createUrlWithBasePath({
+          query: { more: "1" },
+        })}
+      >
+        More...
+      </Button>,
     ],
   };
 });

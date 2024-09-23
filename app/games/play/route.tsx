@@ -89,7 +89,7 @@ export const POST = frames(async (ctx) => {
         </Button>,
         <Button
           action="link"
-          target="https://zora.co/collect/base:0x402ae0eb018c623b14ad61268b786edd4ad87c56"
+          target="https://zora.co/collect/base:0x402ae0eb018c623b14ad61268b786edd4ad87c56/1"
         >
           Get a pass
         </Button>,
@@ -146,11 +146,8 @@ export const POST = frames(async (ctx) => {
               Leaderboard
             </Button>
           ) : game.isCustom ? (
-            <Button
-              action="post"
-              target={ctx.createUrlWithBasePath("/custom?new=1")}
-            >
-              Create my own
+            <Button action="post" target={ctx.createUrlWithBasePath("/create")}>
+              Create
             </Button>
           ) : undefined,
           resultsUrl ? (

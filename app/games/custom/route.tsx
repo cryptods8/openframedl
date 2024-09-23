@@ -20,6 +20,11 @@ const handleRequest = frames(async (ctx) => {
     throw new Error("Invalid message");
   }
 
+  const query: Record<string, string> = {};
+  if (searchParams.from) {
+    query.from = searchParams.from;
+  }
+
   // validate text input
   if (message && userKey && searchParams.new !== "1") {
     const word = message.inputText?.trim().toLowerCase();
@@ -31,7 +36,15 @@ const handleRequest = frames(async (ctx) => {
         }),
         textInput: "Enter a 5-letter word...",
         buttons: [
-          <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
+          searchParams.from === "create" ? (
+            <Button action="post" target={ctx.createUrlWithBasePath("/create")}>
+              ⬅️ Back
+            </Button>
+          ) : undefined,
+          <Button
+            action="post"
+            target={ctx.createUrlWithBasePath({ pathname: "/custom", query })}
+          >
             Create
           </Button>,
         ],
@@ -79,7 +92,10 @@ const handleRequest = frames(async (ctx) => {
       buttons: [
         <Button
           action="post"
-          target={ctx.createUrlWithBasePath("/custom?new=1")}
+          target={ctx.createUrlWithBasePath({
+            pathname: "/custom",
+            query: { ...query, new: "1" },
+          })}
         >
           Create another
         </Button>,
@@ -94,7 +110,18 @@ const handleRequest = frames(async (ctx) => {
     image: ctx.createSignedUrl("/api/images/custom"),
     textInput: "Enter a 5-letter word...",
     buttons: [
-      <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>
+      searchParams.from === "create" ? (
+        <Button action="post" target={ctx.createUrlWithBasePath("/create")}>
+          ⬅️ Back
+        </Button>
+      ) : undefined,
+      <Button
+        action="post"
+        target={ctx.createUrlWithBasePath({
+          pathname: "/custom",
+          query,
+        })}
+      >
         Create
       </Button>,
       // <Button action="post" target={ctx.createUrlWithBasePath("/custom")}>

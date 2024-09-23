@@ -99,6 +99,7 @@ function buildRedirectUrl(arenaConfig: ArenaConfig, arenaUrl: string): string {
 export type ArenaBuilderState = Partial<Omit<ArenaConfig, "words">> & {
   step: number;
   wordCount?: number;
+  from?: string;
 };
 const initialState: ArenaBuilderState = {
   step: 1,
@@ -109,7 +110,7 @@ const handle = frames(async (ctx) => {
   const { searchParams, state, message, userKey } = ctx;
 
   const step = searchParams?.step ? parseInt(searchParams.step, 10) : 0;
-  const nextState = { ...state, step };
+  const nextState = { ...state, step, from: state.from || searchParams.from };
   const prevStep = Math.max(0, step - 1);
   const nextStep = Math.min(step + 1, 6);
   const input = message?.inputText?.trim();
@@ -231,6 +232,14 @@ const handle = frames(async (ctx) => {
     buttons:
       step === 0
         ? [
+            nextState.from === "create" ? (
+              <Button
+                action="post"
+                target={ctx.createUrlWithBasePath("/create")}
+              >
+                ⬅️ Back
+              </Button>
+            ) : undefined,
             <Button
               action="post"
               target={ctx.createUrlWithBasePath(

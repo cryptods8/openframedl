@@ -76,7 +76,7 @@ export const POST = createCustomFrames<ArenaPlayFrameState>({})(async (ctx) => {
         </Button>,
         <Button
           action="link"
-          target="https://zora.co/collect/base:0x402ae0eb018c623b14ad61268b786edd4ad87c56"
+          target="https://zora.co/collect/base:0x402ae0eb018c623b14ad61268b786edd4ad87c56/1"
         >
           Get a pass
         </Button>,
