@@ -72,7 +72,7 @@ const handleRequest = frames(async (ctx) => {
       createdAt: new Date(),
       ...userKey,
       userData: JSON.stringify(userData),
-      isArt: message.buttonIndex === 2,
+      isArt: false,
     };
     console.log("saving custom game", customGame);
     await customGameRepo.save(customGame);
