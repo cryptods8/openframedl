@@ -149,7 +149,8 @@ export function getArenaAvailabilityProperties(
   } = arena;
 
   const arenaStart =
-    startedAt || start.type === "immediate" ? undefined : new Date(start.date);
+    startedAt ||
+    (start.type === "immediate" ? undefined : new Date(start.date));
   const arenaEnd =
     arenaStart && duration.type === "interval"
       ? new Date(arenaStart.getTime() + duration.minutes * 60 * 1000)
