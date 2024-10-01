@@ -15,7 +15,7 @@ import {
   getArenaGamesForUser,
   isAudienceMember,
 } from "../../../arena-utils";
-import { ArenaMember } from "@/app/db/pg/types";
+import { ArenaAudienceMember, ArenaMember } from "@/app/db/pg/types";
 import { formatDuration } from "../../../create/route";
 import { CheckIcon } from "@/app/image-ui/icons/CheckIcon";
 import { ClockIcon } from "@/app/image-ui/icons/ClockIcon";
@@ -238,6 +238,22 @@ function AudienceMemberGameStats({
   );
 }
 
+function shortenMid(string: string, start: number, end: number) {
+  return (
+    string.substring(0, start) + "…" + string.substring(string.length - end)
+  );
+}
+
+function formatUsername({ identityProvider, userId, username }: ArenaAudienceMember) {
+  if (username) {
+    return `@${username}`;
+  }
+  if (identityProvider === "xmtp") {
+    return `${shortenMid(userId!, 6, 4)}`;
+  }
+  return `!${userId}`;
+}
+
 function renderAudience({
   arena,
   currentUser,
@@ -254,7 +270,7 @@ function renderAudience({
       key: `${m.identityProvider}/${m.userId}`,
       label: (
         <div tw="flex items-center" style={{ gap: "1rem" }}>
-          <div tw="flex">{m.username ? `@${m.username}` : `!${m.userId}`}</div>
+          <div tw="flex">{formatUsername(m)}</div>
           <div tw="flex">
             <AudienceMemberGameStats arena={arena} member={m} />
           </div>
@@ -274,7 +290,7 @@ function renderAudience({
     })),
     ...awaitingAudience.map((m) => ({
       key: `${m.identityProvider}/${m.userId ?? `@${m.username}`}`,
-      label: m.username ? `@${m.username}` : `!${m.userId}`,
+      label: formatUsername(m),
       status: "AWAITING" as const,
       current: currentUser && isAudienceMember(m, currentUser),
     })),
