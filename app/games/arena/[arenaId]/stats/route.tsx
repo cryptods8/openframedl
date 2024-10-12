@@ -56,7 +56,7 @@ const handler = createCustomFrames<ArenaStatsFrameState>({})(async (ctx) => {
       >
         Refresh
       </Button>,
-      memberCompletionStatus !== "COMPLETED" &&
+      (memberCompletionStatus !== "COMPLETED" || from !== "play") &&
       completionStatus !== "COMPLETED" ? (
         <Button
           action="post"

@@ -244,7 +244,11 @@ function shortenMid(string: string, start: number, end: number) {
   );
 }
 
-function formatUsername({ identityProvider, userId, username }: ArenaAudienceMember) {
+function formatUsername({
+  identityProvider,
+  userId,
+  username,
+}: ArenaAudienceMember) {
   if (username) {
     return `@${username}`;
   }
@@ -253,6 +257,8 @@ function formatUsername({ identityProvider, userId, username }: ArenaAudienceMem
   }
   return `!${userId}`;
 }
+
+const MAX_DISPLAYED_ITEMS = 14;
 
 function renderAudience({
   arena,
@@ -294,7 +300,8 @@ function renderAudience({
       status: "AWAITING" as const,
       current: currentUser && isAudienceMember(m, currentUser),
     })),
-  ];
+  ].sort((a, b) => (a.current ? -1 : b.current ? 1 : 0));
+  const displayedItems = items.slice(0, MAX_DISPLAYED_ITEMS);
 
   function renderItem({ key, label, status, current }: (typeof items)[0]) {
     return (
@@ -321,7 +328,12 @@ function renderAudience({
           </div>
         )}
         {(items.length !== 2 || freeSlots !== 0) &&
-          items.map((m) => renderItem(m))}
+          displayedItems.map((m) => renderItem(m))}
+        {displayedItems.length < items.length && (
+          <div tw="flex" style={{ color: primaryColor(0.54) }}>
+            {`+${items.length - displayedItems.length} more`}
+          </div>
+        )}
         {freeSlots > 0 && (
           <div tw="flex" style={{ color: primaryColor(0.54) }}>
             {`${items.length > 0 ? "+" : ""}${freeSlots} free slot${

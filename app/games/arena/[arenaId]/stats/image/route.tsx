@@ -43,6 +43,18 @@ interface ArenaStats {
   gamesTotal: number;
 }
 
+const MAX_DISPLAYED_PLAYERS = 14;
+
+const EMPTY_PLAYER: ArenaPlayerStats = {
+  games: [],
+  gamesPlayed: 0,
+  gamesCompleted: 0,
+  gamesWon: 0,
+  wonGuessCount: 0,
+  completedGuessCount: 0,
+  score: 0,
+};
+
 function getArenaStats(arena: ArenaWithGames): ArenaStats {
   const gamesTotal = arena.config.words.length;
   const { suddenDeathStatus } = getArenaAvailabilityProperties(arena);
@@ -147,41 +159,48 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
   );
   const { audience, freeSlots } = determineAwaitingAudience(arena);
 
+  const allPlayers = [
+    ...players,
+    ...otherMembers.map((m) => ({
+      ...EMPTY_PLAYER,
+      user: m,
+    })),
+    ...audience.map((a) => ({
+      ...EMPTY_PLAYER,
+      user: a,
+    })),
+    ...Array.from({ length: freeSlots }).map(() => ({
+      ...EMPTY_PLAYER,
+    })),
+  ];
+
   return {
-    players: [
-      ...players,
-      ...otherMembers.map((m) => ({
-        user: m,
-        games: [],
-        gamesPlayed: 0,
-        gamesCompleted: 0,
-        gamesWon: 0,
-        wonGuessCount: 0,
-        completedGuessCount: 0,
-        score: 0,
-      })),
-      ...audience.map((a) => ({
-        user: a,
-        games: [],
-        gamesPlayed: 0,
-        gamesCompleted: 0,
-        gamesWon: 0,
-        wonGuessCount: 0,
-        completedGuessCount: 0,
-        score: 0,
-      })),
-      ...Array.from({ length: freeSlots }).map(() => ({
-        games: [],
-        gamesPlayed: 0,
-        gamesCompleted: 0,
-        gamesWon: 0,
-        wonGuessCount: 0,
-        completedGuessCount: 0,
-        score: 0,
-      })),
-    ], //.slice(0, 3),
+    players: allPlayers,
     gamesTotal: arena.config.words.length,
   };
+}
+
+function getDisplayedPlayers(
+  players: ArenaPlayerStats[],
+  userKey?: UserKey
+): ArenaPlayerStats[] {
+  if (players.length <= MAX_DISPLAYED_PLAYERS) {
+    return players;
+  }
+  const userResultIdx = players.findIndex(
+    (p) =>
+      p.user?.userId === userKey?.userId &&
+      p.user?.identityProvider === userKey?.identityProvider
+  );
+  const userResult = players[userResultIdx];
+  if (!userResult || userResultIdx < MAX_DISPLAYED_PLAYERS) {
+    return players.slice(0, MAX_DISPLAYED_PLAYERS);
+  }
+  return [
+    ...players.slice(0, MAX_DISPLAYED_PLAYERS - 2),
+    { ...EMPTY_PLAYER },
+    userResult,
+  ];
 }
 
 function renderGameStats(
@@ -348,11 +367,12 @@ function Image({
   arena: ArenaWithGames;
   userKey?: UserKey;
 }) {
-  const { players, gamesTotal } = getArenaStats(arena);
+  const { players: allPlayers, gamesTotal } = getArenaStats(arena);
   const { completionStatus, status } = getArenaAvailabilityProperties(
     arena,
     userKey
   );
+  const players = getDisplayedPlayers(allPlayers, userKey);
   const imageSizeClass =
     players.length > 2 ? "w-24 h-24 text-7xl" : "w-32 h-32 text-8xl";
   function isCurrentUser(p: ArenaPlayerStats) {

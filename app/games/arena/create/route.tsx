@@ -146,8 +146,8 @@ const handle = frames(async (ctx) => {
   if (state.step === 1 && step === 2) {
     if (input) {
       const size = parseInt(input, 10);
-      if (isNaN(size) || size < 2 || size > 14) {
-        return error("Invalid audience size, must be between 2 and 14.");
+      if (isNaN(size) || size < 2 || size > 100) {
+        return error("Invalid audience size, must be between 2 and 100.");
       }
       nextState.audienceSize = size;
     } else {

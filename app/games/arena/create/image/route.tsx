@@ -55,7 +55,7 @@ interface Step {
 const steps: Step[] = [
   {
     label: "How many players?",
-    description: "Enter number of players. Default is 2, maximum is 14.",
+    description: "Enter number of players. Default is 2, maximum is 100.",
     render: ({ state }: StepRendererArgs) => {
       if (!state.audienceSize) {
         return null;
