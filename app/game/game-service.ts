@@ -80,6 +80,7 @@ interface GameWord {
   customGame?: DBCustomGameView;
   arena?: DBArena;
   arenaWordIndex?: number;
+  initWords?: string[];
 }
 
 export const getWordForUserGameKey = async (
@@ -344,7 +345,7 @@ export class GameServiceImpl implements GameService {
     return (game as gameRepo.DBGameViewWithArena).arenaUserId != null;
   }
 
-  private toGuessedGame(
+  toGuessedGame(
     game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
   ): GuessedGame {
     const word = game.word;
@@ -467,7 +468,7 @@ export class GameServiceImpl implements GameService {
     const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
       const { userData, srcGameId, preCreate } = options || {};
-      const { word, customGame, arena, arenaWordIndex } = preCreate
+      const { word, customGame, arena, arenaWordIndex, initWords } = preCreate
         ? await preCreate()
         : await getWordForUserGameKey(key);
       let customMaker: CustomGameMaker | undefined;
@@ -490,7 +491,7 @@ export class GameServiceImpl implements GameService {
         arenaWordIndex,
       };
       const createdGame = await gameRepo.insert(newGame);
-      return {
+      let guessedGame: GuessedGame = {
         ...createdGame,
         guesses: [],
         originalGuesses: [],
@@ -499,6 +500,14 @@ export class GameServiceImpl implements GameService {
         customMaker,
         arena,
       };
+      for (const word of initWords || []) {
+        try {
+          guessedGame = await this.guess(guessedGame, word);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return guessedGame;
     }
     return this.toGuessedGame(game);
   }

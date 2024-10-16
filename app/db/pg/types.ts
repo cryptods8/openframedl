@@ -142,6 +142,7 @@ export type ArenaConfig = {
   audienceSize: number;
   words: string[];
   suddenDeath: boolean | null | undefined;
+  initWords: string[] | null | undefined;
 };
 
 export interface ArenaTable extends AuthoredTable {

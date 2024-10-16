@@ -115,6 +115,7 @@ export const POST = createCustomFrames<ArenaPlayFrameState>({})(async (ctx) => {
           word: arena.config.words[arenaWordIndex]!,
           arena: arena,
           arenaWordIndex,
+          initWords: arena.config.initWords || undefined,
         };
       };
     } else {

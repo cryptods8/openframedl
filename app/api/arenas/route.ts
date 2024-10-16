@@ -10,6 +10,7 @@ interface ArenaCreateRequest {
   duration: ArenaDuration;
   audienceSize: number;
   suddenDeath: boolean;
+  initWords: string[];
 }
 
 const allowedApiKeys = process.env.ALLOWED_API_KEYS?.split(",") ?? [];
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
   }
 
-  const { wordCount, start, duration, audienceSize, suddenDeath } =
+  const { wordCount, start, duration, audienceSize, suddenDeath, initWords } =
     (await req.json()) as Partial<ArenaCreateRequest>;
 
   const config = {
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
     start: start ?? { type: "immediate" },
     words: gameService.generateRandomWords(wordCount ?? 5),
     suddenDeath: suddenDeath ?? null,
+    initWords: initWords ?? null,
   } satisfies ArenaConfig;
   const arena = {
     createdAt: new Date(),
