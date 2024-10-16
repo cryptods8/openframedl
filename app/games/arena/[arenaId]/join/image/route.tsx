@@ -28,7 +28,7 @@ export const revalidate = 0;
 
 const emojiCache: Record<string, string> = {};
 
-export const loadAdditionalAsset = async (_code: string, _segment: string) => {
+const loadAdditionalAsset = async (_code: string, _segment: string) => {
   if (_code === "emoji") {
     const emojiCode = getIconCode(_segment);
     if (emojiCache[emojiCode]) {
