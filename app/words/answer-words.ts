@@ -4,8 +4,6 @@ export default [
   'degen',
   'midst',
   'voter',
-  'slabs',
-  'kicks',
   'frame',
   'kiosk',
   'argue',
