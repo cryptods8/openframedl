@@ -100,17 +100,27 @@ export class GameRepositoryImpl implements GameRepository {
   }
 
   async saveStats(stats: UserStatsSave): Promise<UserStats> {
-    const key = `stats/${stats.identityProvider}/user_id/${stats.userId}`;
-    const newStats = {
-      ...stats,
-      id: stats.id || uuidv4(),
-    } as UserStats;
-    await db.set<UserStats>(key, newStats);
-    return newStats;
+    try {
+      const key = `stats/${stats.identityProvider}/user_id/${stats.userId}`;
+      const newStats = {
+        ...stats,
+        id: stats.id || uuidv4(),
+      } as UserStats;
+      await db.set<UserStats>(key, newStats);
+      return newStats;
+    } catch (e) {
+      console.error("Error saving stats", stats, e);
+      return Promise.reject(e);
+    }
   }
 
   async loadStatsByUserKey(userKey: UserKey): Promise<UserStats | null> {
-    const key = `stats/${userKey.identityProvider}/user_id/${userKey.userId}`;
-    return await db.get<UserStats>(key);
+    try {
+      const key = `stats/${userKey.identityProvider}/user_id/${userKey.userId}`;
+      return await db.get<UserStats>(key);
+    } catch (e) {
+      console.error("Error loading stats by user key", userKey, e);
+      return null;
+    }
   }
 }

@@ -12,7 +12,7 @@ import { LOST_PENALTY, UNPLAYED_PENALTY } from "@/app/game/game-constants";
 import { primaryColor } from "@/app/image-ui/image-utils";
 import { BasicLayout } from "@/app/image-ui/basic-layout";
 import { ArenaTitle } from "@/app/image-ui/arena/arena-title";
-import { ImageResponse } from "@vercel/og";
+import { createImageResponse } from "@/app/utils/image-response";
 import { options } from "@/app/generate-image";
 import { GameStatus } from "@/app/db/pg/types";
 import { ClockIcon } from "@/app/image-ui/icons/ClockIcon";
@@ -575,16 +575,15 @@ export async function GET(
 
   const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
 
-  let imageOptions = options;
+  let imageOptions = {};
   if (arena.config.audienceSize > 6) {
     imageOptions = {
-      ...options,
       width: 1200,
       height: 1200,
     };
   }
 
-  const resp = new ImageResponse(
+  const resp = createImageResponse(
     <Image arena={arena} userKey={userKey} />,
     imageOptions
   );

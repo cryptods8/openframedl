@@ -1,6 +1,6 @@
-import { ImageResponse } from "@vercel/og";
-import { options, primaryColor } from "../../../generate-image";
 import { NextRequest } from "next/server";
+import { createImageResponse } from "@/app/utils/image-response";
+import { primaryColor } from "@/app/image-ui/image-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -121,8 +121,7 @@ export async function GET(req: NextRequest) {
   const success = params.get("success") === "1";
   const word = params.get("word") as string | undefined;
 
-  return new ImageResponse(
-    <CreateCustomFramedlImage success={success} word={word} message={msg} />,
-    options
+  return createImageResponse(
+    <CreateCustomFramedlImage success={success} word={word} message={msg} />
   );
 }

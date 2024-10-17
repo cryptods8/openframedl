@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { ImageResponse } from "@vercel/og";
-import { options } from "@/app/generate-image";
+import { createImageResponse } from "@/app/utils/image-response";
 import { primaryColor } from "@/app/image-ui/image-utils";
 import { ArenaTitle } from "@/app/image-ui/arena/arena-title";
 import { ArenaBuilderState, formatDuration } from "../route";
@@ -248,14 +247,13 @@ export async function GET(req: NextRequest) {
   const step = stepStr ? parseInt(stepStr, 10) : 0;
   const state = stateStr ? JSON.parse(stateStr) : {};
 
-  return new ImageResponse(
+  return createImageResponse(
     step === 0 ? (
       <IntroImage />
     ) : step === 6 ? (
       <ReviewImage state={state} />
     ) : (
       <Image step={step} state={state} />
-    ),
-    options
+    )
   );
 }

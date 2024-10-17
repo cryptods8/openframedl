@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import { ReactNode } from "react";
 import { SatoriOptions, Font } from "satori";
-import { ImageResponse } from "@vercel/og";
+
+import { createImageResponse } from "@/app/utils/image-response";
 
 import {
   GuessedGame,
@@ -69,7 +70,7 @@ export const fonts: Font[] = [
 
 export const options: SatoriOptions = {
   width: 1200,
-  height: 628,
+  height: 630,
   fonts,
 };
 
@@ -77,7 +78,7 @@ async function toImage(
   node: ReactNode,
   satoriOptions?: Partial<SatoriOptions>
 ) {
-  return new ImageResponse(
+  return createImageResponse(
     (
       <div
         tw="flex items-stretch w-full h-full bg-white"

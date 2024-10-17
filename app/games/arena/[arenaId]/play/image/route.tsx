@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ImageResponse } from "@vercel/og";
-import { options } from "@/app/generate-image";
+import { createImageResponse } from "@/app/utils/image-response";
 import { GameKeyboard } from "@/app/image-ui/game-keyboard";
 import { primaryColor } from "@/app/image-ui/image-utils";
 import { GameBoard } from "@/app/image-ui/game-board";
@@ -113,8 +112,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 
-  return new ImageResponse(
-    <ResultImage game={game} message={message} />,
-    options
-  );
+  return createImageResponse(<ResultImage game={game} message={message} />);
 }

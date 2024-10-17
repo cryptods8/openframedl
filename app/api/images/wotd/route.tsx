@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { ImageResponse } from "@vercel/og";
+import { createImageResponse } from "@/app/utils/image-response";
 
-import { options, primaryColor } from "../../../generate-image";
+import { primaryColor } from "@/app/image-ui/image-utils";
 import { verifyUrl } from "../../api-utils";
 import { getWordForUserGameKey } from "../../../game/game-service";
 import { GameIdentityProvider } from "../../../game/game-repository";
@@ -184,7 +184,7 @@ export async function GET(req: NextRequest) {
     };
   }
 
-  const resp = new ImageResponse(<WotdImage {...imageProps} />, options);
+  const resp = createImageResponse(<WotdImage {...imageProps} />);
   resp.headers.set("cache-control", "public, max-age=3600");
   return resp;
 }

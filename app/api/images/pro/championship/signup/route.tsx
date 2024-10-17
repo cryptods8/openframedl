@@ -1,8 +1,8 @@
 import { externalBaseUrl } from "@/app/constants";
 import { findChampionshipSignupById } from "@/app/game/championship-signup-pg-repository";
 import { UserData } from "@/app/game/game-repository";
-import { options, primaryColor } from "@/app/generate-image";
-import { ImageResponse } from "@vercel/og";
+import { primaryColor } from "@/app/generate-image";
+import { createImageResponse } from "@/app/utils/image-response";
 import { NextRequest } from "next/server";
 
 function FramedlText({ text, pfp }: { text: string; pfp?: string | null }) {
@@ -178,7 +178,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return new ImageResponse(<SignupImage user={user} shared={shr === "1"} />, {
-    ...options,
-  });
+  return createImageResponse(<SignupImage user={user} shared={shr === "1"} />);
 }

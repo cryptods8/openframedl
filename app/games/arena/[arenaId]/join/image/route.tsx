@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import satori from "satori";
-import sharp from "sharp";
-
-import { options } from "@/app/generate-image";
+import { createImageResponse } from "@/app/utils/image-response";
 import { primaryColor } from "@/app/image-ui/image-utils";
 import { ArenaTitle } from "@/app/image-ui/arena/arena-title";
 import { BasicLayout } from "@/app/image-ui/basic-layout";
@@ -21,27 +18,9 @@ import { ArenaAudienceMember, ArenaMember } from "@/app/db/pg/types";
 import { formatDuration } from "../../../create/route";
 import { CheckIcon } from "@/app/image-ui/icons/CheckIcon";
 import { ClockIcon } from "@/app/image-ui/icons/ClockIcon";
-import { loadEmoji, getIconCode } from "@/app/utils/twemoji";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const emojiCache: Record<string, string> = {};
-
-const loadAdditionalAsset = async (_code: string, _segment: string) => {
-  if (_code === "emoji") {
-    const emojiCode = getIconCode(_segment);
-    if (emojiCache[emojiCode]) {
-      return emojiCache[emojiCode]!;
-    }
-    const svg = await loadEmoji("twemoji", getIconCode(_segment));
-    const pngData = await sharp(Buffer.from(svg)).toFormat("png").toBuffer();
-    const dataUrl = `data:image/png;base64,${pngData.toString("base64")}`;
-    emojiCache[emojiCode] = dataUrl;
-    return dataUrl;
-  }
-  return _code;
-};
 
 function AudienceMemberLabel({
   status,
@@ -432,33 +411,25 @@ export async function GET(
 
   const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
 
-  let width = 1200;
-  let height = 630;
+  let imageOptions = {};
   if (arena.config.audienceSize > 6) {
-    width = 1200;
-    height = 1200;
+    imageOptions = {
+      width: 1200,
+      height: 1200,
+    };
   }
 
-  const start = Date.now();
-  const svg = await satori(
+  const resp = createImageResponse(
     <BasicLayout>
       <ArenaImage arena={arena} currentUser={userKey} message={message} />
     </BasicLayout>,
-    { ...options, width, height, loadAdditionalAsset }
+    imageOptions
   );
-  const png = await sharp(Buffer.from(svg))
-    .resize(width / 2, height / 2)
-    .toFormat("png")
-    .toBuffer();
-  console.log(`Duration 2: ${Date.now() - start}ms`);
-  const headers = new Headers();
-  headers.set("Content-Type", "image/png");
+
   if (completionStatus === "IN_PROGRESS") {
-    headers.set("cache-control", "public, max-age=60");
+    resp.headers.set("cache-control", "public, max-age=60");
   } else if (completionStatus === "NOT_STARTED") {
-    headers.set("cache-control", "public, max-age=600");
+    resp.headers.set("cache-control", "public, max-age=600");
   }
-  return new Response(png, {
-    headers,
-  });
+  return resp;
 }
