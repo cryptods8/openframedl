@@ -31,7 +31,8 @@ const handle = frames(async (ctx) => {
     });
     const existingSignup = await findChampionshipSignupByUserId(
       fid.toString(),
-      "fc"
+      "fc",
+      2
     );
     if (existingSignup) {
       signupId = existingSignup.id;

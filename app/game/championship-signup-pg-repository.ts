@@ -18,12 +18,14 @@ export async function saveChampionshipSignup(
 
 export async function findChampionshipSignupByUserId(
   userId: string,
-  identityProvider: GameIdentityProvider
+  identityProvider: GameIdentityProvider,
+  roundNumber: number
 ): Promise<DBChampionshipSignup | undefined> {
   return await pgDb
     .selectFrom("championshipSignup")
     .where("userId", "=", userId)
     .where("identityProvider", "=", identityProvider)
+    .where("roundNumber", "=", roundNumber)
     .selectAll()
     .executeTakeFirst();
 }
