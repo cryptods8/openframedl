@@ -1,12 +1,37 @@
-import { loadRanking } from "@/app/game/game-pg-repository";
+import { loadRanking, MIN_GAMES_FOR_RANK } from "@/app/game/game-pg-repository";
+import { basePath } from "@/app/games/frames";
 import { Container } from "@/app/ui/layout/container";
+import { currentURL } from "@/app/utils";
+import { fetchMetadata } from "frames.js/next";
 import { NextServerPageProps } from "frames.js/next/types";
+import { Metadata } from "next";
+import Link from "next/link";
 
 function formatNumber(num: number): string {
   return Number(num).toLocaleString("en", {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   });
+}
+
+export async function generateMetadata({
+  searchParams,
+}: NextServerPageProps): Promise<Metadata> {
+  const { sid } = searchParams || {};
+  const params = new URLSearchParams();
+  if (sid) {
+    params.set("sid", sid as string);
+  }
+  const paramsStr = params.toString();
+  const leaderboardUrl = currentURL(
+    `${basePath}/pro/championship/signup${paramsStr ? `?${paramsStr}` : ""}`
+  );
+  const other = await fetchMetadata(leaderboardUrl);
+  return {
+    title: "Framedl PRO Xmas Cup 2024",
+    description: "Ranking for the upcoming Framedl PRO Xmas Cup 2024",
+    other,
+  };
 }
 
 export const fetchCache = "force-no-store";
@@ -31,16 +56,100 @@ function CheckIcon() {
   );
 }
 
+function RankedUser({
+  p,
+  type,
+}: {
+  p: Awaited<ReturnType<typeof loadRanking>>[number];
+  type: "CURRENT" | "REGULAR" | "SUB";
+}) {
+  return (
+    <div
+      className={`flex flex-row gap-4 px-4 rounded-md w-full relative ${
+        !p.signedUp ? "opacity-60" : ""
+      }${
+        type === "SUB"
+          ? " text-xs text-primary-900/90 even:bg-primary-200 py-2"
+          : type === "CURRENT"
+          ? " bg-primary-600 text-white font-bold py-3"
+          : " even:bg-primary-200 py-3"
+      }`}
+      key={`${p.identityProvider}/${p.userId}`}
+    >
+      <div className="w-8 text-right">
+        {p.maxRank != null && p.maxRank >= MIN_GAMES_FOR_RANK ? p.rank : "-"}
+      </div>
+      <div className="flex-1 text-left flex gap-2 items-center">
+        <span>
+          {p.userData?.username ? p.userData.username : `!${p.userId}`}
+        </span>
+        {p.hasTicket && (
+          <span
+            className={`text-green-600 ${type === "SUB" ? "size-4" : "size-5"}`}
+          >
+            <CheckIcon />
+          </span>
+        )}
+      </div>
+      <div className="text-right">{p.gameCount}</div>
+      <div className="w-8 text-right">{formatNumber(p.averageGuessCount)}</div>
+    </div>
+  );
+}
+
+function Button({
+  href,
+  children,
+  active,
+}: {
+  href: string;
+  children: React.ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <Link href={href} className="w-full">
+      <button
+        className={`px-4 py-2 rounded-md w-full font-semibold text-sm ${
+          active ? "bg-primary-900 text-white " : "bg-primary-900/50 text-white"
+        }`}
+      >
+        {children}
+      </button>
+    </Link>
+  );
+}
+
 export default async function Page({ searchParams }: NextServerPageProps) {
-  const { mr, suo, ruc, cod, s } = searchParams || {};
+  const { mr, suo, ruc, cod, s, uid } = searchParams || {};
   const maxResults = (mr && parseInt(mr as string, 10)) || 64;
   const runnerUpCoeficient = (ruc && parseFloat(ruc as string)) || 1;
-  const cutOffDate = cod ? (cod as string) : "2024-07-31";
+  const cutOffDate = cod ? (cod as string) : "2024-11-30";
+  const signedUpOnly = suo == null || suo === "1";
+  // const [userRanking, ranking] = await Promise.all([
+  //   uid
+  //     ? (
+  //         await loadRanking("fc", {
+  //           signedUpOnly,
+  //           cutOffDate,
+  //           userId: uid as string,
+  //           limit: 1,
+  //         })
+  //       )[0]
+  //     : null,
+  //   loadRanking("fc", {
+  //     limit: maxResults * (1 + runnerUpCoeficient),
+  //     signedUpOnly,
+  //     cutOffDate,
+  //   }),
+  // ]);
+  const userId = uid as string | undefined;
   const ranking = await loadRanking("fc", {
     limit: maxResults * (1 + runnerUpCoeficient),
-    signedUpOnly: suo == null || suo === "1",
+    signedUpOnly,
     cutOffDate,
+    userId,
   });
+  const userRanking = userId ? ranking.find((r) => r.userId === userId) : null;
   let finalRanking = ranking;
   if (s === "final") {
     finalRanking = ranking.filter((p) => p.hasTicket);
@@ -48,16 +157,27 @@ export default async function Page({ searchParams }: NextServerPageProps) {
     finalRanking = ranking.filter((p) => p.hasTicket || p.rank > maxResults);
   }
 
+  function getButtonHref(suo: boolean) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(searchParams || {})) {
+      params.set(key, value as string);
+    }
+    if (suo) {
+      params.set("suo", "1");
+    } else {
+      params.set("suo", "0");
+    }
+    return `/championship/ranking?${params.toString()}`;
+  }
+
   return (
     <Container>
       <h1 className="text-3xl font-space">
-        <span className="font-space font-bold text-3xl">Framedl</span> PRO Word
-        Cup 2024 Roster
+        <span className="font-space font-bold text-3xl">Framedl</span> PRO Xmas
+        Cup 2024 Ranking
       </h1>
       <p className="text-primary-900/60 text-sm mt-2 mb-6 max-w-prose">
-        {
-          "Based on all the games played with top and bottom 10% cut off. Minimum 30 completed games."
-        }
+        {`Based on all the games played with top and bottom 10% cut off. Minimum ${MIN_GAMES_FOR_RANK} completed games.`}
       </p>
       <div className="w-full">
         <div className="flex flex-row gap-4 px-4 py-3 w-full text-sm text-primary-900/60">
@@ -66,39 +186,21 @@ export default async function Page({ searchParams }: NextServerPageProps) {
           <div className="text-right">Games</div>
           <div className="w-8 text-right">Avg</div>
         </div>
-        {finalRanking.map((p, idx) => [
-          idx === maxResults ? (
-            <div key="separator" className="my-6">
-              <div className="text-sm p-4 border-y border-primary-900">
-                Substitutes
-              </div>
-            </div>
-          ) : null,
-          <div
-            className={`flex flex-row gap-4 even:bg-primary-200 px-4 rounded-md w-full relative ${
-              !p.signedUp ? "opacity-50" : ""
-            }${
-              idx >= maxResults ? " text-xs text-primary-900/90 py-2" : " py-3"
-            }`}
+        {userRanking && <RankedUser p={userRanking} type="CURRENT" />}
+        {finalRanking.map((p) => (
+          <RankedUser
+            p={p}
+            type={"REGULAR"}
             key={`${p.identityProvider}/${p.userId}`}
-          >
-            <div className="w-8 text-right">{p.rank}</div>
-            <div className="flex-1 text-left flex gap-2 items-center">
-              <span>
-                {p.userData?.username ? p.userData.username : `!${p.userId}`}
-              </span>
-              {p.hasTicket && (
-                <span className={`text-green-600 ${idx >= maxResults ? 'size-4' : 'size-5'}`}>
-                  <CheckIcon />
-                </span>
-              )}
-            </div>
-            <div className="text-right">{p.gameCount}</div>
-            <div className="w-8 text-right">
-              {formatNumber(p.averageGuessCount)}
-            </div>
-          </div>,
-        ])}
+          />
+        ))}
+      </div>
+      <div className="w-full flex gap-2 fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-sm p-4 border-t border-primary-200">
+        <Container>
+          <Button href={getButtonHref(!signedUpOnly)} active>
+            {signedUpOnly ? "Show All" : "Show Signed Up Only"}
+          </Button>
+        </Container>
       </div>
     </Container>
   );

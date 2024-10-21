@@ -46,7 +46,15 @@ function FramedlText({ text, pfp }: { text: string; pfp?: string | null }) {
   );
 }
 
-function SignupImage({ user, shared }: { user?: User; shared: boolean }) {
+function SignupImage({
+  user,
+  shared,
+  alreadySignedUp,
+}: {
+  user?: User;
+  shared: boolean;
+  alreadySignedUp: boolean;
+}) {
   const text = user
     ? shared
       ? getSharedText(user)
@@ -64,54 +72,21 @@ function SignupImage({ user, shared }: { user?: User; shared: boolean }) {
         }}
       >
         <div
-          tw="flex flex-col items-center justify-center h-full bg-white"
+          tw="flex flex-1 flex-col items-center justify-center h-full bg-white"
           style={{ gap: "3rem" }}
         >
-          <div tw="flex flex-col items-center justify-center h-full p-12">
+          <div tw="flex flex-col items-center justify-center h-full">
             <FramedlText text={text} pfp={user?.userData?.profileImage} />
           </div>
         </div>
-        <div
-          tw="flex flex-1 flex-col items-center justify-center p-8 h-full relative"
-          style={{
-            gap: "2.5rem",
-            borderLeft: `1px solid ${primaryColor(0.2)}`,
-          }}
-        >
-          <div
-            tw="flex flex-col items-center"
-            style={{
-              fontFamily: "SpaceGrotesk",
-              color: primaryColor(),
-              gap: "0.5rem",
-            }}
-          >
-            <div tw="flex items-center" style={{ whiteSpace: "pre-wrap" }}>
-              <b>Framedl</b> <b style={{ color: "green" }}>PRO</b>
-            </div>
-            <div
-              tw="px-3 py-1 rounded text-white flex items-center justify-center"
-              style={{ backgroundColor: "green" }}
-            >
-              <b>Word Cup 2024</b>
-            </div>
-          </div>
+        <div tw="flex flex-col items-center justify-center h-full relative bg-white">
           <img
-            src={`${externalBaseUrl}/cup.png`}
+            src={`${externalBaseUrl}/xmas-cup-2024-nobg.png`}
             alt="Framedl Cup"
-            width="236"
-            height="278"
+            width="630"
+            height="630"
           />
-          <div
-            tw="text-center text-3xl flex flex-wrap"
-            style={{
-              color: primaryColor(0.54),
-              lineHeight: "1.33",
-              maxWidth: "25rem",
-            }}
-          >
-            {`14,000 $DEGEN in prizes. More soon. Stay tuned!`}
-          </div>
+
           {user && !shared && (
             <div tw="absolute left-0 top-0 bottom-0 right-0 flex items-center justify-center p-12">
               <div
@@ -121,7 +96,9 @@ function SignupImage({ user, shared }: { user?: User; shared: boolean }) {
                   lineHeight: 1.33,
                 }}
               >
-                {"You're on the waitlist. Thank you for signing up!"}
+                {`You're on the waitlist${
+                  alreadySignedUp ? " already" : ""
+                }. Thank you for signing up!`}
               </div>
             </div>
           )}
@@ -170,6 +147,7 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const sid = url.searchParams.get("sid");
   const shr = url.searchParams.get("shr");
+  const as = url.searchParams.get("as");
   let user: User | undefined;
   if (sid) {
     const signup = await findChampionshipSignupById(parseInt(sid, 10));
@@ -178,5 +156,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return createImageResponse(<SignupImage user={user} shared={shr === "1"} />);
+  return createImageResponse(
+    <SignupImage
+      user={user}
+      shared={shr === "1"}
+      alreadySignedUp={as === "1"}
+    />
+  );
 }

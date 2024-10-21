@@ -603,16 +603,24 @@ export async function findUserData(key: UserKey) {
 //     .groupBy(["gd.userId", sql<Date>`gd.gameKey - gd.seqn * interval '1 day'`]);
 // }
 
+export const MIN_GAMES_FOR_RANK = 20;
+
 export async function loadRanking(
   identityProvider: GameIdentityProvider,
   {
     limit,
     signedUpOnly,
     cutOffDate,
-  }: { limit: number; signedUpOnly?: boolean; cutOffDate?: string }
+    userId,
+  }: {
+    limit: number;
+    signedUpOnly?: boolean;
+    cutOffDate?: string;
+    userId?: string;
+  }
 ) {
   const excludedUserIds = getExcludeUserIds(identityProvider);
-  const ranking = await pgDb
+  const query = pgDb
     .with("gc_game", (db) =>
       db
         .selectFrom("game")
@@ -680,31 +688,60 @@ export async function loadRanking(
           ),
         ])
     )
-    .with("last_daily_game", (db) =>
+    .with("all_user_data", (db) =>
       db
         .selectFrom("game")
-        .select((db) => [
-          "userId",
-          "identityProvider",
-          "isDaily",
-          db.fn.max("gameKey").as("gameKey"),
-        ])
+        .select(["userId", "identityProvider", "createdAt", "userData"])
         .where("isDaily", "=", true)
-        .groupBy(["userId", "identityProvider", "isDaily"])
-    )
-    .with("fresh_user_data", (db) =>
-      db
-        .selectFrom("game as g")
-        .innerJoin("last_daily_game as ldg", (join) =>
-          join
-            .onRef("g.userId", "=", "ldg.userId")
-            .onRef("g.identityProvider", "=", "ldg.identityProvider")
-            .onRef("g.gameKey", "=", "ldg.gameKey")
-            .onRef("g.isDaily", "=", "ldg.isDaily")
+        .union(
+          db
+            .selectFrom("championshipSignup")
+            .select(["userId", "identityProvider", "createdAt", "userData"])
         )
-        .select(["g.userId", "g.identityProvider", "g.userData"])
-        .where("g.isDaily", "=", true)
     )
+    .with("all_user_data2", (db) =>
+      db
+        .selectFrom("championshipSignup")
+        .select(["userId", "identityProvider", "createdAt", "userData"])
+    )
+    .with(
+      "user_data",
+      (db) =>
+        db
+          .selectFrom("all_user_data")
+          .select((db) => [
+            "userId",
+            "identityProvider",
+            db.fn.max("createdAt").as("maxCreatedAt"),
+          ])
+          .groupBy(["userId", "identityProvider"])
+      // .union(
+      //   db
+      //     .selectFrom("championshipSignup")
+      //     .select(["userId", "identityProvider", "userData", "createdAt"])
+      // )
+    )
+    // .with("last_user_data", (db) =>
+    //   db
+    //     .selectFrom("user_data")
+    //     .select((db) => [
+    //       "userId",
+    //       "identityProvider",
+    //       db.fn.max("createdAt").as("maxCreatedAt"),
+    //     ])
+    //     .groupBy(["userId", "identityProvider"])
+    // )
+    // .with("fresh_user_data", (db) =>
+    //   db
+    //     .selectFrom("user_data as ud")
+    //     .innerJoin("last_user_data as lud", (join) =>
+    //       join
+    //         .onRef("ud.userId", "=", "lud.userId")
+    //         .onRef("ud.identityProvider", "=", "lud.identityProvider")
+    //         .onRef("ud.createdAt", "=", "lud.maxCreatedAt")
+    //     )
+    //     .select(["ud.userId", "ud.identityProvider", "ud.userData"])
+    // )
     .with("signup", (db) =>
       db
         .selectFrom("championshipSignup")
@@ -713,21 +750,28 @@ export async function loadRanking(
           "identityProvider",
           sql<boolean>`bool_or(has_ticket)`.as("hasTicket"),
         ])
+        .where("roundNumber", "=", 2)
         .groupBy(["userId", "identityProvider"])
     )
-    .selectFrom("filtered_ranked_game as frg")
+    .selectFrom("user_data as fud")
+    .leftJoin("filtered_ranked_game as frg", (join) =>
+      join
+        .onRef("fud.userId", "=", "frg.userId")
+        .onRef("fud.identityProvider", "=", "frg.identityProvider")
+    )
     .leftJoin("signup as s", (join) =>
       join
         .onRef("frg.userId", "=", "s.userId")
         .onRef("frg.identityProvider", "=", "s.identityProvider")
     )
     .select((db) => [
-      "frg.userId",
-      "frg.identityProvider",
+      "fud.userId",
+      "fud.identityProvider",
+      // "fud.userData",
       db.fn.sum("guessCount").as("totalGuessCount"),
       db.fn.count("guessCount").as("gameCount"),
       sql<number>`sum(guess_count)::decimal / count(*)`.as("averageGuessCount"),
-      sql<number>`row_number() over (order by sum(guess_count)::decimal / (log(max_rank) * count(*)) asc, frg.user_id asc)`.as(
+      sql<number>`row_number() over (order by sum(guess_count)::decimal / (log(max_rank) * count(*)) asc, fud.user_id asc)`.as(
         "rank"
       ),
       "maxRank",
@@ -737,33 +781,54 @@ export async function loadRanking(
         "score"
       ),
       db
-        .selectFrom("fresh_user_data as fud")
-        .select("fud.userData")
-        .where("fud.identityProvider", "=", db.ref("frg.identityProvider"))
-        .where("fud.userId", "=", db.ref("frg.userId"))
+        .selectFrom("all_user_data as aud")
+        .select("aud.userData")
+        .where("aud.identityProvider", "=", db.ref("fud.identityProvider"))
+        .where("aud.userId", "=", db.ref("fud.userId"))
+        .where("aud.createdAt", "=", db.ref("fud.maxCreatedAt"))
+        .limit(1)
         .as("userData"),
     ])
-    .where("included", "=", true)
-    .where("maxRank", ">", 1)
+    .where((db) =>
+      db.or([
+        db.and([db.eb("included", "=", true), db.eb("maxRank", ">=", MIN_GAMES_FOR_RANK)]),
+        db.and([db.eb("fud.userId", "=", userId!)]),
+      ])
+    )
+    // .where("maxRank", ">", 1)
     .where((x) =>
       excludedUserIds.length > 0
         ? x.and([
-            x.eb("frg.identityProvider", "=", identityProvider),
-            x.eb("frg.userId", "not in", excludedUserIds),
+            x.eb("fud.identityProvider", "=", identityProvider),
+            x.eb("fud.userId", "not in", excludedUserIds),
           ])
-        : x.eb("frg.identityProvider", "=", identityProvider)
+        : x.eb("fud.identityProvider", "=", identityProvider)
     )
     .where((x) => (signedUpOnly ? x.eb("s.userId", "is not", null) : x.and([])))
     .groupBy([
-      "frg.userId",
-      "frg.identityProvider",
+      "fud.userId",
+      "fud.identityProvider",
+      "fud.maxCreatedAt",
       "maxRank",
       "s.userId",
       "s.hasTicket",
     ])
     // .orderBy(["averageGuessCount asc", "gameCount desc"])
-    .orderBy(["score asc", "gameCount desc"])
-    .limit(limit)
-    .execute();
+    .orderBy(["score asc", "gameCount desc"]);
+  if (userId) {
+    return await pgDb
+      .with("ranking", () => query)
+      .selectFrom("ranking")
+      .where((db) =>
+        db.or([
+          db.eb("ranking.userId", "=", userId),
+          db.eb("ranking.rank", "<=", limit),
+        ])
+      )
+      .selectAll()
+      // .limit(limit)
+      .execute();
+  }
+  const ranking = await query.limit(limit).execute();
   return ranking;
 }
