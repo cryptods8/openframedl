@@ -86,7 +86,9 @@ export async function loadUserData(userKey: UserKey): Promise<UserData> {
           getAddressesForFid({ fid, options }),
         ]);
         userData = userDataRes;
-        walletAddresses = addressesRes.map((a) => a.address);
+        walletAddresses = (addressesRes as { address: string }[]).map(
+          (a) => a.address
+        );
       } else {
         userData = await userDataPromise;
       }

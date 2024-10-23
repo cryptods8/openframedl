@@ -217,8 +217,8 @@ export const createCustomFrames = <T extends JsonValue>(
           version: "2024-02-09",
         },
         handler: {
-          isValidPayload: (body: JSON) => isXmtpFrameActionPayload(body),
-          getFrameMessage: async (body: JSON) => {
+          isValidPayload: (body: JsonValue) => isXmtpFrameActionPayload(body),
+          getFrameMessage: async (body: JsonValue) => {
             if (!isXmtpFrameActionPayload(body)) {
               return undefined;
             }
