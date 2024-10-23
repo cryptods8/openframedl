@@ -91,6 +91,9 @@ export async function findArenasWithGames(
     if (!res || !res[0]) {
       throw new Error("Unexpected empty result");
     }
+    const kickedMemberKeys = res[0].members
+      .filter((m) => m.kickedAt != null)
+      .map((m) => `${m.identityProvider}/${m.userId}`);
     const arena: ArenaWithGames = {
       id: res[0].id,
       config: res[0].config,
@@ -104,7 +107,13 @@ export async function findArenasWithGames(
       userData: res[0].userData,
       lastNotifiedAt: res[0].lastNotifiedAt,
       games: res
-        .filter((gr) => gr.gameId)
+        .filter(
+          (gr) =>
+            gr.gameId &&
+            !kickedMemberKeys.includes(
+              `${gr.gameIdentityProvider}/${gr.gameUserId}`
+            )
+        )
         .map((gr) => ({
           id: gr.gameId!,
           userId: gr.gameUserId!,

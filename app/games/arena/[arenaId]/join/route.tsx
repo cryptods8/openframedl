@@ -4,11 +4,13 @@ import { createCustomFrames } from "@/app/games/frames";
 import { getUserDataForFid } from "frames.js";
 import { hubHttpUrl, hubRequestOptions } from "@/app/constants";
 import {
+  ArenaWithGames,
   findArenaWithGamesById,
   updateArena,
 } from "@/app/game/arena-pg-repository";
 import { getArenaAvailabilityProperties } from "../../arena-utils";
 import { createComposeUrl } from "@/app/utils";
+import { UserData } from "@/app/game/game-repository";
 
 const frames = createCustomFrames({});
 
@@ -119,12 +121,12 @@ export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
   }
   // check arena members list
   const { membership, status: availabilityStatus } =
-    getArenaAvailabilityProperties(arena, {
-      ...userKey,
-      username: userData?.username,
-    });
+    getArenaAvailabilityProperties(arena, userKey);
   if (!membership || !membership.success) {
     return error("You can't join the arena - there are no free slots");
+  }
+  if (membership.type === "member_kicked") {
+    return error("You are not allowed to join this arena");
   }
   let added = false;
   if (membership.type === "audience" || membership.type === "free_slot") {

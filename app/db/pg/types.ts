@@ -127,12 +127,13 @@ export type ArenaDuration =
   | { type: "unlimited" }
   | { type: "interval"; minutes: number };
 export type ArenaAudienceMember = {
-  userId?: string;
+  userId: string;
   username?: string;
   identityProvider: GameIdentityProvider;
 };
 export interface ArenaMember extends UserKey {
   username?: string;
+  kickedAt?: number | null;
 }
 
 export type ArenaConfig = {

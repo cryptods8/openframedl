@@ -271,28 +271,30 @@ function renderAudience({
   const freeSlots = awaitingAudienceRes?.freeSlots || 0;
 
   const items = [
-    ...arena.members.map((m) => ({
-      key: `${m.identityProvider}/${m.userId}`,
-      label: (
-        <div tw="flex items-center" style={{ gap: "1rem" }}>
-          <div tw="flex">{formatUsername(m)}</div>
-          <div tw="flex">
-            <AudienceMemberGameStats arena={arena} member={m} />
+    ...arena.members
+      .filter((m) => m.kickedAt == null)
+      .map((m) => ({
+        key: `${m.identityProvider}/${m.userId}`,
+        label: (
+          <div tw="flex items-center" style={{ gap: "1rem" }}>
+            <div tw="flex">{formatUsername(m)}</div>
+            <div tw="flex">
+              <AudienceMemberGameStats arena={arena} member={m} />
+            </div>
           </div>
-        </div>
-      ),
-      status: "JOINED" as const,
-      current:
-        currentUser &&
-        isAudienceMember(
-          {
-            userId: m.userId,
-            username: m.username,
-            identityProvider: m.identityProvider,
-          },
-          currentUser
         ),
-    })),
+        status: "JOINED" as const,
+        current:
+          currentUser &&
+          isAudienceMember(
+            {
+              userId: m.userId,
+              username: m.username,
+              identityProvider: m.identityProvider,
+            },
+            currentUser
+          ),
+      })),
     ...awaitingAudience.map((m) => ({
       key: `${m.identityProvider}/${m.userId ?? `@${m.username}`}`,
       label: formatUsername(m),

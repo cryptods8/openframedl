@@ -3,15 +3,9 @@ import {
   sendDirectCastWithRetries,
 } from "@/app/api/bot/reminders/send-direct-cast";
 import { externalBaseUrl, isPro } from "@/app/constants";
-import {
-  ArenaAudienceMember,
-  ArenaMember,
-  DBArena,
-  DBGame,
-} from "@/app/db/pg/types";
+import { ArenaAudienceMember, DBArena } from "@/app/db/pg/types";
 import { ArenaWithGames } from "@/app/game/arena-pg-repository";
 import { UserKey } from "@/app/game/game-repository";
-import { GuessedGame } from "@/app/game/game-service";
 
 export function getArenaGamesForUser(arena: ArenaWithGames, userKey: UserKey) {
   const allUserGames = arena.games.filter(
@@ -24,34 +18,39 @@ export function getArenaGamesForUser(arena: ArenaWithGames, userKey: UserKey) {
 
 export function isAudienceMember(
   audienceMember: ArenaAudienceMember,
-  user: ArenaMember
+  user: UserKey
 ) {
   if (audienceMember.identityProvider !== user.identityProvider) {
     return false;
   }
-  if (audienceMember.userId) {
-    return audienceMember.userId === user.userId;
-  }
-  return audienceMember.username === user.username;
+  return audienceMember.userId === user.userId;
 }
 
 interface ArenaMembership {
   success: boolean;
-  type?: "audience" | "member" | "free_slot" | "member_free_slot";
+  type?:
+    | "audience"
+    | "member"
+    | "free_slot"
+    | "member_free_slot"
+    | "member_kicked";
 }
 
 export function checkMembership(
   arena: DBArena,
-  user: ArenaMember
+  user: UserKey
 ): ArenaMembership {
-  const isMember = arena.members.some(
+  const member = arena.members.find(
     (m) =>
       m.userId === user.userId && m.identityProvider === user.identityProvider
   );
+  if (member?.kickedAt) {
+    return { success: true, type: "member_kicked" };
+  }
   const isInAudience = !!arena.config.audience.find((m) =>
     isAudienceMember(m, user)
   );
-  if (isMember) {
+  if (member) {
     return {
       success: true,
       type: isInAudience ? "member" : "member_free_slot",
@@ -139,7 +138,7 @@ export function checkSuddenDeath(arena: ArenaWithGames) {
 
 export function getArenaAvailabilityProperties(
   arena: ArenaWithGames,
-  member?: ArenaMember
+  member?: UserKey
 ): ArenaAvailabilityProperties {
   const now = new Date();
   const {

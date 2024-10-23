@@ -155,7 +155,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
         (p) =>
           p.user?.userId === m.userId &&
           p.user.identityProvider === m.identityProvider
-      ) === undefined
+      ) == null && m.kickedAt == null
   );
   const { audience, freeSlots } = determineAwaitingAudience(arena);
 
@@ -182,22 +182,38 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
 
 function getDisplayedPlayers(
   players: ArenaPlayerStats[],
-  userKey?: UserKey
+  userKey?: UserKey,
+  page?: number
 ): ArenaPlayerStats[] {
   if (players.length <= MAX_DISPLAYED_PLAYERS) {
     return players;
   }
-  const userResultIdx = players.findIndex(
-    (p) =>
-      p.user?.userId === userKey?.userId &&
-      p.user?.identityProvider === userKey?.identityProvider
-  );
+  const userResultIdx = userKey
+    ? players.findIndex(
+        (p) =>
+          p.user?.userId === userKey?.userId &&
+          p.user?.identityProvider === userKey?.identityProvider
+      )
+    : -1;
   const userResult = players[userResultIdx];
-  if (!userResult || userResultIdx < MAX_DISPLAYED_PLAYERS) {
-    return players.slice(0, MAX_DISPLAYED_PLAYERS);
+  const pageOffset = (page ?? 0) * MAX_DISPLAYED_PLAYERS;
+  if (
+    !userResult ||
+    (pageOffset <= userResultIdx &&
+      userResultIdx < pageOffset + MAX_DISPLAYED_PLAYERS)
+  ) {
+    return players.slice(pageOffset, pageOffset + MAX_DISPLAYED_PLAYERS);
+  }
+  console.log(userResultIdx, userResult, userKey);
+  if (userResultIdx < pageOffset) {
+    return [
+      userResult,
+      { ...EMPTY_PLAYER },
+      ...players.slice(pageOffset, pageOffset + MAX_DISPLAYED_PLAYERS - 2),
+    ];
   }
   return [
-    ...players.slice(0, MAX_DISPLAYED_PLAYERS - 2),
+    ...players.slice(pageOffset, pageOffset + MAX_DISPLAYED_PLAYERS - 2),
     { ...EMPTY_PLAYER },
     userResult,
   ];
@@ -363,16 +379,18 @@ function StatusBadge({
 function Image({
   arena,
   userKey,
+  page,
 }: {
   arena: ArenaWithGames;
   userKey?: UserKey;
+  page?: number;
 }) {
   const { players: allPlayers, gamesTotal } = getArenaStats(arena);
   const { completionStatus, status } = getArenaAvailabilityProperties(
     arena,
     userKey
   );
-  const players = getDisplayedPlayers(allPlayers, userKey);
+  const players = getDisplayedPlayers(allPlayers, userKey, page);
   const imageSizeClass =
     players.length > 2 ? "w-24 h-24 text-7xl" : "w-32 h-32 text-8xl";
   function isCurrentUser(p: ArenaPlayerStats) {
@@ -404,7 +422,7 @@ function Image({
             )}
           </div>
         </div>
-        {players.length <= 3 ? (
+        {allPlayers.length <= 3 ? (
           <div
             tw="flex w-full justify-center px-16 pt-12 pb-20 flex-1 items-center"
             style={{ gap: players.length === 3 ? "1rem" : "3rem" }}
@@ -560,10 +578,13 @@ export async function GET(
   ctx: { params: Record<string, string | undefined> }
 ) {
   const { arenaId } = ctx.params;
-  const userId = req.nextUrl.searchParams.get("uid") as string | undefined;
-  const identityProvider = req.nextUrl.searchParams.get("ip") as
+  const { searchParams } = req.nextUrl;
+  const userId = searchParams.get("uid") as string | undefined;
+  const identityProvider = searchParams.get("ip") as
     | GameIdentityProvider
     | undefined;
+  const p = searchParams.get("p") as string | undefined;
+  const page = p ? parseInt(p, 10) : undefined;
 
   const userKey =
     userId && identityProvider ? { userId, identityProvider } : undefined;
@@ -584,7 +605,7 @@ export async function GET(
   }
 
   const resp = createImageResponse(
-    <Image arena={arena} userKey={userKey} />,
+    <Image arena={arena} userKey={userKey} page={page} />,
     imageOptions
   );
 

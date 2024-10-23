@@ -42,7 +42,7 @@ const handler = createCustomFrames<ArenaStatsFrameState>({})(async (ctx) => {
   return {
     image: ctx.createSignedUrlWithBasePath({
       pathname: `/arena/${arenaId}/stats/image`,
-      query: userKeyQuery,
+      query: { ...userKeyQuery, p: searchParams.p },
     }),
     imageOptions: {
       aspectRatio: arena.config.audienceSize > 6 ? "1:1" : "1.91:1",
