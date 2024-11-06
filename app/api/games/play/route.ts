@@ -28,9 +28,10 @@ interface PlayRequest {
 export const POST = async (req: NextRequest) => {
   const body: PlayRequest = await req.json();
   const jwt = req.headers.get("Authorization")?.split(" ")[1];
-  const { userData, userKey } = jwt
+  const { userData, userKey: userKeyFromJwt } = jwt
     ? verifyJwt<{ userData?: UserData; userKey: UserKey }>(jwt)
     : { userData: null, userKey: null };
+  const userKey = userKeyFromJwt ?? { userId: "0", identityProvider: "fc" };
   // if (!userKey) {
   //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   // }
@@ -38,8 +39,6 @@ export const POST = async (req: NextRequest) => {
     ? await gameService.load(body.gameId)
     : await gameService.loadOrCreate(
         {
-          userId: "11124",
-          identityProvider: "fc",
           ...userKey,
           gameKey: Math.random().toString(36).substring(2),
           isDaily: false,
@@ -50,6 +49,12 @@ export const POST = async (req: NextRequest) => {
       );
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
+  }
+  if (
+    game.userId !== userKey.userId ||
+    game.identityProvider !== userKey.identityProvider
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const guess = body.guess.trim().toLowerCase();
   const validationResult = gameService.validateGuess(game, guess);

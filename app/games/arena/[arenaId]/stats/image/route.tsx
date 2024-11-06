@@ -17,6 +17,7 @@ import { options } from "@/app/generate-image";
 import { GameStatus } from "@/app/db/pg/types";
 import { ClockIcon } from "@/app/image-ui/icons/ClockIcon";
 import { CheckIcon } from "@/app/image-ui/icons/CheckIcon";
+import { UserGroupIcon } from "@/app/image-ui/icons/UserGroupIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -284,7 +285,7 @@ function getStatusProps(status: "COMPLETED" | "PENDING" | "IN_PROGRESS") {
     return {
       label: "In Progress",
       color: "orange",
-      backgroundColor: "white",
+      backgroundColor: "transparent",
       Icon: ClockIcon,
     };
   }
@@ -364,10 +365,7 @@ function StatusBadge({
 }) {
   const { label, color, backgroundColor, Icon } = getStatusProps(status);
   return (
-    <div
-      tw="flex items-center rounded-full text-3xl p-2"
-      style={{ color, backgroundColor }}
-    >
+    <div tw="flex items-center rounded-full text-3xl p-2" style={{ color }}>
       <div tw="flex h-12 w-12">
         <Icon />
       </div>
@@ -420,6 +418,20 @@ function Image({
             ) : (
               <StatusBadge status="IN_PROGRESS" />
             )}
+          </div>
+          <div
+            tw="flex items-center text-3xl"
+            style={{ color: primaryColor(0.54) }}
+          >
+            <div tw="flex h-12 w-12">
+              <UserGroupIcon />
+            </div>
+            <div tw="flex items-baseline px-4">
+              <div tw="flex font-bold">{arena.members.length}</div>
+              <div tw="flex text-2xl">
+                /{arena.config.audienceSize}
+              </div>
+            </div>
           </div>
         </div>
         {allPlayers.length <= 3 ? (
