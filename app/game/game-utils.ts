@@ -45,7 +45,7 @@ export function formatGameKey(game: PublicGuessedGame) {
   if (!game.isDaily) {
     const subKey = gameKey.substring(gameKey.length - 8);
     if (!game.isCustom) {
-      return `Practice (${subKey})`;
+      return `Practice`;
     }
     return subKey;
   }
@@ -79,4 +79,36 @@ export function getDailyGameKey(date: Date): string {
 
 export function getDateFromDailyGameKey(gameKey: string): Date {
   return new Date(gameKey);
+}
+
+function pluralize(count: number, unit: string) {
+  return `${count} ${unit}${count === 1 ? "" : "s"}`;
+}
+
+export function formatDurationSimple(durationInMinutes: number) {
+  const days = Math.floor(durationInMinutes / 60 / 24);
+  if (days > 1) {
+    return pluralize(days, "day");
+  }
+  const hours = Math.floor((durationInMinutes % (60 * 24)) / 60);
+  if (days === 1) {
+    if (hours > 0) {
+      return `1 day and ${pluralize(hours, "hour")}`;
+    }
+    return "1 day";
+  }
+  if (hours > 12) {
+    return pluralize(hours, "hour");
+  }
+  const minutes = durationInMinutes % 60;
+  if (hours > 0) {
+    if (minutes > 0) {
+      return `${hours} hour${hours === 1 ? "" : "s"} and ${pluralize(
+        minutes,
+        "minute"
+      )}`;
+    }
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+  return pluralize(Math.max(1, minutes), "minute");
 }

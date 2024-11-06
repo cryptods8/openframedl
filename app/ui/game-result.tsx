@@ -36,7 +36,7 @@ export default function GameResult({ game, shareUrl }: GameResultProps) {
           <p className="w-full text-left text-xl">
             {game.status === "WON" ? "You won! 🎉" : "Better luck next time!"}
           </p>
-          <p className="w-full text-left text-slate-600 leading-snug">
+          <p className="w-full text-left text-primary-900/50 leading-snug">
             {game.status === "WON" ? (
               <span>
                 You found the word in {game.guesses.length}{" "}

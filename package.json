@@ -23,8 +23,11 @@
     "@vercel/og": "^0.6.3",
     "@xmtp/frames-validator": "^0.6.2",
     "alchemy-sdk": "^3.2.1",
+    "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",
+    "framer-motion": "^11.11.11",
     "frames.js": "^0.19.4",
+    "jsonwebtoken": "^9.0.2",
     "kysely": "^0.27.3",
     "next": "14.1.1",
     "next-auth": "^4.24.7",
@@ -42,7 +45,9 @@
     "node": ">=18.17.0"
   },
   "devDependencies": {
-    "@frames.js/debugger": "^0.3.15",
+    "@frames.js/debugger": "^0.3.17",
+    "@types/canvas-confetti": "^1.6.4",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20",
     "@types/pg": "^8.11.5",
     "@types/react": "^18",

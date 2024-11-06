@@ -27,6 +27,40 @@ function determineGameMessage(game: GuessedGame) {
   );
 }
 
+function ProgressBar({ game }: { game: GuessedGame }) {
+  const words = game.arena?.config.words;
+  const wordIndex = game.arenaWordIndex!;
+  if (!words || wordIndex == null) {
+    return null;
+  }
+
+  return (
+    <div
+      tw="flex overflow-hidden h-3"
+      style={{ backgroundColor: primaryColor(0.04) }}
+    >
+      <div tw="flex flex-row w-full items-center" style={{ gap: "0.25rem" }}>
+        {words.map((_, idx) => (
+          <div
+            key={idx}
+            tw={`flex flex-1 h-full`}
+            style={{
+              backgroundColor:
+                idx < wordIndex
+                  ? "green"
+                  : idx === wordIndex
+                  ? game.completedAt
+                    ? "green"
+                    : "orange"
+                  : primaryColor(0.2),
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ResultImage({
   game,
   message,
@@ -36,7 +70,13 @@ function ResultImage({
 }) {
   return (
     <BasicLayout>
-      <div tw="flex w-full h-full items-stretch justify-between">
+      <div tw="flex w-full h-full items-stretch justify-between relative pt-3">
+        <div
+          tw="flex absolute top-0 left-0 right-0"
+          style={{ backgroundColor: primaryColor(0.04) }}
+        >
+          <ProgressBar game={game} />
+        </div>
         <div tw="flex">
           <GameBoard game={game} isPublic={false} />
         </div>
@@ -49,7 +89,7 @@ function ResultImage({
           }}
         >
           <div
-            tw="flex flex-col flex-1 items-center relative pt-12"
+            tw="flex flex-col flex-1 items-center relative pt-11"
             style={{ gap: "1rem" }}
           >
             <ArenaTitle

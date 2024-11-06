@@ -9,6 +9,7 @@ import { ProfileApp } from "@/app/profiles/profile-app";
 
 import { ProfileNav } from "./profile-nav";
 import { Container } from "@/app/ui/layout/container";
+import { Footer } from "@/app/ui/layout/footer";
 import { CustomGames } from "../../custom-games";
 import { ProfileGallery } from "../../profile-gallery";
 import { EmptyMessage } from "../../empty-message";
@@ -34,7 +35,7 @@ export default async function ProfilePage(props: NextServerPageProps) {
 
   return (
     <ProfileApp>
-      <div className="w-full h-full bg-primary-100 text-left flex-1 text-primary-900">
+      <div className="w-full h-full bg-primary-100 text-left flex-1 text-primary-900 p-8">
         <div className="max-w-xs md:max-w-screen-sm lg:max-w-screen-lg xl:max-w-screen-xl mx-auto px-2">
           <ProfileHeader
             ip={userKey.identityProvider}
@@ -43,7 +44,7 @@ export default async function ProfilePage(props: NextServerPageProps) {
           />
         </div>
         <div>
-          <div className="border-t border-b border-primary-200 py-4 mt-6 mb-4">
+          <div className="border-t border-b border-primary-200 py-4 mt-6 mb-4 bg-gradient-to-r from-transparent via-primary-200/50 to-transparent">
             <ProfileNav isCurrentUser={isCurrentUser} />
           </div>
           <Container>
@@ -67,6 +68,7 @@ export default async function ProfilePage(props: NextServerPageProps) {
           </Container>
         </div>
       </div>
+      <Footer />
     </ProfileApp>
   );
 }

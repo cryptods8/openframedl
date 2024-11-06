@@ -28,12 +28,12 @@ export async function generateMetadata({
 
 export default async function Home() {
   return (
-    <div className="flex flex-col p-6 w-full justify-center items-center text-slate-600">
+    <div className="flex flex-col p-6 w-full justify-center items-center text-primary-900/50">
       <div>
         Framedl Word of the Day by{" "}
         <Link
           href="https://warpcast.com/ds8"
-          className="underline hover:text-slate-700"
+          className="underline hover:text-primary-900/80"
         >
           ds8
         </Link>

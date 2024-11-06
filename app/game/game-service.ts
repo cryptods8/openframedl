@@ -116,7 +116,7 @@ export const getWordForUserGameKey = async (
 
 export interface GuessCharacter {
   character: string;
-  status: "CORRECT" | "WRONG_POSITION" | "INCORRECT";
+  status: "CORRECT" | "WRONG_POSITION" | "INCORRECT" | "UNKNOWN";
 }
 
 export interface Guess {
@@ -164,7 +164,8 @@ export type GuessValidationStatus =
   | "INVALID_EMPTY"
   | "INVALID_SIZE"
   | "INVALID_FORMAT"
-  | "INVALID_WORD";
+  | "INVALID_WORD"
+  | "INVALID_ALREADY_GUESSED";
 
 export type PreCreateFunction = () => Promise<GameWord>;
 export interface LoadOrCreateOptions {
@@ -667,7 +668,8 @@ export class GameServiceImpl implements GameService {
     if (!this.isValidGuess(guessedGame, guess)) {
       throw new Error("Guess is invalid!");
     }
-    const game = await gameRepo.findByUserGameKey(guessedGame);
+    // const game = await gameRepo.findByUserGameKey(guessedGame);
+    const game = this.fromGuessedGame(guessedGame);
     if (!game) {
       throw new Error(`Game not found: ${guessedGame.id}`);
     }
@@ -704,8 +706,8 @@ export class GameServiceImpl implements GameService {
     return updatedGame;
   }
 
-  private fromGuessedGame(game: GuessedGame): DBGameView {
-    const { customMaker } = game;
+  private fromGuessedGame(game: GuessedGame): gameRepo.DBGameViewWithArena {
+    const { customMaker, arena } = game;
     return {
       id: game.id,
       userId: game.userId,
@@ -724,7 +726,16 @@ export class GameServiceImpl implements GameService {
       srcGameId: game.srcGameId || null,
       arenaId: game.arenaId || null,
       arenaWordIndex: game.arenaWordIndex || null,
-      // TODO: arena
+      arenaConfig: arena?.config || null,
+      arenaMembers: arena?.members || null,
+      arenaCreatedAt: arena?.createdAt || null,
+      arenaUpdatedAt: arena?.updatedAt || null,
+      arenaDeletedAt: arena?.deletedAt || null,
+      arenaUserId: arena?.userId || null,
+      arenaIdentityProvider: arena?.identityProvider || null,
+      arenaUserData: arena?.userData || null,
+      arenaStartedAt: arena?.startedAt || null,
+      arenaLastNotifiedAt: arena?.lastNotifiedAt || null,
       customUserId: customMaker?.userId || null,
       customIdentityProvider: customMaker?.identityProvider || null,
       customNumByUser: customMaker?.number || null,
@@ -813,7 +824,7 @@ export class GameServiceImpl implements GameService {
     return this.gameRepository.loadStatsByUserKey(userKey);
   }
 
-  validateGuess(game: GuessedGame, guess: String | null | undefined) {
+  validateGuess(game: GuessedGame, guess: string | null | undefined) {
     if (!guess) {
       return "INVALID_EMPTY";
     }
@@ -826,6 +837,12 @@ export class GameServiceImpl implements GameService {
     }
     if (!allWords.includes(formattedGuess) && formattedGuess !== game.word) {
       return "INVALID_WORD";
+    }
+    if (
+      game.originalGuesses.includes(formattedGuess) &&
+      !game.customMaker?.isArt
+    ) {
+      return "INVALID_ALREADY_GUESSED";
     }
     return "VALID";
   }

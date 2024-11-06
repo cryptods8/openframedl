@@ -10,6 +10,7 @@ import { currentURL } from "./utils";
 import { isUrlSigned } from "./signer";
 import { basePath } from "./games/frames";
 import { ProfileApp } from "./profiles/profile-app";
+import { Footer } from "./ui/layout/footer";
 
 export async function generateMetadata({
   searchParams,
@@ -20,6 +21,9 @@ export async function generateMetadata({
   }
   if (searchParams?.cw) {
     queryParams.set("cw", searchParams.cw as string);
+  }
+  if (searchParams?.app) {
+    queryParams.set("app", searchParams.app as string);
   }
 
   const framesUrl = currentURL(`${basePath}?${queryParams.toString()}`);
@@ -48,6 +52,7 @@ export default async function Home({ searchParams }: NextServerPageProps) {
           shareUrl={`${externalBaseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
         />
       </div>
+      <Footer />
     </ProfileApp>
   );
 }

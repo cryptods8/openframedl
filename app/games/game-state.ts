@@ -67,6 +67,9 @@ export async function nextGameState(
       case "INVALID_WORD":
         message = "Word not found in dictionary!";
         break;
+      case "INVALID_ALREADY_GUESSED":
+        message = "Already guessed!";
+        break;
     }
     return {
       message,
@@ -74,12 +77,6 @@ export async function nextGameState(
     };
   }
 
-  if (game.originalGuesses.includes(guess) && !game.customMaker?.isArt) {
-    return {
-      message: "Already guessed!",
-      game,
-    };
-  }
   const guessedGame = await timeCall("guess", () =>
     gameService.guess(game, guess)
   );

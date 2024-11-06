@@ -9,7 +9,6 @@ export type GameVariant = "daily" | "random";
 
 const handleRequest = frames(async (ctx) => {
   const { searchParams } = ctx;
-  console.log("current url", ctx.url.toString());
 
   const params = new URLSearchParams();
   let gameById: GuessedGame | null = null;
@@ -20,7 +19,7 @@ const handleRequest = frames(async (ctx) => {
   }
   const custom = searchParams.cw || gameById?.isCustom;
   if (searchParams.cw) {
-    params.set("cid", searchParams.cw);    
+    params.set("cid", searchParams.cw);
   }
   if (custom) {
     params.set("custom", "1");
@@ -51,10 +50,7 @@ const handleRequest = frames(async (ctx) => {
         >
           Play
         </Button>,
-        <Button
-          action="post"
-          target={ctx.createUrlWithBasePath("/create")}
-        >
+        <Button action="post" target={ctx.createUrlWithBasePath("/create")}>
           Create
         </Button>,
       ],
@@ -62,16 +58,30 @@ const handleRequest = frames(async (ctx) => {
   }
 
   function toVariantTarget(variant: GameVariant) {
-    return ctx.createUrlWithBasePath({ pathname: "/play", query: { variant, src: searchParams.id || "" } });
+    return ctx.createUrlWithBasePath({
+      pathname: "/play",
+      query: { variant, src: searchParams.id || "" },
+    });
   }
 
   return {
     state: {},
     image: signedImageUrl,
     buttons: [
-      <Button action="post" target={toVariantTarget("daily")}>
-        Play
-      </Button>,
+      searchParams.app === "1" ? (
+        <Button
+          action="link"
+          target={`https://warpcast.com/~/composer-action?url=${encodeURIComponent(
+            ctx.createExternalUrl("/api/actions/app")
+          )}`}
+        >
+          Play
+        </Button>
+      ) : (
+        <Button action="post" target={toVariantTarget("daily")}>
+          Play
+        </Button>
+      ),
       isMore ? (
         <Button action="post" target={toVariantTarget("random")}>
           🎲 Practice
@@ -95,10 +105,7 @@ const handleRequest = frames(async (ctx) => {
         </Button>
       ) : undefined,
       isMore ? (
-        <Button
-          action="post"
-          target={ctx.createUrlWithBasePath("/create")}
-        >
+        <Button action="post" target={ctx.createUrlWithBasePath("/create")}>
           Create
         </Button>
       ) : undefined,

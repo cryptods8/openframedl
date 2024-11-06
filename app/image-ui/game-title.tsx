@@ -54,13 +54,19 @@ export function GameTitle({
           {isPro && (
             <span
               tw={dark && !isArena ? "bg-white rounded px-3 py-1" : ""}
-              style={{ color: isArena ? "white" : "green" }}
+              style={{ color: isArena && dark ? "white" : "green" }}
             >
               PRO
             </span>
           )}
           {type === "ARENA" && (
-            <div tw="flex text-white" style={{ fontFamily: "SpaceGrotesk" }}>
+            <div
+              tw="flex"
+              style={{
+                fontFamily: "SpaceGrotesk",
+                color: dark ? "white" : undefined,
+              }}
+            >
               {/* {"⚔️ ARENA"} */}
               {"⚔️ ARENA"}
             </div>
