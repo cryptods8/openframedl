@@ -413,7 +413,7 @@ export function Game({ game, jwt, config }: GameProps) {
     const { title, text } = buildShareableResult(currentGame);
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
-    if (window.parent !== window.self) {
+    if (jwt) {
       createCast({ text: fullText, embeds: [url] });
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
