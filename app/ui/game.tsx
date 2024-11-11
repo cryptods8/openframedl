@@ -169,17 +169,13 @@ function GameKeyboard({
   onKeyPress: (key: string) => void;
   onSubmit: () => void;
 }) {
-  const handleSubmit = useCallback(() => onSubmit, [onSubmit]);
   return (
     <div className="flex flex-col gap-1.5 items-center w-full">
       {KEYS.map((row, rowIndex) => (
         <div key={rowIndex} className="flex w-full">
           {rowIndex === KEYS.length - 1 && (
             <KeyWrapper className="flex-[1.5_1_0%]">
-              <GameKeyboardKey
-                keyboardKey="enter"
-                onPress={handleSubmit}
-              />
+              <GameKeyboardKey keyboardKey="enter" onPress={onSubmit} />
             </KeyWrapper>
           )}
           {rowIndex === 1 && <Spacer />}

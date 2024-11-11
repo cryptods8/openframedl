@@ -27,9 +27,6 @@ function AuthChildrenContainer({ children }: { children: React.ReactNode }) {
     }
     setIsSigningIn(true);
     signIn("credentials", { jwt, redirect: false })
-      .then((r) => {
-        console.log("SIGNED IN", r);
-      })
       .catch((e) => {
         console.error("E", e);
       })
