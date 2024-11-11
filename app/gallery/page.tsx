@@ -11,7 +11,6 @@ import Link from "next/link";
 import { addDaysToDate, getDailyGameKey } from "../game/game-utils";
 import { IconButton, IconButtonProps } from "../ui/button/icon-button";
 import { toUrlSearchParams } from "../utils";
-import { getServerSession } from "next-auth";
 import { ProfileApp } from "../profiles/profile-app";
 
 function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
@@ -81,7 +80,6 @@ function ArrowButton({ dir = "right", ...props }: ArrowButtonProps) {
 
 export default async function GalleryPage(props: NextServerPageProps) {
   const filter = buildFilter(props);
-  const session = await getServerSession();
 
   let games: PublicGuessedGame[] = [];
   let subtitle: React.ReactNode | undefined;

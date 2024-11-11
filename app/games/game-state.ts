@@ -28,7 +28,6 @@ export async function nextGameState(
     gameService.loadOrCreate(userGameKey, options)
   );
   if (resetType) {
-    console.log("resetting the game", game.id);
     const resetGame = await timeCall("reset", async () => {
       if (resetType === "undo") {
         return await gameService.undoGuess(game);

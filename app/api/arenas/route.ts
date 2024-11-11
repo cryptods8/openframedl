@@ -1,13 +1,14 @@
 import { externalBaseUrl } from "@/app/constants";
-import { ArenaConfig, ArenaDuration, ArenaStart } from "@/app/db/pg/types";
+import { ArenaAudienceMember, ArenaConfig, ArenaDuration, ArenaStart } from "@/app/db/pg/types";
 import { insertArena } from "@/app/game/arena-pg-repository";
 import { gameService } from "@/app/game/game-service";
 import { NextResponse } from "next/server";
 
-interface ArenaCreateRequest {
+export interface ArenaCreateRequest {
   wordCount: number;
   start: ArenaStart;
   duration: ArenaDuration;
+  audience: ArenaAudienceMember[];
   audienceSize: number;
   suddenDeath: boolean;
   initWords: string[];
@@ -22,11 +23,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
   }
 
-  const { wordCount, start, duration, audienceSize, suddenDeath, initWords } =
+  const { wordCount, start, duration, audienceSize, audience, suddenDeath, initWords } =
     (await req.json()) as Partial<ArenaCreateRequest>;
 
   const config = {
-    audience: [],
+    audience: audience ?? [],
     audienceSize: audienceSize ?? 2,
     duration: duration ?? { type: "unlimited" },
     start: start ?? { type: "immediate" },

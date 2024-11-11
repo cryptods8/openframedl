@@ -1,6 +1,10 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createAppClient, viemConnector } from "@farcaster/auth-client";
-import { NextAuthOptions } from "next-auth";
+import { getServerSession, NextAuthOptions, Session } from "next-auth";
+import { verifyJwt } from "./jwt";
+import { UserKey } from "../game/game-repository";
+import { UserData } from "../game/game-repository";
+import { loadUserData } from "../games/user-data";
 
 export const domain = process.env.NEXT_PUBLIC_DOMAIN!;
 if (!domain) {
@@ -35,8 +39,29 @@ export const authOptions: NextAuthOptions = {
           type: "text",
           placeholder: "0x0",
         },
+        jwt: {
+          label: "JWT",
+          type: "text",
+          placeholder: "0x0",
+        },
       },
       async authorize(credentials, req) {
+        const jwt = credentials?.jwt;
+        if (jwt) {
+          const verifiedToken = verifyJwt(jwt);
+          if (verifiedToken) {
+            const { userKey, userData } = verifiedToken as {
+              userKey: UserKey;
+              userData?: UserData;
+            };
+            return {
+              id: userKey.userId,
+              name: userData?.username,
+              image: userData?.profileImage,
+              userData,
+            };
+          }
+        }
         const {
           body: { csrfToken },
         } = req as { body: { csrfToken: string } };
@@ -57,22 +82,92 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        const userData = await loadUserData({
+          identityProvider: "fc",
+          userId: fid.toString(),
+        });
+
         return {
           id: fid.toString(),
-          name: fid.toString(),
-          image: credentials?.pfp,
+          name: userData?.username,
+          image: userData?.profileImage,
+          userData,
         };
       },
     }),
   ],
   callbacks: {
+    jwt: async ({ token, user }) => {
+      if (user && "userData" in user) {
+        token.userData = user.userData;
+      }
+      return token;
+    },
     session: async ({ session, token }) => {
       const fid = token?.sub;
-      const user = session.user ? { ...session.user, fid } : undefined;
-      if (!user || !fid) {
+      const userData = token?.userData;
+      const user = session.user
+        ? { ...session.user, fid, userData }
+        : undefined;
+      if (!user || !fid || !userData) {
         return session;
       }
       return { ...session, user };
     },
   },
 };
+
+export async function getFarcasterSession() {
+  return (await getServerSession(authOptions)) as FarcasterSession | null;
+}
+
+export async function getUserInfoFromJwtOrSession(
+  jwt?: string
+): Promise<UserInfo> {
+  const { userData, userKey: userKeyFromJwt } = jwt
+    ? verifyJwt<{ userData?: UserData; userKey: UserKey }>(jwt)
+    : { userData: null, userKey: null };
+  if (userKeyFromJwt) {
+    return { userData, userKey: userKeyFromJwt };
+  }
+  const session = await getFarcasterSession();
+  const user = session?.user;
+  if (user) {
+    return {
+      userData: user.userData,
+      userKey: { userId: user.fid, identityProvider: "fc" as const },
+    };
+  }
+  return {
+    userData: null,
+    userKey: { userId: "0", identityProvider: "fc" as const },
+    anonymous: true,
+  };
+}
+
+export async function getFarcasterUserFromJwtOrSession(jwt?: string) {
+  const { userData, userKey } = await getUserInfoFromJwtOrSession(jwt);
+  return {
+    image: userData?.profileImage,
+    name: userData?.username,
+    fid: userKey.userId,
+    userData,
+  };
+}
+
+export interface UserInfo {
+  userData?: UserData | null;
+  userKey: UserKey;
+  anonymous?: boolean;
+}
+
+export interface FarcasterUser {
+  image?: string;
+  name?: string;
+  fid: string;
+  userData?: UserData;
+}
+
+export interface FarcasterSession extends Omit<Session, "user"> {
+  user: FarcasterUser;
+}

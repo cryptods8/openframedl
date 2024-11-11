@@ -24,6 +24,19 @@ body {
   width: 100%;
 }
 
+.fc-authkit-signin-button > button {
+  font-size: 15px;
+  font-family: "Inter";
+  padding: 0.5rem 0.75rem;
+  line-height: 24px;
+  border-radius: 9999px;
+  /* background-color: rgb(94 63 166 / var(--tw-bg-opacity)); */
+}
+
+.fc-authkit-signin-button > button > svg {
+  transform: scale(0.8);
+}
+
 @font-face {
   font-family: "SpaceGrotesk";
   font-weight: 400;

@@ -74,7 +74,6 @@ const handleRequest = frames(async (ctx) => {
       userData: JSON.stringify(userData),
       isArt: false,
     };
-    console.log("saving custom game", customGame);
     await customGameRepo.save(customGame);
 
     const playUrl = ctx.createExternalUrl({

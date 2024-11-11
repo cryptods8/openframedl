@@ -1,13 +1,11 @@
 import { Metadata } from "next";
-import { fetchMetadata } from "frames.js/next";
 import { NextServerPageProps } from "frames.js/next/types";
 
 import { Game } from "../ui/game";
-import { currentURL } from "../utils";
-import { basePath } from "../games/frames";
 import { gameService } from "../game/game-service";
 import { UserData, UserKey } from "../game/game-repository";
-import { verifyJwt } from "../lib/jwt";
+import { ProfileApp } from "../profiles/profile-app";
+import { getUserInfoFromJwtOrSession } from "../lib/auth";
 
 export async function generateMetadata({
   searchParams,
@@ -35,10 +33,12 @@ async function loadGame({
   gameId,
   userKey,
   userData,
+  anonymous,
 }: {
   gameId: string | undefined;
   userKey: UserKey | undefined;
-  userData: UserData | undefined;
+  userData: UserData | null | undefined;
+  anonymous?: boolean;
 }) {
   if (gameId) {
     const game = await gameService.load(gameId);
@@ -52,12 +52,12 @@ async function loadGame({
       }
     }
   }
-  if (userKey) {
+  if (userKey && !anonymous) {
     const gameKey = gameService.getDailyKey();
     return await gameService.loadOrCreate(
       { ...userKey, gameKey, isDaily: true },
       {
-        userData,
+        userData: userData ?? undefined,
       }
     );
   }
@@ -67,17 +67,23 @@ async function loadGame({
 export default async function App({ searchParams }: NextServerPageProps) {
   const gameIdParam = searchParams?.id as string | undefined;
   const jwt = searchParams?.jwt as string | undefined;
-  const { userData, userKey } = jwt
-    ? verifyJwt<{ userData?: UserData; userKey: UserKey }>(jwt)
-    : { userData: undefined, userKey: undefined };
-  const game = await loadGame({ gameId: gameIdParam, userKey, userData });
+  const { userData, userKey, anonymous } = await getUserInfoFromJwtOrSession(
+    jwt
+  );
+  const game = await loadGame({
+    gameId: gameIdParam,
+    userKey,
+    userData,
+    anonymous,
+  });
   return (
     <div className="w-full h-dvh min-h-full">
-      <Game
-        game={game ?? undefined}
-        jwt={jwt}
-        userData={userData ?? undefined}
-      />
+      <ProfileApp headerless>
+        <Game
+          game={game ?? undefined}
+          jwt={searchParams?.jwt as string | undefined}
+        />
+      </ProfileApp>
     </div>
   );
 }

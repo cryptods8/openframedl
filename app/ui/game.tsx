@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import clsx from "clsx";
 import {
   Guess,
   GuessCharacter,
@@ -20,7 +21,8 @@ import {
 import { externalBaseUrl } from "../constants";
 import { createCast } from "../lib/cast";
 import Dialog from "./dialog";
-import { Avatar } from "./avatar";
+import { SignIn } from "./auth/sign-in";
+import { createComposeUrl } from "../utils";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -51,32 +53,89 @@ function BackspaceIcon() {
 
 function GameKeyboardKey({
   keyboardKey,
-  onClick,
+  onPress,
   status,
 }: {
   keyboardKey: string;
-  onClick: () => void;
+  onPress: (key: string) => void;
   status?: GuessCharacter["status"];
 }) {
+  // Add state for tracking the repeat interval
+  const [repeatInterval, setRepeatInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
+
+  // Initial delay before repeat starts (in ms)
+  const INITIAL_DELAY = 500;
+  // Interval between repeats (in ms)
+  const REPEAT_INTERVAL = 30;
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onPress(keyboardKey);
+
+    if (keyboardKey === "enter") {
+      return;
+    }
+
+    // Only set up repeat for backspace
+    // if (keyboardKey === "backspace") {
+    const timeout = setTimeout(() => {
+      // Start repeating after initial delay
+      onPress(keyboardKey);
+      const interval = setInterval(() => {
+        onPress(keyboardKey);
+      }, REPEAT_INTERVAL);
+      setRepeatInterval(interval);
+    }, INITIAL_DELAY);
+
+    // Store the timeout so we can clear it on mouse up
+    setRepeatInterval(timeout);
+    // }
+  };
+
+  const handleMouseUp = () => {
+    if (repeatInterval) {
+      clearTimeout(repeatInterval);
+      clearInterval(repeatInterval);
+      setRepeatInterval(null);
+    }
+  };
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (repeatInterval) {
+        clearTimeout(repeatInterval);
+        clearInterval(repeatInterval);
+      }
+    };
+  }, [repeatInterval]);
+
   return (
     <button
-      className={`w-full h-12 font-semibold flex items-center justify-center select-none active:outline active:outline-2 active:outline-primary-900/20 transition-all duration-100 rounded ${
+      className={clsx(
+        "w-full h-12 font-semibold flex items-center justify-center select-none",
+        "active:outline active:outline-2 active:outline-primary-900/20 transition-all duration-100 rounded",
         keyboardKey === "backspace" || keyboardKey === "enter"
           ? "text-xs"
-          : "text-lg"
-      } ${
+          : "text-lg",
         status === "CORRECT"
           ? "bg-green-600 text-white"
           : status === "WRONG_POSITION"
           ? "bg-orange-600 text-white"
           : status === "INCORRECT"
           ? "bg-primary-950/40 text-white"
+          : keyboardKey === "enter"
+          ? "bg-primary-500 text-white"
+          : keyboardKey === "backspace"
+          ? "bg-white"
           : "bg-primary-950/5"
-      }`}
-      onClick={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
+      )}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onClick={(e) => e.preventDefault()}
     >
       {keyboardKey === "backspace" ? (
         <div className="size-5">
@@ -89,25 +148,29 @@ function GameKeyboardKey({
   );
 }
 
+function KeyWrapper({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <div className={`px-0.5 ${className}`}>{children}</div>;
+}
+
+function Spacer() {
+  return <div className="flex-[0.5_1_0%]" />;
+}
+
 function GameKeyboard({
   game,
   onKeyPress,
+  onSubmit,
 }: {
   game?: GuessedGame;
   onKeyPress: (key: string) => void;
+  onSubmit: () => void;
 }) {
-  function Spacer() {
-    return <div className="flex-[0.5_1_0%]" />;
-  }
-  function KeyWrapper({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) {
-    return <div className={`px-0.5 ${className}`}>{children}</div>;
-  }
   return (
     <div className="flex flex-col gap-1.5 items-center w-full">
       {KEYS.map((row, rowIndex) => (
@@ -116,7 +179,7 @@ function GameKeyboard({
             <KeyWrapper className="flex-[1.5_1_0%]">
               <GameKeyboardKey
                 keyboardKey="enter"
-                onClick={() => onKeyPress("enter")}
+                onPress={useCallback(() => onSubmit, [onSubmit])}
               />
             </KeyWrapper>
           )}
@@ -126,47 +189,18 @@ function GameKeyboard({
               <GameKeyboardKey
                 keyboardKey={key}
                 status={game?.allGuessedCharacters[key]?.status}
-                onClick={() => onKeyPress(key)}
+                onPress={onKeyPress}
               />
             </KeyWrapper>
           ))}
           {rowIndex === KEYS.length - 1 && (
             <KeyWrapper className="flex-[1.5_1_0%]">
-              <GameKeyboardKey
-                keyboardKey="backspace"
-                onClick={() => onKeyPress("backspace")}
-              />
+              <GameKeyboardKey keyboardKey="backspace" onPress={onKeyPress} />
             </KeyWrapper>
           )}
           {rowIndex === 1 && <Spacer />}
         </div>
       ))}
-    </div>
-  );
-}
-
-function GameWord({
-  word,
-}: {
-  word?: Omit<Guess, "characters"> & {
-    characters: (GuessCharacter & { character: string })[];
-  };
-}) {
-  return (
-    <div className="flex gap-2">
-      {Array.from({ length: 5 }).map((_, idx) => {
-        const character = word?.characters[idx];
-        return (
-          <div
-            key={idx}
-            className={
-              "w-16 h-16 bg-white font-semibold flex items-center justify-center text-2xl"
-            }
-          >
-            {character?.character?.toUpperCase()}
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -260,7 +294,7 @@ function getGameHref(game: GuessedGame, jwt?: string) {
   return url.toString();
 }
 
-export function Game({ game, jwt, userData }: GameProps) {
+export function Game({ game, jwt }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -273,7 +307,15 @@ export function Game({ game, jwt, userData }: GameProps) {
     currentGame?.status === "WON" || currentGame?.status === "LOST";
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
 
-  const submit = async () => {
+  const handleSubmit = useCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+    if (isGameOver) {
+      setIsDialogOpen(true);
+      return;
+    }
+
     if (!currentWord) {
       setValidationResult("INVALID_EMPTY");
       return;
@@ -317,38 +359,42 @@ export function Game({ game, jwt, userData }: GameProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    currentWord,
+    currentGame,
+    isSubmitting,
+    isGameOver,
+    jwt,
+    setIsDialogOpen,
+    setValidationResult,
+    setCurrentGame,
+    setCurrentWord,
+  ]);
 
   const handleKeyPress = useCallback(
     (k: string) => {
-      const key = k.toLowerCase();
-      const isEnter = key === "enter";
       if (isSubmitting || isGameOver) {
-        if (isEnter && isGameOver) {
-          setIsDialogOpen(true);
-        }
         return;
       }
-      if (isEnter) {
-        submit();
-        return;
-      }
-      // only allow backspace, enter, and letters
+      const key = k.toLowerCase();
+      // only allow backspace and letters
       const isBackspace = key === "backspace";
       if (isBackspace) {
-        setCurrentWord(currentWord.slice(0, -1));
+        setCurrentWord((word) => word.slice(0, -1));
         return;
       }
       const isLetter = /^[a-z]$/.test(key);
       if (isLetter) {
-        const newWord = currentWord + key;
-        if (newWord.length > 5) {
-          return;
-        }
-        setCurrentWord(newWord);
+        setCurrentWord((word) => {
+          const newWord = word + key;
+          if (newWord.length > 5) {
+            return word;
+          }
+          return newWord;
+        });
       }
     },
-    [currentWord, setCurrentWord, isSubmitting, isGameOver]
+    [setCurrentWord, isSubmitting, isGameOver]
   );
 
   useEffect(() => {
@@ -356,16 +402,26 @@ export function Game({ game, jwt, userData }: GameProps) {
       if (e.ctrlKey || e.metaKey || e.altKey) {
         return;
       }
-      handleKeyPress(e.key.toLowerCase());
+      const key = e.key.toLowerCase();
+      if (key === "enter") {
+        handleSubmit();
+      } else {
+        handleKeyPress(key);
+      }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyPress]);
+  }, [handleKeyPress, handleSubmit]);
 
   const handleShare = () => {
     const { title, text } = buildShareableResult(currentGame);
     const url = `${externalBaseUrl}/?id=${currentGame?.id}&app=1`;
-    createCast({ text: `${title}\n\n${text}`, embeds: [url] });
+    const fullText = `${title}\n\n${text}`;
+    if (window.parent !== window.self) {
+      createCast({ text: fullText, embeds: [url] });
+    } else {
+      window.open(createComposeUrl(fullText, url), "_blank");
+    }
   };
 
   const handlePractice = () => {
@@ -375,25 +431,15 @@ export function Game({ game, jwt, userData }: GameProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4 items-center h-full w-full pt-4 pb-1.5   px-0.5 max-h-[720px]">
-      <div className="flex flex-row items-center justify-between gap-2 w-full px-3.5">
+    <div className="flex flex-col gap-4 items-center h-full w-full pt-4 pb-1 max-h-[960px]">
+      <div className="flex flex-row items-center justify-between gap-2 w-full px-4 sm:px-8 sm:py-4">
         <div>
           <div className="text-xl font-semibold font-space">
             Framedl {currentGame && formatGameKey(currentGame)}
           </div>
           <div className="text-sm text-primary-900/50">Guess the word</div>
         </div>
-        {userData && (
-          <div className="flex items-center gap-2 p-1 rounded-full bg-white">
-            <Avatar
-              avatar={userData.profileImage}
-              username={userData.username}
-            />
-            <div className="text-sm text-primary-900/50 pr-3">
-              {`@${userData.username}`}
-            </div>
-          </div>
-        )}
+        <SignIn jwt={jwt} />
       </div>
       <div className="relative flex-1 flex flex-col items-center justify-center w-full">
         <GameGrid
@@ -463,7 +509,7 @@ export function Game({ game, jwt, userData }: GameProps) {
                   size="sm"
                   href={`/app/leaderboard?uid=${
                     currentGame.userId
-                  }&gh=${encodeURIComponent(getGameHref(currentGame, jwt))}`}
+                  }&gh=${encodeURIComponent(getGameHref(currentGame))}`}
                 >
                   Leaderboard
                 </Button>
@@ -474,8 +520,12 @@ export function Game({ game, jwt, userData }: GameProps) {
           {currentGame?.status === "WON" && <GameConfetti />}
         </div>
       </Dialog>
-      <div className="w-96 max-w-full">
-        <GameKeyboard game={currentGame} onKeyPress={handleKeyPress} />
+      <div className="w-[640px] max-w-full p-0.5">
+        <GameKeyboard
+          game={currentGame}
+          onKeyPress={handleKeyPress}
+          onSubmit={handleSubmit}
+        />
       </div>
     </div>
   );

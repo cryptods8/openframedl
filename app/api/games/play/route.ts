@@ -1,7 +1,6 @@
-import { UserData, UserKey } from "@/app/game/game-repository";
-import { gameService } from "@/app/game/game-service";
-import { verifyJwt } from "@/app/lib/jwt";
 import { NextRequest, NextResponse } from "next/server";
+import { gameService } from "@/app/game/game-service";
+import { getUserInfoFromJwtOrSession } from "@/app/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -25,16 +24,15 @@ interface PlayRequest {
   gameId?: string;
 }
 
+async function getUserInfoFromRequest(req: NextRequest) {
+  const jwt = req.headers.get("Authorization")?.split(" ")[1];
+  return getUserInfoFromJwtOrSession(jwt);
+}
+
 export const POST = async (req: NextRequest) => {
   const body: PlayRequest = await req.json();
-  const jwt = req.headers.get("Authorization")?.split(" ")[1];
-  const { userData, userKey: userKeyFromJwt } = jwt
-    ? verifyJwt<{ userData?: UserData; userKey: UserKey }>(jwt)
-    : { userData: null, userKey: null };
-  const userKey = userKeyFromJwt ?? { userId: "0", identityProvider: "fc" };
-  // if (!userKey) {
-  //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  // }
+
+  const { userData, userKey } = await getUserInfoFromRequest(req);
   const game = body.gameId
     ? await gameService.load(body.gameId)
     : await gameService.loadOrCreate(

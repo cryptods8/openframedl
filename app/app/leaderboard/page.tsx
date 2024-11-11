@@ -150,7 +150,7 @@ export default async function LeaderboardPage({
         })}
       </div>
       {gameHref && (
-        <div className="fixed border-t border-primary-500/10 w-full bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm">
+        <div className="fixed border-t border-primary-500/10 w-full bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10">
           <div className="flex items-center justify-center h-full p-4">
             <Button variant="outline" href={gameHref}>
               Back to Game

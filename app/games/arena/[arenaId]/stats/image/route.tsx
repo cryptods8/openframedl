@@ -205,7 +205,6 @@ function getDisplayedPlayers(
   ) {
     return players.slice(pageOffset, pageOffset + MAX_DISPLAYED_PLAYERS);
   }
-  console.log(userResultIdx, userResult, userKey);
   if (userResultIdx < pageOffset) {
     return [
       userResult,

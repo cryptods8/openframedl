@@ -56,7 +56,6 @@ const handleRequest = frames(async (ctx) => {
       leaderboardSearchParams.set("date", dateStr);
     }
   }
-  console.log("SP", searchParams, leaderboardSearchParams);
 
   const imageUrl = constructImageUrl(
     ctx.createUrl("/api/images/leaderboard"),

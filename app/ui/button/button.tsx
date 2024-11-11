@@ -27,7 +27,7 @@ export function Button({
     variant === "primary"
       ? "bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700 border-transparent"
       : variant === "outline"
-      ? "border-primary-500/20 text-primary-900/80 hover:bg-primary-600/5 active:bg-primary-600/10"
+      ? "border-primary-500/20 text-primary-900/80 bg-white hover:bg-primary-100 active:bg-primary-200"
       : "bg-white text-primary-900/80 hover:bg-white/50 active:bg-white/50 border-transparent"
   } ${
     size === "md"

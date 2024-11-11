@@ -1,13 +1,13 @@
-import { getServerSession } from "next-auth";
 import { ProfileApp } from "../profile-app";
 import { EmptyMessage } from "../empty-message";
 import { redirect } from "next/navigation";
+import { getFarcasterSession } from "@/app/lib/auth";
 
 export default async function MyProfile() {
-  const session = await getServerSession();
+  const session = await getFarcasterSession();
 
-  if (session?.user?.name) {
-    return redirect(`/profiles/fc/${session.user.name}`);
+  if (session?.user?.fid) {
+    return redirect(`/profiles/fc/${session.user.fid}`);
   }
 
   return (
