@@ -21,7 +21,10 @@ import { createCast } from "../lib/cast";
 import { Dialog } from "./dialog";
 import { SignIn } from "./auth/sign-in";
 import { createComposeUrl } from "../utils";
-import { EllipsisHorizontalIcon, EllipsisVerticalIcon } from "@heroicons/react/16/solid";
+import {
+  EllipsisHorizontalIcon,
+  EllipsisVerticalIcon,
+} from "@heroicons/react/16/solid";
 import { IconButton } from "./button/icon-button";
 
 // TODO: move to common file
@@ -426,7 +429,20 @@ export function Game({ game, jwt, config }: GameProps) {
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
-      createCast(window, { text: title, embeds: [url] });
+      // createCast(window, { text: title, embeds: [url] });
+      window.parent?.postMessage(
+        {
+          type: "createCast",
+          data: {
+            cast: {
+              parent: "0x",
+              text: title,
+              embeds: [url],
+            },
+          },
+        },
+        "*"
+      );
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }
