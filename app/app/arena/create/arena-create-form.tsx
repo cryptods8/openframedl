@@ -160,7 +160,7 @@ export function ArenaCreateForm({ jwt }: { jwt?: string }) {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!createdArena) {
       console.error("No arena created");
       return;
@@ -171,7 +171,7 @@ export function ArenaCreateForm({ jwt }: { jwt?: string }) {
       audienceSize: config.audienceSize || 2,
     });
     if (jwt) {
-      createCast({ text, embeds: [arenaUrl] });
+      createCast(window, { text, embeds: [arenaUrl] });
     } else {
       window.open(createComposeUrl(text, arenaUrl), "_blank");
     }

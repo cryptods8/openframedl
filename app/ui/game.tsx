@@ -421,12 +421,12 @@ export function Game({ game, jwt, config }: GameProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyPress, handleSubmit]);
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const { title, text } = buildShareableResult(currentGame);
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
-      createCast({ text: fullText, embeds: [url] });
+      createCast(window, { text: fullText, embeds: [url] });
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }

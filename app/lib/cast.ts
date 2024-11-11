@@ -1,4 +1,7 @@
-export function createCast(data: { text: string; embeds: string[] }) {
+export async function createCast(
+  window: Window,
+  data: { text: string; embeds: string[] }
+) {
   window.parent?.postMessage(
     {
       type: "createCast",
