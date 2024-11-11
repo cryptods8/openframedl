@@ -8,6 +8,7 @@ import { loadUserData, loadUsername, loadFid } from "@/app/games/user-data";
 import { gameService } from "@/app/game/game-service";
 import { createComposeUrl } from "@/app/utils";
 import { notifyArenaMembers } from "../arena-utils";
+import { buildArenaShareText } from "@/app/game/arena-utils";
 
 export function formatDuration(minutes: number): string {
   const d = Math.floor(minutes / 1440);
@@ -63,36 +64,8 @@ const parseAudience = async (input: string): Promise<ArenaAudienceMember[]> => {
 
 function buildRedirectUrl(arenaConfig: ArenaConfig, arenaUrl: string): string {
   const { audience, audienceSize } = arenaConfig;
-  const audienceString = audience.reduce((res, a, idx, all) => {
-    const username = a.username ? `@${a.username}` : `!${a.userId}`;
-    if (idx === 0) {
-      return username;
-    }
-    const separator = idx === all.length - 1 ? " and " : ", ";
-    return `${res}${separator}${username}`;
-  }, "");
-
-  const freeSlots = audienceSize - audience.length;
-  let audienceMessage: string;
-  if (audienceString) {
-    const freeSlotMessage =
-      freeSlots > 0
-        ? `\n\nPlus there ${
-            freeSlots === 1
-              ? "is 1 more free slot"
-              : `are ${freeSlots} more free slots`
-          } for anyone to join.`
-        : "";
-    audienceMessage = `Hey, ${audienceString}! You are invited to cross words in Framedl Arena.${freeSlotMessage}\n\nLet the best one win!`;
-  } else {
-    audienceMessage = `Hey, you are all invited to cross words in Framedl Arena! There ${
-      freeSlots === 1 ? "is" : "are"
-    } ${freeSlots} free slot${
-      freeSlots === 1 ? "" : "s"
-    } for anyone to join the fun.\n\nLet the best one win!`;
-  }
-
-  const redirectUrl = createComposeUrl(audienceMessage, arenaUrl);
+  const message = buildArenaShareText({ audience, audienceSize });
+  const redirectUrl = createComposeUrl(message, arenaUrl);
   return redirectUrl;
 }
 

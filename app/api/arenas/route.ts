@@ -1,8 +1,14 @@
 import { externalBaseUrl } from "@/app/constants";
-import { ArenaAudienceMember, ArenaConfig, ArenaDuration, ArenaStart } from "@/app/db/pg/types";
+import {
+  ArenaAudienceMember,
+  ArenaConfig,
+  ArenaDuration,
+  ArenaStart,
+} from "@/app/db/pg/types";
 import { insertArena } from "@/app/game/arena-pg-repository";
 import { gameService } from "@/app/game/game-service";
-import { NextResponse } from "next/server";
+import { getUserInfoFromJwtOrSession } from "@/app/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 
 export interface ArenaCreateRequest {
   wordCount: number;
@@ -17,14 +23,39 @@ export interface ArenaCreateRequest {
 const allowedApiKeys = process.env.ALLOWED_API_KEYS?.split(",") ?? [];
 const adminApiKey = process.env.ADMIN_SECRET;
 
-export async function POST(req: Request) {
+async function getUserInfoFromRequest(req: NextRequest) {
   const apiKey = req.headers.get("x-framedl-api-key");
-  if (!apiKey || ![...allowedApiKeys, adminApiKey].includes(apiKey)) {
-    return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
+  if (apiKey && [...allowedApiKeys, adminApiKey].includes(apiKey)) {
+    return {
+      userKey: {
+        userId: "0x0000000000000000000000000000000000000000",
+        identityProvider: "xmtp" as const,
+      },
+      userData: {},
+    };
+  }
+  const jwt = req.headers.get("Authorization")?.split(" ")[1];
+  return getUserInfoFromJwtOrSession(jwt);
+}
+
+export async function POST(req: NextRequest) {
+  const { userData, userKey, anonymous } = await getUserInfoFromRequest(req);
+  if (anonymous) {
+    return NextResponse.json(
+      { error: "Anonymous users are not allowed" },
+      { status: 403 }
+    );
   }
 
-  const { wordCount, start, duration, audienceSize, audience, suddenDeath, initWords } =
-    (await req.json()) as Partial<ArenaCreateRequest>;
+  const {
+    wordCount,
+    start,
+    duration,
+    audienceSize,
+    audience,
+    suddenDeath,
+    initWords,
+  } = (await req.json()) as Partial<ArenaCreateRequest>;
 
   const config = {
     audience: audience ?? [],
@@ -40,9 +71,9 @@ export async function POST(req: Request) {
     updatedAt: new Date(),
     config: JSON.stringify(config),
     members: "[]",
-    userData: "{}",
-    userId: "0x0000000000000000000000000000000000000000",
-    identityProvider: "xmtp" as const,
+    userData: JSON.stringify(userData || {}),
+    userId: userKey.userId,
+    identityProvider: userKey.identityProvider,
   };
   const id = await insertArena(arena);
 

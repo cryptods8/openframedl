@@ -18,7 +18,7 @@ import {
   formatGameKey,
 } from "../game/game-utils";
 import { createCast } from "../lib/cast";
-import Dialog from "./dialog";
+import { Dialog } from "./dialog";
 import { SignIn } from "./auth/sign-in";
 import { createComposeUrl } from "../utils";
 

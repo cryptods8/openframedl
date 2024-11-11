@@ -15,6 +15,10 @@ import { CheckIcon, XMarkIcon } from "@heroicons/react/16/solid";
 import { formatDurationSimple } from "@/app/game/game-utils";
 import { FarcasterUser } from "./search-users";
 import { ArenaCreateRequest } from "@/app/api/arenas/route";
+import { Dialog } from "@/app/ui/dialog";
+import { buildArenaShareText } from "@/app/game/arena-utils";
+import { createCast } from "@/app/lib/cast";
+import { createComposeUrl } from "@/app/utils";
 
 function Label({
   children,
@@ -92,7 +96,7 @@ function parseTimeLimit(timeLimit: string) {
     .reduce((acc, num) => acc + num, 0);
 }
 
-export function ArenaCreateForm() {
+export function ArenaCreateForm({ jwt }: { jwt?: string }) {
   const [audienceSize, setAudienceSize] = useState(2);
   const [wordCount, setWordCount] = useState(5);
   const [startDate, setStartDate] = useState<string | null>(null);
@@ -100,29 +104,84 @@ export function ArenaCreateForm() {
   const [suddenDeath, setSuddenDeath] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<FarcasterUser[]>([]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [createdArena, setCreatedArena] = useState<{
+    id: number;
+    arenaUrl: string;
+    config: Partial<ArenaCreateRequest>;
+  } | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmitting) {
+      return;
+    }
+    setIsSubmitting(true);
     const payload: Partial<ArenaCreateRequest> = {
       audienceSize,
       wordCount,
       start: startDate
-        ? { type: "scheduled", date: startDate }
+        ? { type: "scheduled", date: new Date(startDate).toISOString() }
         : { type: "immediate" },
       duration: timeLimit
         ? { type: "interval", minutes: parseTimeLimit(timeLimit) }
         : { type: "unlimited" },
-      suddenDeath,
-      audience: selectedUsers.map((u) => ({
+      suddenDeath: suddenDeath && audienceSize === 2,
+      audience: selectedUsers.slice(0, audienceSize).map((u) => ({
         userId: u.fid.toString(),
         identityProvider: "fc",
         username: u.username,
       })),
     };
-    console.log("payload", payload);
+
+    try {
+      const response = await fetch("/api/arenas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("data", data);
+        setCreatedArena({ ...data, config: payload });
+        setIsDialogOpen(true);
+      } else {
+        console.error("Failed to create arena", response);
+      }
+    } catch (error) {
+      console.error("Failed to create arena", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleShare = () => {
+    if (!createdArena) {
+      console.error("No arena created");
+      return;
+    }
+    const { config, arenaUrl } = createdArena;
+    const text = buildArenaShareText({
+      audience: config.audience || [],
+      audienceSize: config.audienceSize || 2,
+    });
+    if (jwt) {
+      createCast({ text, embeds: [arenaUrl] });
+    } else {
+      window.open(createComposeUrl(text, arenaUrl), "_blank");
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form
+      onSubmit={handleSubmit}
+      className="flex-1 flex flex-col justify-between"
+    >
       <div className="space-y-6 py-6">
         <div>
           <InputField
@@ -216,10 +275,25 @@ export function ArenaCreateForm() {
         </div>
       </div>
       <div className="flex flex-row justify-end pt-4 pb-8">
-        <Button type="submit" variant="primary">
-          Create
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? "Creating..." : "Create"}
         </Button>
       </div>
+
+      <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
+        <div className="w-full flex flex-col gap-2">
+          <p className="w-full text-left text-xl font-space font-bold">
+            Arena created! 🎉
+          </p>
+          {createdArena && (
+            <div className="flex flex-col gap-2 items-center w-full pt-4">
+              <Button variant="primary" onClick={handleShare}>
+                Share
+              </Button>
+            </div>
+          )}
+        </div>
+      </Dialog>
     </form>
   );
 }

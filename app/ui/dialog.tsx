@@ -7,7 +7,7 @@ interface DialogProps {
   children: React.ReactNode;
 }
 
-export default function Dialog({ open, onClose, children }: DialogProps) {
+export function Dialog({ open, onClose, children }: DialogProps) {
   return (
     <AnimatePresence>
       {open && (
