@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
 import {
-  Guess,
   GuessCharacter,
   GuessedGame,
   GuessValidationStatus,
@@ -18,7 +17,6 @@ import {
   formatDurationSimple,
   formatGameKey,
 } from "../game/game-utils";
-import { externalBaseUrl } from "../constants";
 import { createCast } from "../lib/cast";
 import Dialog from "./dialog";
 import { SignIn } from "./auth/sign-in";
@@ -260,11 +258,7 @@ function GameGrid({
 interface GameProps {
   game?: GuessedGame;
   jwt?: string;
-  userData?: {
-    profileImage?: string | null;
-    displayName?: string | null;
-    username?: string | null;
-  };
+  config: GameConfig;
 }
 
 function NextGameMessage() {
@@ -285,8 +279,8 @@ function isPracticeGame(game: GuessedGame) {
   return !game.isDaily && !game.isCustom && !game.arena;
 }
 
-function getGameHref(game: GuessedGame, jwt?: string) {
-  const url = new URL(`${externalBaseUrl}/app`);
+function getGameHref(game: GuessedGame, config: GameConfig, jwt?: string) {
+  const url = new URL(`${config.externalBaseUrl}/app`);
   url.searchParams.set("id", game.id);
   if (jwt) {
     url.searchParams.set("jwt", jwt);
@@ -294,7 +288,12 @@ function getGameHref(game: GuessedGame, jwt?: string) {
   return url.toString();
 }
 
-export function Game({ game, jwt }: GameProps) {
+interface GameConfig {
+  externalBaseUrl: string;
+  isPro: boolean;
+}
+
+export function Game({ game, jwt, config }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -415,7 +414,7 @@ export function Game({ game, jwt }: GameProps) {
 
   const handleShare = () => {
     const { title, text } = buildShareableResult(currentGame);
-    const url = `${externalBaseUrl}/?id=${currentGame?.id}&app=1`;
+    const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (window.parent !== window.self) {
       createCast({ text: fullText, embeds: [url] });
@@ -509,7 +508,9 @@ export function Game({ game, jwt }: GameProps) {
                   size="sm"
                   href={`/app/leaderboard?uid=${
                     currentGame.userId
-                  }&gh=${encodeURIComponent(getGameHref(currentGame))}`}
+                  }&gh=${encodeURIComponent(
+                    getGameHref(currentGame, config, jwt)
+                  )}`}
                 >
                   Leaderboard
                 </Button>

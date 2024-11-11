@@ -6,6 +6,7 @@ import { gameService } from "../game/game-service";
 import { UserData, UserKey } from "../game/game-repository";
 import { ProfileApp } from "../profiles/profile-app";
 import { getUserInfoFromJwtOrSession } from "../lib/auth";
+import { externalBaseUrl, isPro } from "../constants";
 
 export async function generateMetadata({
   searchParams,
@@ -82,6 +83,10 @@ export default async function App({ searchParams }: NextServerPageProps) {
         <Game
           game={game ?? undefined}
           jwt={searchParams?.jwt as string | undefined}
+          config={{
+            externalBaseUrl: externalBaseUrl,
+            isPro: isPro,
+          }}
         />
       </ProfileApp>
     </div>

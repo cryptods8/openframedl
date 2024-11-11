@@ -9,7 +9,10 @@ export const baseUrl =
   process.env["VERCEL_URL"] ||
   fallbackBaseUrl;
 
-export const externalBaseUrl = process.env["EXTERNAL_BASE_URL"] || baseUrl;
+export const externalBaseUrl =
+  process.env["NEXT_PUBLIC_EXTERNAL_BASE_URL"] ||
+  process.env["EXTERNAL_BASE_URL"] ||
+  baseUrl;
 
 const fallbackHubHttpUrl = isProduction
   ? undefined
