@@ -426,7 +426,7 @@ export function Game({ game, jwt, config }: GameProps) {
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
-      createCast(window, { text: fullText, embeds: [url] });
+      createCast(window, { text: title, embeds: [url] });
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }
