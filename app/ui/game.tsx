@@ -430,14 +430,13 @@ export function Game({ game, jwt, config }: GameProps) {
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
       // createCast(window, { text: title, embeds: [url] });
-      window.parent?.postMessage(
+      window.parent.postMessage(
         {
           type: "createCast",
           data: {
             cast: {
-              parent: "0x",
-              text: title,
-              embeds: [url],
+              text: "Play Framedl",
+              embeds: ["https://framedl.xyz/?app=1"],
             },
           },
         },
