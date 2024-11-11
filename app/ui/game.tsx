@@ -21,6 +21,8 @@ import { createCast } from "../lib/cast";
 import { Dialog } from "./dialog";
 import { SignIn } from "./auth/sign-in";
 import { createComposeUrl } from "../utils";
+import { EllipsisHorizontalIcon, EllipsisVerticalIcon } from "@heroicons/react/16/solid";
+import { IconButton } from "./button/icon-button";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -285,6 +287,16 @@ function getGameHref(game: GuessedGame, config: GameConfig, jwt?: string) {
   return url.toString();
 }
 
+function MenuButton() {
+  return (
+    <div className="w-12 h-12 rounded-full shadow-md shadow-primary-500/10">
+      <IconButton size="lg">
+        <EllipsisVerticalIcon className="size-5 text-primary-900/80" />
+      </IconButton>
+    </div>
+  );
+}
+
 interface GameConfig {
   externalBaseUrl: string;
   isPro: boolean;
@@ -518,7 +530,10 @@ export function Game({ game, jwt, config }: GameProps) {
           {currentGame?.status === "WON" && <GameConfetti />}
         </div>
       </Dialog>
-      <div className="w-[640px] max-w-full p-0.5">
+      <div className="w-[640px] max-w-full p-0.5 relative">
+        {/* <div className="absolute -top-14 right-4">
+          <MenuButton />
+        </div> */}
         <GameKeyboard
           game={currentGame}
           onKeyPress={handleKeyPress}

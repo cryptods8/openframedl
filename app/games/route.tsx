@@ -64,11 +64,11 @@ const handleRequest = frames(async (ctx) => {
     });
   }
 
-  return {
-    state: {},
-    image: signedImageUrl,
-    buttons: [
-      searchParams.app === "1" ? (
+  if (searchParams.app === "1") {
+    return {
+      state: {},
+      image: signedImageUrl,
+      buttons: [
         <Button
           action="link"
           target={`https://warpcast.com/~/composer-action?url=${encodeURIComponent(
@@ -76,12 +76,18 @@ const handleRequest = frames(async (ctx) => {
           )}`}
         >
           Play
-        </Button>
-      ) : (
-        <Button action="post" target={toVariantTarget("daily")}>
-          Play
-        </Button>
-      ),
+        </Button>,
+      ],
+    };
+  }
+
+  return {
+    state: {},
+    image: signedImageUrl,
+    buttons: [
+      <Button action="post" target={toVariantTarget("daily")}>
+        Play
+      </Button>,
       isMore ? (
         <Button action="post" target={toVariantTarget("random")}>
           🎲 Practice
