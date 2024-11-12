@@ -535,7 +535,23 @@ export function Game({ game, jwt, config }: GameProps) {
           </p>
           {currentGame && (
             <div className="flex flex-col gap-2 items-center w-full pt-4">
-              <Button variant="primary" onClick={handleShare}>
+              <Button
+                variant="primary"
+                onClick={() =>
+                  window.parent.postMessage(
+                    {
+                      type: "createCast",
+                      data: {
+                        cast: {
+                          text: "Play Framedl",
+                          embeds: ["https://framedl.xyz/?app=1"],
+                        },
+                      },
+                    },
+                    "*"
+                  )
+                }
+              >
                 Share
               </Button>
               {isPracticeGame(currentGame) ? (
