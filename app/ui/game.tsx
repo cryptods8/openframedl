@@ -431,33 +431,8 @@ export function Game({ game, jwt, config }: GameProps) {
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
-      const cast = { text: title, embeds: [url] };
-      console.log("cast", cast, "parent", window.parent);
+      const cast = { text: fullText, embeds: [url] };
       createCast(window, cast);
-      window.postMessage(
-        {
-          type: "createCast",
-          data: {
-            cast: {
-              text: "Play Framedl",
-              embeds: ["https://framedl.xyz/?app=1"],
-            },
-          },
-        },
-        "*"
-      );
-      window.parent.postMessage(
-        {
-          type: "createCast",
-          data: {
-            cast: {
-              text: "Play Framedl 2",
-              embeds: ["https://framedl.xyz/?app=1"],
-            },
-          },
-        },
-        "*"
-      );
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }
@@ -535,23 +510,7 @@ export function Game({ game, jwt, config }: GameProps) {
           </p>
           {currentGame && (
             <div className="flex flex-col gap-2 items-center w-full pt-4">
-              <Button
-                variant="primary"
-                onClick={() =>
-                  window.parent.postMessage(
-                    {
-                      type: "createCast",
-                      data: {
-                        cast: {
-                          text: "Play Framedl",
-                          embeds: ["https://framedl.xyz/?app=1"],
-                        },
-                      },
-                    },
-                    "*"
-                  )
-                }
-              >
+              <Button variant="primary" onClick={handleShare}>
                 Share
               </Button>
               {isPracticeGame(currentGame) ? (
