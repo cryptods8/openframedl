@@ -424,7 +424,9 @@ export function Game({ game, jwt, config }: GameProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyPress, handleSubmit]);
 
-  const handleShare = async () => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+
     const { title, text } = buildShareableResult(currentGame);
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
@@ -432,18 +434,30 @@ export function Game({ game, jwt, config }: GameProps) {
       const cast = { text: title, embeds: [url] };
       console.log("cast", cast, "parent", window.parent);
       createCast(window, cast);
-      // window.parent.postMessage(
-      //   {
-      //     type: "createCast",
-      //     data: {
-      //       cast: {
-      //         text: "Play Framedl",
-      //         embeds: ["https://framedl.xyz/?app=1"],
-      //       },
-      //     },
-      //   },
-      //   "*"
-      // );
+      window.postMessage(
+        {
+          type: "createCast",
+          data: {
+            cast: {
+              text: "Play Framedl",
+              embeds: ["https://framedl.xyz/?app=1"],
+            },
+          },
+        },
+        "*"
+      );
+      window.parent.postMessage(
+        {
+          type: "createCast",
+          data: {
+            cast: {
+              text: "Play Framedl 2",
+              embeds: ["https://framedl.xyz/?app=1"],
+            },
+          },
+        },
+        "*"
+      );
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }
