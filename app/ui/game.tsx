@@ -429,19 +429,21 @@ export function Game({ game, jwt, config }: GameProps) {
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
-      // createCast(window, { text: title, embeds: [url] });
-      window.parent.postMessage(
-        {
-          type: "createCast",
-          data: {
-            cast: {
-              text: "Play Framedl",
-              embeds: ["https://framedl.xyz/?app=1"],
-            },
-          },
-        },
-        "*"
-      );
+      const cast = { text: title, embeds: [url] };
+      console.log("cast", cast, "parent", window.parent);
+      createCast(window, cast);
+      // window.parent.postMessage(
+      //   {
+      //     type: "createCast",
+      //     data: {
+      //       cast: {
+      //         text: "Play Framedl",
+      //         embeds: ["https://framedl.xyz/?app=1"],
+      //       },
+      //     },
+      //   },
+      //   "*"
+      // );
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }

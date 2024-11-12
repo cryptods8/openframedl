@@ -14,32 +14,35 @@ const config = {
 };
 
 function AuthChildrenContainer({ children }: { children: React.ReactNode }) {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
-  const jwt = searchParams.get("jwt");
+  // const searchParams = useSearchParams();
+  // const pathname = usePathname();
+  // const router = useRouter();
+  // const jwt = searchParams.get("jwt");
 
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  // const [isSigningIn, setIsSigningIn] = useState(false);
 
-  useEffect(() => {
-    if (!jwt) {
-      return;
-    }
-    setIsSigningIn(true);
-    signIn("credentials", { jwt, redirect: false })
-      .catch((e) => {
-        console.error("E", e);
-      })
-      .finally(() => {
-        setIsSigningIn(false);
+  // useEffect(() => {
+  //   if (!jwt) {
+  //     return;
+  //   }
+  //   setIsSigningIn(true);
+  //   signIn("credentials", { jwt, redirect: false })
+  //     .then((r) => {
+  //       console.log("SIGN IN RESPONSE", r);
+  //     })
+  //     .catch((e) => {
+  //       console.error("E", e);
+  //     })
+  //     .finally(() => {
+  //       setIsSigningIn(false);
 
-        // const newSearchParams = new URLSearchParams(searchParams.toString());
-        // newSearchParams.delete("jwt");
-        // const query = newSearchParams.toString();
-        // const newPathname = pathname + (query ? `?${query}` : "");
-        // router.replace(newPathname);
-      });
-  }, [jwt, router, searchParams, pathname, setIsSigningIn]);
+  //       // const newSearchParams = new URLSearchParams(searchParams.toString());
+  //       // newSearchParams.delete("jwt");
+  //       // const query = newSearchParams.toString();
+  //       // const newPathname = pathname + (query ? `?${query}` : "");
+  //       // router.replace(newPathname);
+  //     });
+  // }, [jwt, router, searchParams, pathname, setIsSigningIn]);
 
   // if (isSigningIn) {
   //   return null;

@@ -115,6 +115,33 @@ export const authOptions: NextAuthOptions = {
       return { ...session, user };
     },
   },
+  cookies: {
+    sessionToken: {
+      name: "__Secure-next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "none",
+        path: "/",
+        secure: true,
+      },
+    },
+    csrfToken: {
+      name: "__Secure-next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+      },
+    },
+    callbackUrl: {
+      name: "__Secure-next-auth.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+      },
+    },
+  },
 };
 
 export async function getFarcasterSession() {

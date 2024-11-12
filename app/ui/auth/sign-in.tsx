@@ -137,6 +137,7 @@ export function SignIn({ jwt }: { jwt?: string }) {
 
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     // somehow this is necessary to get the "good" nonce
@@ -149,6 +150,20 @@ export function SignIn({ jwt }: { jwt?: string }) {
         setNonce(nonce);
       });
   }, [session]);
+
+  useEffect(() => {
+    if (!jwt) {
+      return;
+    }
+    setIsSigningIn(true);
+    signIn("credentials", { jwt, redirect: false })
+      .catch((e) => {
+        console.error("E", e);
+      })
+      .finally(() => {
+        setIsSigningIn(false);
+      });
+  }, [jwt, setIsSigningIn]);
 
   const handleSuccess = useCallback((res: StatusAPIResponse) => {
     signIn("credentials", {
@@ -164,7 +179,7 @@ export function SignIn({ jwt }: { jwt?: string }) {
     signOut();
   }, []);
 
-  const isLoading = status === "loading";
+  const isLoading = status === "loading" || isSigningIn;
   const userInfo = userInfoFromJwtOrSession(jwt, session);
 
   return (
@@ -173,7 +188,7 @@ export function SignIn({ jwt }: { jwt?: string }) {
         <ProfileButton
           userInfo={userInfo}
           onSignOut={handleSignOut}
-          isLoading={status === "loading"}
+          isLoading={isLoading}
         />
       ) : (
         nonce && (
