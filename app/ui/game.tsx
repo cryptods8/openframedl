@@ -21,11 +21,8 @@ import { createCast } from "../lib/cast";
 import { Dialog } from "./dialog";
 import { SignIn } from "./auth/sign-in";
 import { createComposeUrl } from "../utils";
-import {
-  EllipsisHorizontalIcon,
-  EllipsisVerticalIcon,
-} from "@heroicons/react/16/solid";
-import { IconButton } from "./button/icon-button";
+import { GameOptionsMenu } from "./game/game-options-menu";
+import { useSession } from "next-auth/react";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -224,6 +221,12 @@ function getValidationResultMessage(
   }
 }
 
+const placeholderGuesses = ["JUST ", "START", "TYPIN", "G... "].map((w) => ({
+  characters: w
+    .split("")
+    .map((c) => ({ character: c, status: "UNKNOWN" as const })),
+}));
+
 function GameGrid({
   game,
   currentWord,
@@ -234,27 +237,22 @@ function GameGrid({
   submitting: boolean;
 }) {
   const guesses = [...(game?.guesses || [])];
-  guesses.push({
-    characters: Array.from({ length: 5 }).map((_, idx) => ({
-      character: currentWord[idx] || "",
-      status: "UNKNOWN" as const,
-    })),
-  });
-  return <GameGuessGrid guesses={guesses} full submitting={submitting} />;
-  // return (
-  //   <div className="flex flex-col gap-2 items-center">
-  //     {game?.guesses.map((guess, index) => (
-  //       <GameWord key={index} word={guess} />
-  //     ))}
-  //     <GameWord
-  //       word={{
-  //         characters: currentWord
-  //           .split("")
-  //           .map((c) => ({ character: c, status: "CORRECT" as const })),
-  //       }}
-  //     />
-  //   </div>
-  // );
+  if (currentWord) {
+    guesses.push({
+      characters: Array.from({ length: 5 }).map((_, idx) => ({
+        character: currentWord[idx] || "",
+        status: "UNKNOWN" as const,
+      })),
+    });
+  }
+  return (
+    <GameGuessGrid
+      guesses={guesses.length > 0 ? guesses : placeholderGuesses}
+      placeholder={guesses.length === 0}
+      full
+      submitting={submitting}
+    />
+  );
 }
 
 interface GameProps {
@@ -290,16 +288,6 @@ function getGameHref(game: GuessedGame, config: GameConfig, jwt?: string) {
   return url.toString();
 }
 
-function MenuButton() {
-  return (
-    <div className="w-12 h-12 rounded-full shadow-md shadow-primary-500/10">
-      <IconButton size="lg">
-        <EllipsisVerticalIcon className="size-5 text-primary-900/80" />
-      </IconButton>
-    </div>
-  );
-}
-
 interface GameConfig {
   externalBaseUrl: string;
   isPro: boolean;
@@ -317,6 +305,36 @@ export function Game({ game, jwt, config }: GameProps) {
   const isGameOver =
     currentGame?.status === "WON" || currentGame?.status === "LOST";
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
+
+  const [isWindowFocused, setIsWindowFocused] = useState(true);
+  const { status: sessionStatus } = useSession();
+
+  useEffect(() => {
+    const onFocus = () => setIsWindowFocused(true);
+    const onBlur = () => setIsWindowFocused(false);
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
+
+  const handleGameChange = useCallback(
+    (game: GuessedGame | undefined) => {
+      setCurrentGame(game);
+      setCurrentWord("");
+      setValidationResult(null);
+      setIsDialogOpen(game?.status === "WON" || game?.status === "LOST");
+    },
+    [setCurrentGame, setCurrentWord, setIsDialogOpen, setValidationResult]
+  );
+
+  useEffect(() => {
+    handleGameChange(game);
+  }, [game, handleGameChange]);
 
   const handleSubmit = useCallback(async () => {
     if (isSubmitting) {
@@ -355,12 +373,7 @@ export function Game({ game, jwt, config }: GameProps) {
       });
       const data = await resp.json();
       if (data.data) {
-        setCurrentGame(data.data);
-        setCurrentWord("");
-        setValidationResult(null);
-        if (data.data.status === "WON" || data.data.status === "LOST") {
-          setIsDialogOpen(true);
-        }
+        handleGameChange(data.data);
       }
       if (data.validationResult) {
         setValidationResult(data.validationResult);
@@ -378,8 +391,8 @@ export function Game({ game, jwt, config }: GameProps) {
     jwt,
     setIsDialogOpen,
     setValidationResult,
-    setCurrentGame,
     setCurrentWord,
+    handleGameChange,
   ]);
 
   const handleKeyPress = useCallback(
@@ -406,6 +419,15 @@ export function Game({ game, jwt, config }: GameProps) {
       }
     },
     [setCurrentWord, isSubmitting, isGameOver]
+  );
+
+  const handleNewGame = useCallback(
+    (gameType: "practice" | "daily") => {
+      if (gameType === "practice") {
+        handleGameChange(undefined);
+      }
+    },
+    [handleGameChange]
   );
 
   useEffect(() => {
@@ -438,14 +460,17 @@ export function Game({ game, jwt, config }: GameProps) {
     }
   };
 
-  const handlePractice = () => {
-    setCurrentGame(undefined);
-    setIsDialogOpen(false);
-    setCurrentWord("");
-  };
-
   return (
-    <div className="flex flex-col gap-4 items-center h-full w-full pt-4 pb-1 max-h-[960px]">
+    <div className="flex flex-col gap-4 items-center h-full w-full pt-4 pb-1 max-h-[960px] relative">
+      {!isWindowFocused && !isGameOver && !isSubmitting && !isDialogOpen && (
+        <div className="absolute top-0 left-0 right-0 bottom-0 bg-white/50 backdrop-blur-sm z-[10000]">
+          <div className="flex items-center justify-center h-full w-full p-8">
+            <div className="text-xl font-semibold text-primary-900/30">
+              Click anywhere to start…
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-row items-center justify-between gap-2 w-full px-4 sm:px-8 sm:py-4">
         <div>
           <div className="text-xl font-semibold font-space">
@@ -514,7 +539,11 @@ export function Game({ game, jwt, config }: GameProps) {
                 Share
               </Button>
               {isPracticeGame(currentGame) ? (
-                <Button variant="outline" onClick={handlePractice} size="sm">
+                <Button
+                  variant="outline"
+                  onClick={() => handleNewGame("practice")}
+                  size="sm"
+                >
                   New Practice
                 </Button>
               ) : (
@@ -537,9 +566,14 @@ export function Game({ game, jwt, config }: GameProps) {
         </div>
       </Dialog>
       <div className="w-[640px] max-w-full p-0.5 relative">
-        {/* <div className="absolute -top-14 right-4">
-          <MenuButton />
-        </div> */}
+        <div className="absolute -top-14 right-4">
+          <GameOptionsMenu
+            onNewGame={handleNewGame}
+            showDaily={
+              sessionStatus === "authenticated" && !currentGame?.isDaily
+            }
+          />
+        </div>
         <GameKeyboard
           game={currentGame}
           onKeyPress={handleKeyPress}

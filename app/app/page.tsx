@@ -67,16 +67,22 @@ async function loadGame({
 
 export default async function App({ searchParams }: NextServerPageProps) {
   const gameIdParam = searchParams?.id as string | undefined;
+  const gtParam = searchParams?.gt as string | undefined;
   const jwt = searchParams?.jwt as string | undefined;
   const { userData, userKey, anonymous } = await getUserInfoFromJwtOrSession(
     jwt
   );
-  const game = await loadGame({
-    gameId: gameIdParam,
-    userKey,
-    userData,
-    anonymous,
-  });
+  const game =
+    gtParam !== "practice"
+      ? await loadGame({
+          gameId: gameIdParam,
+          userKey,
+          userData,
+          anonymous,
+        })
+      : null;
+  console.log("game", game);
+
   return (
     <div className="w-full h-dvh min-h-full">
       <ProfileApp headerless>

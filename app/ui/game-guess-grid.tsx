@@ -7,10 +7,12 @@ export function GameGuessGrid({
   guesses,
   full,
   submitting,
+  placeholder,
 }: {
   guesses: Guess[];
   full?: boolean;
   submitting?: boolean;
+  placeholder?: boolean;
 }) {
   const arr = full ? fullArray : guesses;
   return (
@@ -25,9 +27,11 @@ export function GameGuessGrid({
             {characters.map((letter, j) => (
               <div
                 key={j}
-                className={`w-12 h-12 flex items-center justify-center font-bold text-2xl border-2 transition-all duration-100 ${
+                className={`w-12 h-12 flex items-center justify-center font-bold text-2xl border-2 transition-[border-color,background-color] duration-100 ${
                   !letter
                     ? "bg-white border-primary-950/20"
+                    : placeholder
+                    ? "bg-white text-primary-950/30 border-primary-950/20"
                     : letter.status === "CORRECT"
                     ? "bg-green-600 text-white border-transparent"
                     : letter.status === "WRONG_POSITION"

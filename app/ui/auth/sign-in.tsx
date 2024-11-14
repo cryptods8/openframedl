@@ -19,32 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Avatar } from "../avatar";
 import { decode } from "jsonwebtoken";
 import { UserKey } from "@/app/game/game-repository";
-
-function ProgressBarIcon() {
-  return (
-    <svg
-      width="100%"
-      height="100%"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      ></circle>
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      ></path>
-    </svg>
-  );
-}
+import { ProgressBarIcon } from "../icons/progress-bar-icon";
 
 function ProfileButton({
   userInfo,
@@ -90,14 +65,14 @@ function ProfileButton({
         >
           <MenuItems
             anchor="bottom end"
-            className="w-52 origin-top-right mt-1 rounded-lg text-white bg-primary-500 font-bold [--anchor-gap:var(--spacing-1)] focus:outline-none shadow-lg shadow-primary-500/10"
+            className="w-48 origin-bottom-right rounded-md border border-primary-200 bg-white shadow-md shadow-primary-500/10 p-1 transition duration-100 ease-out [--anchor-gap:4px] focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 font-inter font-semibold"
           >
             <MenuItem>
               <button
-                className="group flex w-full items-center gap-2 rounded-lg py-3 px-5 bg-primary-400 data-[focus]:bg-primary-400/80 transition duration-150 ease-in-out"
+                className="flex items-center gap-2 px-3 py-2 hover:bg-primary-100 rounded w-full"
                 onClick={onSignOut}
               >
-                <ArrowLeftStartOnRectangleIcon className="size-5 fill-white/70" />
+                <ArrowLeftStartOnRectangleIcon className="size-5 fill-primary-900/60" />
                 Sign out
               </button>
             </MenuItem>
