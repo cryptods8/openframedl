@@ -41,3 +41,7 @@ Decentralized social network built on Ethereum. Come [join us](https://farcaster
 ### Who are you?
 
 [ds8](https://warpcast.com/ds8)
+
+### License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
