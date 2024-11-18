@@ -5,7 +5,7 @@ import { fetchMetadata } from "frames.js/next";
 import GameResult from "./ui/game-result";
 
 import { gameService } from "./game/game-service";
-import { externalBaseUrl } from "./constants";
+import { externalBaseUrl, isPro } from "./constants";
 import { currentURL } from "./utils";
 import { isUrlSigned } from "./signer";
 import { basePath } from "./games/frames";
@@ -29,7 +29,7 @@ export async function generateMetadata({
   const framesUrl = currentURL(`${basePath}?${queryParams.toString()}`);
   const other = await fetchMetadata(framesUrl);
   return {
-    title: "Framedl by ds8",
+    title: `Framedl${isPro ? " PRO" : ""} by ds8`,
     description: "Wordle in a frame",
     other,
   };
@@ -50,6 +50,7 @@ export default async function Home({ searchParams }: NextServerPageProps) {
         <GameResult
           game={gameById}
           shareUrl={`${externalBaseUrl}${gameById ? `?id=${gameById.id}` : ""}`}
+          config={{ isPro }}
         />
       </div>
       <Footer />

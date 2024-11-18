@@ -13,8 +13,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page({ searchParams }: NextServerPageProps) {
-  const jwt = searchParams?.jwt as string | undefined;
-
   return (
     <ProfileApp headerless>
       <div className="w-full p-4 h-full flex-1 flex flex-col">
@@ -26,11 +24,11 @@ export default async function Page({ searchParams }: NextServerPageProps) {
             <div className="text-primary-900/50 text-sm">Create an arena</div>
           </div>
           <div>
-            <SignIn jwt={jwt} />
+            <SignIn />
           </div>
         </div>
         <div className="flex-1 flex sm:px-4">
-          <ArenaCreateForm jwt={jwt} />
+          <ArenaCreateForm />
         </div>
       </div>
     </ProfileApp>

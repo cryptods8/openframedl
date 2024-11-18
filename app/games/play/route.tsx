@@ -116,7 +116,7 @@ export const POST = frames(async (ctx) => {
     const url = ctx.createExternalUrl(`?id=${game.id}`);
     resultsUrl = signUrl(url);
 
-    const { title, text } = buildShareableResult(game);
+    const { title, text } = buildShareableResult(game, { isPro });
     shareUrl = createComposeUrl(`${title}\n\n${text}`, url);
   }
 

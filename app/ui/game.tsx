@@ -23,6 +23,10 @@ import { SignIn } from "./auth/sign-in";
 import { createComposeUrl } from "../utils";
 import { GameOptionsMenu } from "./game/game-options-menu";
 import { useSession } from "next-auth/react";
+import { useJwt } from "../hooks/use-jwt";
+import { UserData } from "../game/game-repository";
+import Image from "next/image";
+import Link from "next/link";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -257,8 +261,8 @@ function GameGrid({
 
 interface GameProps {
   game?: GuessedGame;
-  jwt?: string;
   config: GameConfig;
+  userData?: UserData;
 }
 
 function NextGameMessage() {
@@ -293,7 +297,7 @@ interface GameConfig {
   isPro: boolean;
 }
 
-export function Game({ game, jwt, config }: GameProps) {
+export function Game({ game, config, userData }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -308,6 +312,7 @@ export function Game({ game, jwt, config }: GameProps) {
 
   const [isWindowFocused, setIsWindowFocused] = useState(true);
   const { status: sessionStatus } = useSession();
+  const { jwt } = useJwt();
 
   useEffect(() => {
     const onFocus = () => setIsWindowFocused(true);
@@ -449,7 +454,7 @@ export function Game({ game, jwt, config }: GameProps) {
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
 
-    const { title, text } = buildShareableResult(currentGame);
+    const { title, text } = buildShareableResult(currentGame, config);
     const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
@@ -459,6 +464,35 @@ export function Game({ game, jwt, config }: GameProps) {
       window.open(createComposeUrl(fullText, url), "_blank");
     }
   };
+
+  if (config.isPro && !userData?.passOwnership) {
+    return (
+      <div className="flex flex-col h-full w-full p-8 items-center justify-center text-center gap-8">
+        <Link
+          href="https://zora.co/collect/base:0x402ae0eb018c623b14ad61268b786edd4ad87c56/1"
+          target="_blank"
+        >
+          <div className="overflow-hidden rounded-md shadow-xl shadow-primary-500/5 max-w-xl hover:scale-105 transition-all duration-150 active:scale-100 active:shadow-primary-500/0">
+            <Image
+              src="/pro-full.png"
+              alt="Framedl PRO"
+              className="w-full aspect-square"
+              width={2048}
+              height={2048}
+            />
+          </div>
+        </Link>
+        <div>
+          <p className="text-xl font-semibold text-primary-900/50">
+            Framedl PRO Pass is required to play
+          </p>
+          <p className="text-primary-900/50 mt-2">
+            Click on the image to go to Zora and buy the Framedl PRO Pass
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 items-center h-full w-full pt-4 pb-1 max-h-[960px] relative">
@@ -473,12 +507,14 @@ export function Game({ game, jwt, config }: GameProps) {
       )}
       <div className="flex flex-row items-center justify-between gap-2 w-full px-4 sm:px-8 sm:py-4">
         <div>
-          <div className="text-xl font-semibold font-space">
-            Framedl {currentGame && formatGameKey(currentGame)}
+          <div className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
+            <span>Framedl </span>
+            {config.isPro && <span style={{ color: "green" }}>PRO </span>}
+            <span>{currentGame && formatGameKey(currentGame)}</span>
           </div>
           <div className="text-sm text-primary-900/50">Guess the word</div>
         </div>
-        <SignIn jwt={jwt} />
+        <SignIn />
       </div>
       <div className="relative flex-1 flex flex-col items-center justify-center w-full">
         <GameGrid

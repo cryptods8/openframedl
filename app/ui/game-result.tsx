@@ -8,12 +8,13 @@ import Link from "next/link";
 export interface GameResultProps {
   game?: PublicGuessedGame | null;
   shareUrl?: string;
+  config: { isPro: boolean };
 }
 
-export default function GameResult({ game, shareUrl }: GameResultProps) {
+export default function GameResult({ game, shareUrl, config }: GameResultProps) {
   const handleShare = () => {
     const url = shareUrl || window.location.href;
-    const { title, text } = buildShareableResult(game);
+    const { title, text } = buildShareableResult(game, config);
     const { navigator } = window;
     const fullText = `${title}\n\n${text}\n\n${url}`;
     if (navigator?.share) {

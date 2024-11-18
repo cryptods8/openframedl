@@ -19,6 +19,7 @@ import { Dialog } from "@/app/ui/dialog";
 import { buildArenaShareText } from "@/app/game/arena-utils";
 import { createCast } from "@/app/lib/cast";
 import { createComposeUrl } from "@/app/utils";
+import { useJwt } from "@/app/hooks/use-jwt";
 
 function Label({
   children,
@@ -96,7 +97,7 @@ function parseTimeLimit(timeLimit: string) {
     .reduce((acc, num) => acc + num, 0);
 }
 
-export function ArenaCreateForm({ jwt }: { jwt?: string }) {
+export function ArenaCreateForm() {
   const [audienceSize, setAudienceSize] = useState(2);
   const [wordCount, setWordCount] = useState(5);
   const [startDate, setStartDate] = useState<string | null>(null);
@@ -112,6 +113,8 @@ export function ArenaCreateForm({ jwt }: { jwt?: string }) {
     arenaUrl: string;
     config: Partial<ArenaCreateRequest>;
   } | null>(null);
+
+  const { jwt } = useJwt();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

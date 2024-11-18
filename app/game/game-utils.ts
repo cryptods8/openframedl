@@ -1,6 +1,5 @@
-import { isPro } from "../constants";
 import { UserData, UserKey } from "./game-repository";
-import { CustomGameMaker, PublicGuessedGame } from "./game-service";
+import { PublicGuessedGame } from "./game-service";
 
 function buildResultText(game: PublicGuessedGame) {
   return game.guesses
@@ -53,7 +52,8 @@ export function formatGameKey(game: PublicGuessedGame) {
 }
 
 export function buildShareableResult(
-  game: PublicGuessedGame | null | undefined
+  game: PublicGuessedGame | null | undefined,
+  config: { isPro: boolean }
 ) {
   if (!game) {
     return {
@@ -62,7 +62,7 @@ export function buildShareableResult(
     };
   }
   const guessCount = game.status === "WON" ? `${game.guesses.length}` : "X";
-  const title = `Framedl ${isPro ? "PRO " : ""}${formatGameKey(
+  const title = `Framedl ${config.isPro ? "PRO " : ""}${formatGameKey(
     game
   )} ${guessCount}/6${game.isHardMode ? "*" : ""}`;
   const text = buildResultText(game);

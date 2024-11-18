@@ -81,18 +81,17 @@ export default async function App({ searchParams }: NextServerPageProps) {
           anonymous,
         })
       : null;
-  console.log("game", game);
 
   return (
     <div className="w-full h-dvh min-h-full">
       <ProfileApp headerless>
         <Game
           game={game ?? undefined}
-          jwt={searchParams?.jwt as string | undefined}
           config={{
             externalBaseUrl: externalBaseUrl,
             isPro: isPro,
           }}
+          userData={userData}
         />
       </ProfileApp>
     </div>

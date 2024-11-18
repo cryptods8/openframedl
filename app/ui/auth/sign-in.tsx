@@ -20,6 +20,7 @@ import { Avatar } from "../avatar";
 import { decode } from "jsonwebtoken";
 import { UserKey } from "@/app/game/game-repository";
 import { ProgressBarIcon } from "../icons/progress-bar-icon";
+import { useJwt } from "@/app/hooks/use-jwt";
 
 function ProfileButton({
   userInfo,
@@ -104,7 +105,7 @@ function userInfoFromJwtOrSession(
   };
 }
 
-export function SignIn({ jwt }: { jwt?: string }) {
+export function SignIn() {
   const { data: session, status } = useSession() as {
     data: FarcasterSession | null;
     status: "loading" | "unauthenticated" | "authenticated";
@@ -113,6 +114,7 @@ export function SignIn({ jwt }: { jwt?: string }) {
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const { jwt, clear: clearJwt } = useJwt();
 
   useEffect(() => {
     // somehow this is necessary to get the "good" nonce
@@ -152,7 +154,8 @@ export function SignIn({ jwt }: { jwt?: string }) {
 
   const handleSignOut = useCallback(() => {
     signOut();
-  }, []);
+    clearJwt();
+  }, [signOut, clearJwt]);
 
   const isLoading = status === "loading" || isSigningIn;
   const userInfo = userInfoFromJwtOrSession(jwt, session);

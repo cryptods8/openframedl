@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gameService } from "@/app/game/game-service";
 import { getUserInfoFromJwtOrSession } from "@/app/lib/auth";
+import { isPro } from "@/app/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,14 @@ export const POST = async (req: NextRequest) => {
   const body: PlayRequest = await req.json();
 
   const { userData, userKey } = await getUserInfoFromRequest(req);
+  if (isPro) {
+    if (!userData?.passOwnership) {
+      return NextResponse.json(
+        { error: "Framedl PRO Pass is required to play!" },
+        { status: 401 }
+      );
+    }
+  }
   const game = body.gameId
     ? await gameService.load(body.gameId)
     : await gameService.loadOrCreate(
