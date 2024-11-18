@@ -91,7 +91,7 @@ export default async function App({ searchParams }: NextServerPageProps) {
             externalBaseUrl: externalBaseUrl,
             isPro: isPro,
           }}
-          userData={userData}
+          userData={userData ?? undefined}
         />
       </ProfileApp>
     </div>
