@@ -11,7 +11,11 @@ import { UserSelect } from "./user-select";
 import { useState } from "react";
 import clsx from "clsx";
 import { Button } from "@/app/ui/button/button";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/16/solid";
+import {
+  BackspaceIcon,
+  CheckIcon,
+  XMarkIcon,
+} from "@heroicons/react/16/solid";
 import { formatDurationSimple } from "@/app/game/game-utils";
 import { FarcasterUser } from "./search-users";
 import { ArenaCreateRequest } from "@/app/api/arenas/route";
@@ -20,6 +24,7 @@ import { buildArenaShareText } from "@/app/game/arena-utils";
 import { createCast } from "@/app/lib/cast";
 import { createComposeUrl } from "@/app/utils";
 import { useJwt } from "@/app/hooks/use-jwt";
+import { IconButton } from "@/app/ui/button/icon-button";
 
 function Label({
   children,
@@ -98,8 +103,8 @@ function parseTimeLimit(timeLimit: string) {
 }
 
 export function ArenaCreateForm() {
-  const [audienceSize, setAudienceSize] = useState(2);
-  const [wordCount, setWordCount] = useState(5);
+  const [audienceSize, setAudienceSize] = useState<number | null>(null);
+  const [wordCount, setWordCount] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [timeLimit, setTimeLimit] = useState("");
   const [suddenDeath, setSuddenDeath] = useState(false);
@@ -116,6 +121,9 @@ export function ArenaCreateForm() {
 
   const { jwt } = useJwt();
 
+  const actualAudienceSize = audienceSize ?? 2;
+  const actualWordCount = wordCount ?? 5;
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) {
@@ -123,16 +131,16 @@ export function ArenaCreateForm() {
     }
     setIsSubmitting(true);
     const payload: Partial<ArenaCreateRequest> = {
-      audienceSize,
-      wordCount,
+      audienceSize: actualAudienceSize,
+      wordCount: actualWordCount,
       start: startDate
         ? { type: "scheduled", date: new Date(startDate).toISOString() }
         : { type: "immediate" },
       duration: timeLimit
         ? { type: "interval", minutes: parseTimeLimit(timeLimit) }
         : { type: "unlimited" },
-      suddenDeath: suddenDeath && audienceSize === 2,
-      audience: selectedUsers.slice(0, audienceSize).map((u) => ({
+      suddenDeath: suddenDeath && actualAudienceSize === 2,
+      audience: selectedUsers.slice(0, actualAudienceSize).map((u) => ({
         userId: u.fid.toString(),
         identityProvider: "fc",
         username: u.username,
@@ -191,20 +199,25 @@ export function ArenaCreateForm() {
             label="How many players?"
             id="audience-size"
             type="number"
+            placeholder="2"
             min={1}
             max={100}
             step={1}
-            value={audienceSize}
-            onChange={(e) => setAudienceSize(parseInt(e.target.value, 10))}
-            helperText="Enter the number of players. Minimum is 1, maximum is 100."
+            value={audienceSize ?? ""}
+            onChange={(e) =>
+              setAudienceSize(
+                e.target.value ? parseInt(e.target.value, 10) : null
+              )
+            }
+            helperText="Enter the number of players. Default is 2, minimum is 1, maximum is 100."
           />
         </div>
         <div>
           <Field>
             <Label>Who exactly?</Label>
             <UserSelect
-              helperText={`Leave blank to allow anyone to join. Up to ${audienceSize} people.`}
-              max={audienceSize}
+              helperText={`Leave blank to allow anyone to join. Up to ${actualAudienceSize} people.`}
+              max={actualAudienceSize}
               onListChange={(list) => setSelectedUsers(list)}
             />
           </Field>
@@ -214,28 +227,46 @@ export function ArenaCreateForm() {
             label="How many words?"
             id="word-count"
             type="number"
+            placeholder="5"
             min={1}
             max={9}
             step={1}
-            value={wordCount}
-            onChange={(e) => setWordCount(parseInt(e.target.value, 10))}
-            helperText="The number of words in the arena. Minimum is 1, maximum is 9."
+            value={wordCount ?? ""}
+            onChange={(e) =>
+              setWordCount(e.target.value ? parseInt(e.target.value, 10) : null)
+            }
+            helperText="The number of words in the arena. Default is 5, minimum is 1, maximum is 9."
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <InputField
-              label="When to start?"
-              id="start-date"
-              type="datetime-local"
-              value={startDate ?? ""}
-              onChange={(e) => setStartDate(e.target.value)}
-              helperText="Leave empty to start immediately"
-            />
+          <div className="flex flex-row items-center gap-2">
+            <div className="flex-1">
+              <InputField
+                label="When to start?"
+                id="start-date"
+                type="datetime-local"
+                value={startDate ?? ""}
+                onChange={(e) => setStartDate(e.target.value)}
+                helperText="Leave empty to start immediately"
+              />
+            </div>
+            <div className="flex pt-1.5">
+              <IconButton
+                variant="ghost"
+                size="md"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setStartDate(null);
+                }}
+              >
+                <BackspaceIcon className="size-6" />
+              </IconButton>
+            </div>
           </div>
           <div className="relative">
             <InputField
               label="Any time limit?"
+              placeholder="Unlimited"
               id="time-limit"
               value={timeLimit}
               onChange={(e) => setTimeLimit(e.target.value)}
@@ -264,7 +295,7 @@ export function ArenaCreateForm() {
               <Switch
                 checked={suddenDeath}
                 onChange={setSuddenDeath}
-                disabled={audienceSize !== 2}
+                disabled={actualAudienceSize !== 2}
                 className="group inline-flex h-6 w-11 items-center rounded-full bg-primary-200 transition data-[checked]:bg-primary-500 disabled:opacity-50"
               >
                 <span className="size-4 translate-x-1 rounded-full bg-white transition group-data-[checked]:translate-x-6" />

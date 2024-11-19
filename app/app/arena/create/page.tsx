@@ -18,8 +18,10 @@ export default async function Page({ searchParams }: NextServerPageProps) {
       <div className="w-full p-4 h-full flex-1 flex flex-col">
         <div className="sm:pt-4 sm:px-4 flex items-center gap-2 justify-between">
           <div>
-            <h1 className="font-space font-bold text-xl">
-              Framedl {isPro ? "PRO " : " "}⚔️ ARENA
+            <h1 className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
+              <span>Framedl</span>
+              {isPro && <span style={{ color: "green" }}> PRO</span>}
+              <span> ⚔️ ARENA</span>
             </h1>
             <div className="text-primary-900/50 text-sm">Create an arena</div>
           </div>

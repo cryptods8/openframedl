@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { FarcasterUser, searchUsers } from "./search-users";
 import { Avatar } from "@/app/ui/avatar";
 import { XMarkIcon } from "@heroicons/react/16/solid";
+import { ProgressBarIcon } from "@/app/ui/icons/progress-bar-icon";
 
 export function UserSelect({
   helperText,
@@ -28,6 +29,15 @@ export function UserSelect({
   const [people, setPeople] = useState<FarcasterUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [list, setList] = useState<FarcasterUser[]>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const handleSelect = (user: FarcasterUser | null) => {
     if (!user) {
@@ -57,7 +67,7 @@ export function UserSelect({
   };
 
   useEffect(() => {
-    if (query === "") {
+    if (debouncedQuery === "") {
       setPeople([]);
       return;
     }
@@ -65,7 +75,7 @@ export function UserSelect({
     setLoading(true);
 
     const abortController = new AbortController();
-    searchUsers(query, abortController.signal)
+    searchUsers(debouncedQuery, abortController.signal)
       .then((result) => {
         setPeople(result.result.users);
       })
@@ -78,7 +88,7 @@ export function UserSelect({
       .finally(() => setLoading(false));
 
     return () => abortController.abort();
-  }, [query]);
+  }, [debouncedQuery]);
 
   return (
     <div className="w-full">
@@ -92,6 +102,13 @@ export function UserSelect({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search for a user"
           />
+          {loading && (
+            <div className="absolute top-0 right-2 bottom-0 flex items-center justify-center">
+              <div className="size-6 p-1 animate-spin flex items-center justify-center">
+                <ProgressBarIcon />
+              </div>
+            </div>
+          )}
         </div>
 
         <ComboboxOptions
