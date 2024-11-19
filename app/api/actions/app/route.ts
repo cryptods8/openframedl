@@ -15,7 +15,7 @@ export const GET = async () => {
     name: isPro ? "Framedl PRO" : "Framedl",
     aboutUrl: appBaseUrl,
     description: isPro ? "Play Framedl PRO" : "Play Framedl",
-    imageUrl: `${appBaseUrl}/${isPro ? "pro-icon.png" : "icon.png"}`,
+    imageUrl: `${externalBaseUrl}${isPro ? "/pro-icon.png" : "/app/icon.png"}`,
   });
 };
 
