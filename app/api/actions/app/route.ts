@@ -1,22 +1,21 @@
-import { externalBaseUrl } from "@/app/constants";
+import { externalBaseUrl, isPro } from "@/app/constants";
 import { createCustomFrames } from "@/app/games/frames";
 import { loadUserData } from "@/app/games/user-data";
 import { signJwt } from "@/app/lib/jwt";
-import { NextRequest } from "next/server";
 
 const appBaseUrl = `${externalBaseUrl}/app`;
 
-export const GET = async (req: NextRequest) => {
+export const GET = async () => {
   return Response.json({
     type: "composer",
     action: {
       type: "post",
     },
     icon: "play",
-    name: "Framedl",
+    name: isPro ? "Framedl PRO" : "Framedl",
     aboutUrl: appBaseUrl,
-    description: "Play Framedl",
-    imageUrl: `${appBaseUrl}/icon.png`,
+    description: isPro ? "Play Framedl PRO" : "Play Framedl",
+    imageUrl: `${appBaseUrl}/${isPro ? "pro-icon.png" : "icon.png"}`,
   });
 };
 
@@ -36,7 +35,7 @@ export const POST = frames(async (ctx) => {
 
   return Response.json({
     type: "form",
-    title: "Play Framedl",
+    title: isPro ? "Play Framedl PRO" : "Play Framedl",
     url: url.toString(),
   });
 });
