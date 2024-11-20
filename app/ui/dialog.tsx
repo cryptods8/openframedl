@@ -18,9 +18,9 @@ export function Dialog({ open, onClose, children }: DialogProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           />
-          <div className="fixed inset-0 flex w-screen items-end justify-center p-8">
+          <div className="fixed inset-0 flex w-screen items-end justify-center p-4 min-[360px]:p-8">
             <DialogPanel
-              className="border border-primary-200 bg-white p-8 rounded-md shadow-lg font-inter"
+              className="border border-primary-200 bg-white p-6 min-[360px]:p-8 rounded-md shadow-lg font-inter"
               as={motion.div}
               initial={{ opacity: 0, translateY: 100 }}
               animate={{ opacity: 1, translateY: 0 }}

@@ -26,11 +26,11 @@ export function GameOptionsMenu({
           }
         }}
         className={clsx(
-          "size-12 rounded-full shadow-md shadow-primary-500/10 flex items-center justify-center bg-white border-primary-200 border",
-          "hover:bg-primary-200/70 hover:border-primary-300/70 active:bg-primary-200 active:border-primary-300 active:shadow-primary-500/0 transition-all duration-150"
+          "size-10 rounded-full shadow-md shadow-primary-500/10 flex items-center justify-center bg-white border-primary-100 border",
+          "hover:bg-primary-100 hover:border-primary-200 active:bg-primary-200 active:border-primary-300 active:shadow-primary-500/0 transition-all duration-150"
         )}
       >
-        <EllipsisVerticalIcon className="size-5 text-primary-900/80" />
+        <EllipsisVerticalIcon className="size-5 text-primary-900/70" />
       </MenuButton>
       <Transition
         enter="transition ease-out duration-75"

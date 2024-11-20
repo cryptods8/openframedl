@@ -495,7 +495,7 @@ export function Game({ game, config, userData }: GameProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4 items-center h-full w-full pt-4 pb-1 max-h-[960px] relative">
+    <div className="flex flex-col items-center h-full w-full pt-2 gap-2 min-[360px]:gap-4 min-[360px]:pt-4 min-[360px]:pb-1 max-h-[960px] relative">
       {!isWindowFocused && !isGameOver && !isSubmitting && !isDialogOpen && (
         <div className="absolute top-0 left-0 right-0 bottom-0 bg-white/50 backdrop-blur-sm z-[10000]">
           <div className="flex items-center justify-center h-full w-full p-8">
@@ -505,14 +505,14 @@ export function Game({ game, config, userData }: GameProps) {
           </div>
         </div>
       )}
-      <div className="flex flex-row items-center justify-between gap-2 w-full px-4 sm:px-8 sm:py-4">
+      <div className="flex flex-row items-center justify-between w-full px-4 sm:px-8 sm:py-4">
         <div>
-          <div className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
+          <div className="text-lg min-[360px]:text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
             <span>Framedl </span>
             {config.isPro && <span style={{ color: "green" }}>PRO </span>}
             <span>{currentGame && formatGameKey(currentGame)}</span>
           </div>
-          <div className="text-sm text-primary-900/50">Guess the word</div>
+          <div className="text-xs min-[360px]:text-sm text-primary-900/50">Guess the word</div>
         </div>
         <SignIn />
       </div>
@@ -602,7 +602,7 @@ export function Game({ game, config, userData }: GameProps) {
         </div>
       </Dialog>
       <div className="w-[640px] max-w-full p-0.5 relative">
-        <div className="absolute -top-14 right-4">
+        <div className="absolute -top-12 right-4">
           <GameOptionsMenu
             onNewGame={handleNewGame}
             showDaily={

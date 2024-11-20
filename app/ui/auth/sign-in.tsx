@@ -35,7 +35,7 @@ function ProfileButton({
     <div className="inline-flex flex-row items-center text-white font-inter shrink-0">
       <Link
         href={`/profiles/${userInfo.userKey.identityProvider}/${userInfo.userKey.userId}`}
-        className="bg-primary-500 w-full pl-1 pr-3 py-1 text-lg font-bold rounded-l-full hover:bg-primary-500/90 active:bg-primary-500/80 inline-flex items-center gap-2 transition duration-150 ease-in-out"
+        className="bg-primary-500 w-full pl-1 pr-2 py-1 text-lg font-bold rounded-l-full hover:bg-primary-500/90 active:bg-primary-500/80 inline-flex items-center gap-2 transition duration-150 ease-in-out"
       >
         {isLoading && userInfo.anonymous ? (
           <div className="size-8 p-1 animate-spin flex items-center justify-center">
@@ -53,8 +53,8 @@ function ProfileButton({
         <div className="w-px h-6 bg-white/20" />
       </div>
       <Menu>
-        <MenuButton className="inline-flex items-center rounded-r-full bg-primary-500 p-2 data-[hover]:bg-primary-500/90 data-[open]:bg-primary-500/80 transition duration-150 ease-in-out">
-          <ChevronDownIcon className="size-6 fill-white/70" />
+        <MenuButton className="inline-flex items-center rounded-r-full bg-primary-500 px-2 py-2.5 data-[hover]:bg-primary-500/90 data-[open]:bg-primary-500/80 transition duration-150 ease-in-out">
+          <ChevronDownIcon className="size-5 fill-white/70" />
         </MenuButton>
         <Transition
           enter="transition ease-out duration-75"
