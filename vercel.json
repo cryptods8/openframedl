@@ -11,6 +11,10 @@
     {
       "path": "/api/bot/reminders/arena/process",
       "schedule": "5/10 * * * *"
+    },
+    {
+      "path": "/api/bot/casts/daily/process",
+      "schedule": "0 1 * * *"
     }
   ]
 }
