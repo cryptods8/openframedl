@@ -206,6 +206,7 @@ export const createCustomFrames = <T extends JsonValue>(
   createFrames({
     basePath,
     initialState: customInitialState,
+    imagesRoute: null,
     middleware: [
       customRequestMiddleware,
       maintenanceMiddleware,

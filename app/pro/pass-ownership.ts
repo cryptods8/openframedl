@@ -34,7 +34,7 @@ export async function checkPassOwnership(
       acc[tokenId] = true;
       return acc;
     }, {} as Record<string, boolean>);
-  const hasBasicPass = tokenIdsMap["1"];
+  const hasBasicPass = tokenIdsMap["1"] || tokenIdsMap["6"];
   const hasOGPass = tokenIdsMap["2"];
   console.debug("Pass ownership", { addresses, hasBasicPass, hasOGPass });
   if (hasBasicPass && hasOGPass) {
