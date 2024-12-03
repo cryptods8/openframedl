@@ -171,7 +171,7 @@ export default async function Page({ searchParams }: NextServerPageProps) {
   }
 
   return (
-    <Container>
+    <div className="py-8 pb-20 px-4 sm:px-8 max-w-screen-sm">
       <h1 className="text-3xl font-space">
         <span className="font-space font-bold text-3xl">Framedl</span> PRO Xmas
         Cup 2024 Ranking
@@ -202,6 +202,6 @@ export default async function Page({ searchParams }: NextServerPageProps) {
           </Button>
         </Container>
       </div>
-    </Container>
+    </div>
   );
 }
