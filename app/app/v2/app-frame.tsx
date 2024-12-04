@@ -12,12 +12,14 @@ function toUserData(user: FrameContext["user"]) {
 export function AppFrame({
   config,
   gameType,
+  debug,
 }: {
   config: {
     externalBaseUrl: string;
     isPro: boolean;
   };
   gameType?: string;
+  debug?: boolean;
 }) {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [context, setContext] = useState<FrameContext | undefined>();
@@ -53,27 +55,29 @@ export function AppFrame({
     }
   }, [isSDKLoaded]);
 
-  // if (false) {
-  //   return (
-  //     <div className="w-full h-dvh flex flex-col items-center justify-center">
-  //       <div className="text-xs">{JSON.stringify(context, null, 2)}</div>
-  //       <div className="flex-1">
-  //         <Game
-  //           game={undefined}
-  //           config={config}
-  //           userData={context?.user}
-  //           appFrame
-  //         />
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
+  const openUrl = sdk.actions.openUrl;
   const appFrame = useMemo(() => {
     return {
-      openUrl: (url: string) => sdk.actions.openUrl(url),
+      openUrl: (url: string) => openUrl(url),
     };
-  }, [sdk]);
+  }, [openUrl]);
+
+  if (debug) {
+    return (
+      <div className="w-full h-dvh flex flex-col items-center justify-center">
+        <div className="text-xs">{JSON.stringify(context, null, 2)}</div>
+        <div className="flex-1">
+          <Game
+            game={loadedGame}
+            config={config}
+            userData={context?.user ? toUserData(context.user) : undefined}
+            appFrame={appFrame}
+            gameType={gameType}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Game

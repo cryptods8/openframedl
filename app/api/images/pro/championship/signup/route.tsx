@@ -13,7 +13,12 @@ function FramedlText({ text, pfp }: { text: string; pfp?: string | null }) {
     >
       {pfp && (
         <div tw="w-20 h-20 flex">
-          <img src={pfp} alt="PFP" tw="w-full h-full" />
+          <img
+            src={pfp}
+            alt="PFP"
+            tw="w-full h-full"
+            style={{ objectFit: "cover" }}
+          />
         </div>
       )}
       {text.split("").map((l, idx) => {

@@ -427,9 +427,7 @@ function Image({
             </div>
             <div tw="flex items-baseline px-4">
               <div tw="flex font-bold">{arena.members.length}</div>
-              <div tw="flex text-2xl">
-                /{arena.config.audienceSize}
-              </div>
+              <div tw="flex text-2xl">/{arena.config.audienceSize}</div>
             </div>
           </div>
         </div>
@@ -455,6 +453,9 @@ function Image({
                     <img
                       src={p.user.profileImage}
                       tw={`${imageSizeClass} rounded-lg bg-white`}
+                      style={{
+                        objectFit: "cover",
+                      }}
                     />
                   ) : (
                     <div
