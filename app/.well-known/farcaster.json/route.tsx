@@ -5,13 +5,11 @@ import { externalBaseUrl, isProduction } from "@/app/constants";
 
 const accountAssociation = isProduction
   ? {
-      accountAssociation: {
-        header:
-          "eyJmaWQiOjExMTI0LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4ZENjODlEZjVGYzhENDJDNTQ0MzM4ODUzMWFGMTU1MUUwRmJkNUNBZCJ9",
-        payload: "eyJkb21haW4iOiJmcmFtZWRsLnh5eiJ9",
-        signature:
-          "MHhhMzljN2EzZTJiZmU1NmZjZDM4YTgxNDkxMjk4YjcxZGZkNTk0ZmJmODBjN2I0YmUwNGU5ZjUwMTYyZjYyZTgzNDliNDllZGNjNjgzM2M0MmZiODZlNDMyMDNkYmU3YzlkZGJkNjJiYWU1M2Q5ZDllODY1YTk3MDk1YmMwODMzZTFj",
-      },
+      header:
+        "eyJmaWQiOjExMTI0LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4ZENjODlEZjVGYzhENDJDNTQ0MzM4ODUzMWFGMTU1MUUwRmJkNUNBZCJ9",
+      payload: "eyJkb21haW4iOiJmcmFtZWRsLnh5eiJ9",
+      signature:
+        "MHhhMzljN2EzZTJiZmU1NmZjZDM4YTgxNDkxMjk4YjcxZGZkNTk0ZmJmODBjN2I0YmUwNGU5ZjUwMTYyZjYyZTgzNDliNDllZGNjNjgzM2M0MmZiODZlNDMyMDNkYmU3YzlkZGJkNjJiYWU1M2Q5ZDllODY1YTk3MDk1YmMwODMzZTFj",
     }
   : {
       header:
