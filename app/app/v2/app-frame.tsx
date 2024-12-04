@@ -3,7 +3,7 @@
 import { GuessedGame } from "@/app/game/game-service";
 import { Game } from "@/app/ui/game";
 import sdk, { FrameContext } from "@farcaster/frame-sdk";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function toUserData(user: FrameContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
@@ -26,7 +26,7 @@ export function AppFrame({
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [context, setContext] = useState<FrameContext | undefined>();
   const [loadedGame, setLoadedGame] = useState<GuessedGame | undefined>();
-
+  const [error, setError] = useState<string | undefined>();
   useEffect(() => {
     const load = async () => {
       const ctx = await sdk.context;
@@ -57,17 +57,37 @@ export function AppFrame({
     }
   }, [isSDKLoaded]);
 
-  const openUrl = sdk.actions.openUrl;
+  const openUrl = useCallback(
+    (url: string) => {
+      try {
+        return sdk.actions.openUrl(debug?.debugUrl || url);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        } else {
+          setError(e?.toString());
+        }
+      }
+      return Promise.resolve();
+    },
+    [debug?.debugUrl]
+  );
   const appFrame = useMemo(() => {
     return {
-      openUrl: (url: string) => openUrl(debug?.debugUrl || url),
+      openUrl,
     };
-  }, [openUrl, debug?.debugUrl]);
+  }, [openUrl]);
 
   if (debug) {
     return (
       <div className="w-full h-dvh flex flex-col items-center justify-center">
-        <div className="text-xs">{JSON.stringify(context, null, 2)}</div>
+        <div
+          className={`text-xs max-h-[100px] overflow-y-auto ${
+            error ? "text-red-500" : ""
+          }`}
+        >
+          {error ? error : JSON.stringify(context, null, 2)}
+        </div>
         <div className="flex-1 w-full">
           <Game
             game={loadedGame}
