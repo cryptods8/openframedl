@@ -19,7 +19,9 @@ export function AppFrame({
     isPro: boolean;
   };
   gameType?: string;
-  debug?: boolean;
+  debug?: {
+    debugUrl?: string;
+  };
 }) {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [context, setContext] = useState<FrameContext | undefined>();
@@ -58,9 +60,9 @@ export function AppFrame({
   const openUrl = sdk.actions.openUrl;
   const appFrame = useMemo(() => {
     return {
-      openUrl: (url: string) => openUrl(url),
+      openUrl: (url: string) => openUrl(debug?.debugUrl || url),
     };
-  }, [openUrl]);
+  }, [openUrl, debug?.debugUrl]);
 
   if (debug) {
     return (

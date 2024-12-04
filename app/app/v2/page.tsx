@@ -36,7 +36,8 @@ export async function generateMetadata({
 
 export default function Page({ searchParams }: NextServerPageProps) {
   const gtParam = searchParams?.gt as string | undefined;
-  const debugParam = searchParams?.debug as string | undefined;
+  const debugParam = searchParams?.dbg as string | undefined;
+  const debugUrlParam = searchParams?.dbgUrl as string | undefined;
   return (
     <div className="w-full h-dvh min-h-full">
       <ProfileApp headerless>
@@ -46,7 +47,7 @@ export default function Page({ searchParams }: NextServerPageProps) {
             isPro,
           }}
           gameType={gtParam || "daily"}
-          debug={debugParam === "1"}
+          debug={debugParam === "1" ? { debugUrl: debugUrlParam } : {}}
         />
       </ProfileApp>
     </div>
