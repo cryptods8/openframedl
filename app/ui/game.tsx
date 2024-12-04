@@ -259,16 +259,6 @@ function GameGrid({
   );
 }
 
-interface GameProps {
-  game?: GuessedGame;
-  config: GameConfig;
-  userData?: UserData & { fid?: number };
-  appFrame?: {
-    openUrl: (url: string) => Promise<void>;
-  };
-  gameType?: string;
-}
-
 function NextGameMessage() {
   // calculate time until tomorrow 00UTC
   const now = new Date();
@@ -292,9 +282,7 @@ function getGameHref(
   options: {
     config: GameConfig;
     jwt?: string;
-    appFrame?: {
-      openUrl: (url: string) => Promise<void>;
-    };
+    appFrame?: boolean;
   }
 ) {
   const url = new URL(
@@ -334,12 +322,30 @@ function useSessionId() {
   };
 }
 
+interface GameProps {
+  game?: GuessedGame;
+  config: GameConfig;
+  userData?: UserData & { fid?: number };
+  appFrame?: boolean;
+  onShare?: ({
+    title,
+    text,
+    url,
+  }: {
+    title: string;
+    text: string;
+    url: string;
+  }) => Promise<void>;
+  gameType?: string;
+}
+
 export function Game({
   game,
   config,
   userData,
   appFrame,
   gameType,
+  onShare,
 }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
@@ -514,8 +520,8 @@ export function Game({
     if (jwt) {
       const cast = { text: fullText, embeds: [url] };
       createCast(window, cast);
-    } else if (appFrame) {
-      await appFrame.openUrl(createComposeUrl(title, url));
+    } else if (onShare) {
+      await onShare({ title, text, url });
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }

@@ -2,6 +2,7 @@
 
 import { GuessedGame } from "@/app/game/game-service";
 import { Game } from "@/app/ui/game";
+import { createComposeUrl } from "@/app/utils";
 import sdk, { FrameContext } from "@farcaster/frame-sdk";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -60,7 +61,6 @@ export function AppFrame({
   const openUrl = useCallback(
     (url: string) => {
       try {
-        setError("no error: " + url);
         return sdk.actions.openUrl(debug?.debugUrl || url);
       } catch (e) {
         if (e instanceof Error) {
@@ -73,11 +73,25 @@ export function AppFrame({
     },
     [debug?.debugUrl]
   );
-  const appFrame = useMemo(() => {
-    return {
-      openUrl,
-    };
-  }, [openUrl]);
+
+  const isDebug = !!debug;
+  const onShare = useCallback(
+    ({ title, url }: { title: string; url: string }) => {
+      if (isDebug) {
+        setError("no error: " + JSON.stringify({ title, url }));
+      }
+      return openUrl(createComposeUrl(title, url));
+    },
+    [openUrl, isDebug, setError]
+  );
+
+  const userData = useMemo(() => {
+    return context?.user ? toUserData(context.user) : undefined;
+  }, [context?.user]);
+
+  if (!isSDKLoaded) {
+    return null;
+  }
 
   if (debug) {
     return (
@@ -94,22 +108,15 @@ export function AppFrame({
           >
             Test open url
           </button>
-          <button
-            className="bg-primary-500 text-white px-4 py-3 font-bold rounded-md"
-            onClick={() =>
-              appFrame.openUrl(debug?.debugUrl || "https://www.google.com")
-            }
-          >
-            Test open url
-          </button>
         </div>
         <div className="flex-1 w-full">
           <Game
             game={loadedGame}
             config={config}
-            userData={context?.user ? toUserData(context.user) : undefined}
-            appFrame={appFrame}
+            userData={userData}
+            appFrame
             gameType={gameType}
+            onShare={onShare}
           />
         </div>
       </div>
@@ -120,9 +127,10 @@ export function AppFrame({
     <Game
       game={loadedGame}
       config={config}
-      userData={context?.user ? toUserData(context.user) : undefined}
-      appFrame={appFrame}
+      userData={userData}
+      appFrame
       gameType={gameType}
+      onShare={onShare}
     />
   );
 }
