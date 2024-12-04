@@ -50,22 +50,25 @@ function drawRandomRectangles(count: number) {
 function ResultImage({ game }: { game: GuessedGame }) {
   return (
     <BasicLayout>
-      <div tw="flex w-full h-full items-stretch justify-between relative">
-        <div tw="flex flex-1 items-center justify-center px-12">
-          <GameBoard game={game} isPublic />
+      <div
+        tw="flex w-full h-full items-stretch justify-between relative"
+        style={{ backgroundColor: primaryColor(0.02) }}
+      >
+        <div tw="flex items-center justify-center pl-12">
+          <div
+            tw="flex items-center justify-center rounded-lg border bg-white p-4"
+            style={{ borderColor: primaryColor(0.24) }}
+          >
+            <GameBoard game={game} isPublic />
+          </div>
         </div>
         <div
-          tw={"flex flex-col flex-1 px-8 border-l py-32"}
+          tw={"flex flex-col flex-1 px-8 py-32"}
           style={{
             gap: "3rem",
-            borderColor: primaryColor(0.2),
-            backgroundColor: primaryColor(0.04),
           }}
         >
-          <div
-            tw="flex flex-col flex-1 items-center"
-            style={{ gap: "1rem" }}
-          >
+          <div tw="flex flex-col flex-1 items-center" style={{ gap: "1rem" }}>
             <GameTitle game={game} customMaker={null} size="lg" />
 
             <div

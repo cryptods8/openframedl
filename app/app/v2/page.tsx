@@ -11,7 +11,7 @@ export async function generateMetadata({
 
   const imageUrl = id
     ? `${externalBaseUrl}/app/v2/frames/image?id=${id}`
-    : `${externalBaseUrl}/init-final.png`;
+    : `${externalBaseUrl}/init-v2.png`;
   return {
     title: "Framedl by ds8",
     description: "Wordle in a frame",
