@@ -262,7 +262,11 @@ function GameGrid({
 interface GameProps {
   game?: GuessedGame;
   config: GameConfig;
-  userData?: UserData;
+  userData?: UserData & { fid?: number };
+  appFrame?: {
+    openUrl: (url: string) => Promise<void>;
+  };
+  gameType?: string;
 }
 
 function NextGameMessage() {
@@ -283,11 +287,22 @@ function isPracticeGame(game: GuessedGame) {
   return !game.isDaily && !game.isCustom && !game.arena;
 }
 
-function getGameHref(game: GuessedGame, config: GameConfig, jwt?: string) {
-  const url = new URL(`${config.externalBaseUrl}/app`);
+function getGameHref(
+  game: GuessedGame,
+  options: {
+    config: GameConfig;
+    jwt?: string;
+    appFrame?: {
+      openUrl: (url: string) => Promise<void>;
+    };
+  }
+) {
+  const url = new URL(
+    `${options.config.externalBaseUrl}/app${options.appFrame ? "/v2" : ""}`
+  );
   url.searchParams.set("id", game.id);
-  if (jwt) {
-    url.searchParams.set("jwt", jwt);
+  if (options.jwt) {
+    url.searchParams.set("jwt", options.jwt);
   }
   return url.toString();
 }
@@ -297,7 +312,35 @@ interface GameConfig {
   isPro: boolean;
 }
 
-export function Game({ game, config, userData }: GameProps) {
+function useSessionId() {
+  function generateId() {
+    const id = Math.random().toString(36).substring(2);
+    return id;
+  }
+  function getSessionId() {
+    if (typeof localStorage !== "undefined") {
+      const savedId = localStorage.getItem("game_sessionId");
+      if (!savedId) {
+        const id = generateId();
+        localStorage.setItem("game_sessionId", id);
+        return id;
+      }
+      return savedId;
+    }
+    return generateId();
+  }
+  return {
+    sessionId: getSessionId(),
+  };
+}
+
+export function Game({
+  game,
+  config,
+  userData,
+  appFrame,
+  gameType,
+}: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -313,6 +356,7 @@ export function Game({ game, config, userData }: GameProps) {
   const [isWindowFocused, setIsWindowFocused] = useState(true);
   const { status: sessionStatus } = useSession();
   const { jwt } = useJwt();
+  const { sessionId } = useSessionId();
 
   useEffect(() => {
     const onFocus = () => setIsWindowFocused(true);
@@ -369,6 +413,14 @@ export function Game({ game, config, userData }: GameProps) {
         body: JSON.stringify({
           guess: currentWord,
           gameId: currentGame?.id,
+          userData: appFrame ? userData : undefined,
+          userId: userData?.fid?.toString() || sessionId,
+          identityProvider: appFrame
+            ? userData
+              ? "fc_unauth"
+              : "anon"
+            : undefined,
+          gameType: appFrame ? gameType : undefined,
         }),
         headers: jwt
           ? {
@@ -455,11 +507,15 @@ export function Game({ game, config, userData }: GameProps) {
     e.preventDefault();
 
     const { title, text } = buildShareableResult(currentGame, config);
-    const url = `${config.externalBaseUrl}/?id=${currentGame?.id}&app=1`;
+    const url = `${config.externalBaseUrl}${appFrame ? "/app/v2" : "/"}?id=${
+      currentGame?.id
+    }&app=1`;
     const fullText = `${title}\n\n${text}`;
     if (jwt) {
       const cast = { text: fullText, embeds: [url] };
       createCast(window, cast);
+    } else if (appFrame) {
+      appFrame.openUrl(createComposeUrl(url, url));
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }
@@ -512,9 +568,11 @@ export function Game({ game, config, userData }: GameProps) {
             {config.isPro && <span style={{ color: "green" }}>PRO </span>}
             <span>{currentGame && formatGameKey(currentGame)}</span>
           </div>
-          <div className="text-xs min-[360px]:text-sm text-primary-900/50">Guess the word</div>
+          <div className="text-xs min-[360px]:text-sm text-primary-900/50">
+            Guess the word
+          </div>
         </div>
-        <SignIn />
+        {!appFrame && <SignIn />}
       </div>
       <div className="relative flex-1 flex flex-col items-center justify-center w-full">
         <GameGrid
@@ -589,8 +647,8 @@ export function Game({ game, config, userData }: GameProps) {
                   href={`/app/leaderboard?uid=${
                     currentGame.userId
                   }&gh=${encodeURIComponent(
-                    getGameHref(currentGame, config, jwt)
-                  )}`}
+                    getGameHref(currentGame, { config, jwt, appFrame })
+                  )}&ip=${currentGame.identityProvider}`}
                 >
                   Leaderboard
                 </Button>
@@ -602,14 +660,16 @@ export function Game({ game, config, userData }: GameProps) {
         </div>
       </Dialog>
       <div className="w-[640px] max-w-full p-0.5 relative">
-        <div className="absolute -top-12 right-4">
-          <GameOptionsMenu
-            onNewGame={handleNewGame}
-            showDaily={
-              sessionStatus === "authenticated" && !currentGame?.isDaily
-            }
-          />
-        </div>
+        {!appFrame && (
+          <div className="absolute -top-12 right-4">
+            <GameOptionsMenu
+              onNewGame={handleNewGame}
+              showDaily={
+                sessionStatus === "authenticated" && !currentGame?.isDaily
+              }
+            />
+          </div>
+        )}
         <GameKeyboard
           game={currentGame}
           onKeyPress={handleKeyPress}

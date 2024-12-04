@@ -33,13 +33,13 @@ export function GameTitle({
   customMaker?: CustomGameMaker | null | undefined;
   dark?: boolean;
   type?: "ARENA" | "ART" | "DAILY" | "PRACTICE";
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
 }) {
   const isArena = type === "ARENA";
   return (
     <div
       tw={`flex items-center flex-wrap ${
-        size === "md" ? "text-5xl" : "text-4xl"
+        size === "lg" ? "text-6xl" : size === "md" ? "text-5xl" : "text-4xl"
       }`}
       style={{
         fontFamily: "SpaceGrotesk",
@@ -73,7 +73,10 @@ export function GameTitle({
           )}
         </div>
         {type !== "ARENA" && (
-          <div tw="flex text-3xl items-center" style={{ gap: "0.5rem" }}>
+          <div
+            tw={`flex items-center ${size === "lg" ? "text-4xl" : "text-3xl"}`}
+            style={{ gap: "0.5rem" }}
+          >
             <div tw="flex">{formatGameKey(game, customMaker)}</div>
             {isPro &&
               (game?.userData?.passOwnership === "OG" ||

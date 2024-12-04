@@ -21,7 +21,7 @@ export interface Database {
 
 interface UserKey {
   userId: string;
-  identityProvider: "xmtp" | "fc";
+  identityProvider: "xmtp" | "fc" | "lens" | "anon" | "fc_unauth";
 }
 
 export interface UserDataColumn {
@@ -97,7 +97,7 @@ export interface VCustomGameTable extends CustomGameTable {
 export interface VGameTable extends GameTable {
   customNumByUser: number | null;
   customUserId: string | null;
-  customIdentityProvider: "xmtp" | "fc" | null;
+  customIdentityProvider: "xmtp" | "fc" | "lens" | "anon" | "fc_unauth" | null;
   customUserData: UserDataColumnType | null;
   customIsArt: boolean | null;
 }

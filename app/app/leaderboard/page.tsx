@@ -4,6 +4,7 @@ import { NextServerPageProps } from "frames.js/next/types";
 import { Avatar } from "@/app/ui/avatar";
 import { LeaderboardDataItem } from "@/app/game/game-pg-repository";
 import { Button } from "@/app/ui/button/button";
+import { GameIdentityProvider } from "@/app/game/game-repository";
 
 interface LeaderboardEntry {
   id: string;
@@ -53,10 +54,11 @@ export default async function LeaderboardPage({
   const dateParam = searchParams?.date as string | undefined;
   const daysParam = searchParams?.days as string | undefined;
   const gameHref = searchParams?.gh as string | undefined;
+  const ipParam = searchParams?.ip as GameIdentityProvider | undefined;
 
   const days = daysParam != null ? parseInt(daysParam, 10) : 14;
   const date = dateParam ?? getDailyGameKey(new Date());
-  const leaderboard = await gameService.loadLeaderboard("fc", {
+  const leaderboard = await gameService.loadLeaderboard(ipParam ?? "fc", {
     userId: userIdParam,
     date,
     days,
@@ -91,7 +93,7 @@ export default async function LeaderboardPage({
   }
   return (
     <div
-      className={`w-full pt-4 px-4 font-inter ${gameHref ? "pb-28" : "pb-8"}`}
+      className={`w-full flex-1 max-w-xl pt-4 px-4 font-inter ${gameHref ? "pb-28" : "pb-8"}`}
     >
       <div className="w-full pb-4">
         <div className="font-space font-semibold text-xl">

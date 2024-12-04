@@ -11,7 +11,7 @@ export interface UserData {
   passOwnership?: FramedlProPassOwnership | null | undefined;
 }
 
-export type GameIdentityProvider = "xmtp" | "fc";
+export type GameIdentityProvider = "xmtp" | "fc" | "lens" | "anon" | "fc_unauth";
 
 export interface UserKey {
   userId: string;

@@ -1,31 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gameService } from "@/app/game/game-service";
+import { gameService, GuessedGame } from "@/app/game/game-service";
 import { getUserInfoFromJwtOrSession } from "@/app/lib/auth";
 import { isPro } from "@/app/constants";
+import { UserData } from "@/app/game/game-repository";
 
 export const dynamic = "force-dynamic";
 
 export const GET = async (req: NextRequest) => {
-  // const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(req.url);
+  const fid = searchParams.get("fid");
+  if (!fid) {
+    return NextResponse.json({ error: "Missing fid" }, { status: 400 });
+  }
   // const gk = searchParams.get("gk");
-  // const gameKey = gk ? (gk as string) : gameService.getDailyKey();
+  const gameKey = gameService.getDailyKey();
 
-  // const game = await gameService.loadOrCreate({
-  //   gameKey,
-  //   userId: "11124",
-  //   identityProvider: "fc",
-  //   isDaily: true,
-  // });
+  const game = await gameService.loadOrCreate({
+    gameKey,
+    userId: fid ?? "",
+    identityProvider: "fc_unauth",
+    isDaily: true,
+  });
 
-  return NextResponse.json({ data: null });
+  return NextResponse.json(gameToResponse(game));
 };
 
 interface PlayRequest {
   guess: string;
   gameId?: string;
+  userData?: UserData & { fid?: number };
+  identityProvider?: "fc_unauth" | "anon";
+  userId?: string;
+  gameType?: string;
 }
 
-async function getUserInfoFromRequest(req: NextRequest) {
+function gameToResponse(game: GuessedGame) {
+  return {
+    data: game.completedAt != null ? game : { ...game, word: "" },
+  };
+}
+
+async function getUserInfoFromRequest(req: NextRequest, body: PlayRequest) {
+  if (
+    (body.identityProvider === "fc_unauth" ||
+      body.identityProvider === "anon") &&
+    body.userId
+  ) {
+    return {
+      userData: { ...body.userData, passOwnership: undefined },
+      userKey: {
+        userId: body.userId,
+        identityProvider: body.identityProvider,
+      },
+    };
+  }
   const jwt = req.headers.get("Authorization")?.split(" ")[1];
   return getUserInfoFromJwtOrSession(jwt);
 }
@@ -33,7 +61,10 @@ async function getUserInfoFromRequest(req: NextRequest) {
 export const POST = async (req: NextRequest) => {
   const body: PlayRequest = await req.json();
 
-  const { userData, userKey } = await getUserInfoFromRequest(req);
+  const { userData, userKey, anonymous } = await getUserInfoFromRequest(
+    req,
+    body
+  );
   if (isPro) {
     if (!userData?.passOwnership) {
       return NextResponse.json(
@@ -42,13 +73,20 @@ export const POST = async (req: NextRequest) => {
       );
     }
   }
+  const isUnauthenticated =
+    userKey.identityProvider === "anon" ||
+    userKey.identityProvider === "fc_unauth" ||
+    !!anonymous;
   const game = body.gameId
     ? await gameService.load(body.gameId)
     : await gameService.loadOrCreate(
         {
           ...userKey,
-          gameKey: Math.random().toString(36).substring(2),
-          isDaily: false,
+          gameKey:
+            isUnauthenticated && body.gameType === "daily"
+              ? gameService.getDailyKey()
+              : Math.random().toString(36).substring(2),
+          isDaily: isUnauthenticated && body.gameType === "daily",
         },
         {
           userData: userData || undefined,
@@ -57,11 +95,14 @@ export const POST = async (req: NextRequest) => {
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
-  if (
-    game.userId !== userKey.userId ||
-    game.identityProvider !== userKey.identityProvider
-  ) {
+  const isOwner =
+    game.userId === userKey.userId &&
+    game.identityProvider === userKey.identityProvider;
+  if (!isOwner) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!body.guess) {
+    return NextResponse.json(gameToResponse(game));
   }
   const guess = body.guess.trim().toLowerCase();
   const validationResult = gameService.validateGuess(game, guess);
@@ -72,10 +113,5 @@ export const POST = async (req: NextRequest) => {
     );
   }
   const updatedGame = await gameService.guess(game, guess);
-  return NextResponse.json({
-    data:
-      updatedGame.completedAt != null
-        ? updatedGame
-        : { ...updatedGame, word: "" },
-  });
+  return NextResponse.json(gameToResponse(updatedGame));
 };

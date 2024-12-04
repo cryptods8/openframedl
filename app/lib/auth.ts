@@ -171,7 +171,7 @@ export async function getUserInfoFromJwtOrSession(
   }
   return {
     userData: null,
-    userKey: { userId: "0", identityProvider: "fc" as const },
+    userKey: { userId: "0", identityProvider: "anon" as const },
     anonymous: true,
   };
 }
