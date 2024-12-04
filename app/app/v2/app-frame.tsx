@@ -68,7 +68,7 @@ export function AppFrame({
     return (
       <div className="w-full h-dvh flex flex-col items-center justify-center">
         <div className="text-xs">{JSON.stringify(context, null, 2)}</div>
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           <Game
             game={loadedGame}
             config={config}
