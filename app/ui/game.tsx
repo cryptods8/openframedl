@@ -515,7 +515,7 @@ export function Game({
       const cast = { text: fullText, embeds: [url] };
       createCast(window, cast);
     } else if (appFrame) {
-      appFrame.openUrl(createComposeUrl(title, url));
+      await appFrame.openUrl(createComposeUrl(title, url));
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }

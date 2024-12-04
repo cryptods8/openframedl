@@ -60,6 +60,7 @@ export function AppFrame({
   const openUrl = useCallback(
     (url: string) => {
       try {
+        setError("no error: " + url);
         return sdk.actions.openUrl(debug?.debugUrl || url);
       } catch (e) {
         if (e instanceof Error) {
@@ -90,6 +91,14 @@ export function AppFrame({
           <button
             className="bg-primary-500 text-white px-4 py-3 font-bold rounded-md"
             onClick={() => openUrl(debug?.debugUrl || "https://www.google.com")}
+          >
+            Test open url
+          </button>
+          <button
+            className="bg-primary-500 text-white px-4 py-3 font-bold rounded-md"
+            onClick={() =>
+              appFrame.openUrl(debug?.debugUrl || "https://www.google.com")
+            }
           >
             Test open url
           </button>
