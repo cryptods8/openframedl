@@ -87,6 +87,12 @@ export function AppFrame({
           }`}
         >
           {error ? error : JSON.stringify(context, null, 2)}
+          <button
+            className="bg-primary-500 text-white px-4 py-3 font-bold rounded-md"
+            onClick={() => openUrl(debug?.debugUrl || "https://www.google.com")}
+          >
+            Test open url
+          </button>
         </div>
         <div className="flex-1 w-full">
           <Game
