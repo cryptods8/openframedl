@@ -47,7 +47,7 @@ export default function Page({ searchParams }: NextServerPageProps) {
             isPro,
           }}
           gameType={gtParam || "daily"}
-          debug={debugParam === "1" ? { debugUrl: debugUrlParam } : {}}
+          debug={debugParam === "1" ? { debugUrl: debugUrlParam } : undefined}
         />
       </ProfileApp>
     </div>
