@@ -517,11 +517,11 @@ export function Game({
       currentGame?.id
     }&app=1`;
     const fullText = `${title}\n\n${text}`;
-    if (jwt) {
+    if (onShare) {
+      await onShare({ title, text, url });
+    } else if (jwt) {
       const cast = { text: fullText, embeds: [url] };
       createCast(window, cast);
-    } else if (onShare) {
-      await onShare({ title, text, url });
     } else {
       window.open(createComposeUrl(fullText, url), "_blank");
     }
