@@ -48,7 +48,7 @@ export async function sendReminder(reminder: Reminder) {
   const gameKey = getDailyGameKey(now);
   const message = `${getMessageForHoursRemaining(
     hoursRemaining
-  )}\n\nFramedl ${gameKey}\n${externalBaseUrl}\n\nTo stop receiving these reminders, click here: ${
+  )}\n\nFramedl ${gameKey}\n${externalBaseUrl}?app=1\n\nTo stop receiving these reminders, click here: ${
     reminder.unsubscribeUrl
   }`;
   const cast = {
