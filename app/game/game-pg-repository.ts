@@ -122,6 +122,8 @@ export interface GameFilter extends Partial<UserKey> {
   type?: GameType;
   gameKey?: string;
   completedOnly?: boolean;
+  offset?: number;
+  limit?: number;
 }
 
 export async function findAllByFilter(
@@ -182,6 +184,9 @@ export async function findAllByFilter(
       }
       return eb.and(conditions);
     })
+    .orderBy("createdAt", "desc")
+    .offset(filter.offset || 0)
+    .limit(filter.limit || 100)
     .selectAll()
     .execute();
 }

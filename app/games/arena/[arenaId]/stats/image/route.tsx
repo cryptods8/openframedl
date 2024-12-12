@@ -28,7 +28,7 @@ interface ArenaPlayerStats {
     identityProvider?: GameIdentityProvider;
     profileImage?: string | undefined;
   };
-  games: { guessCount: number; status: GameStatus }[];
+  games: { guessCount: number; status: GameStatus; isHardMode: boolean }[];
   gamesPlayed: number;
   gamesCompleted: number;
   gamesWon: number;
@@ -110,6 +110,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
         playerStats.games.push({
           guessCount: game.guessCount,
           status: game.status,
+          isHardMode: game.isHardMode,
         });
         return acc;
       },
@@ -235,7 +236,7 @@ function renderGameStats(
           return (
             <div
               key={idx}
-              tw="flex w-12 h-12 rounded items-center justify-center text-3xl"
+              tw="flex w-12 h-12 rounded items-center justify-center text-3xl relative"
               style={
                 g && g.status !== "IN_PROGRESS"
                   ? g.status === "WON"
@@ -262,6 +263,12 @@ function renderGameStats(
                 : g
                 ? g.guessCount
                 : "-"}
+              {g && g.isHardMode && (
+                <div
+                  tw="absolute -top-1 -right-1 w-3 h-3 text-xl flex items-center justify-center rounded-full"
+                  style={{ backgroundColor: "orange" }}
+                />
+              )}
             </div>
           );
         }),
