@@ -57,7 +57,7 @@ export function GalleryGameEntry(props: {
                   }`}
                   className="text-primary-900 underline hover:text-primary-700"
                 >
-                  {formatGameKey(game)}
+                  {formatGameKey(game)}{game.isHardMode ? "*" : ""}
                 </Link>
               ) : (
                 <Link

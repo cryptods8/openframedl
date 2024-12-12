@@ -41,6 +41,9 @@ export function formatGameKey(game: PublicGuessedGame) {
     const username = formatUsername(game.customMaker, true);
     return `#${game.customMaker.number} by ${username}`;
   }
+  if (game.arenaId != null) {
+    return `Arena ${game.arenaId} (#${game.arenaWordIndex})`;
+  }
   if (!game.isDaily) {
     const subKey = gameKey.substring(gameKey.length - 8);
     if (!game.isCustom) {

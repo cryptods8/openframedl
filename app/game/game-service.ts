@@ -157,6 +157,8 @@ export interface PublicGuessedGame {
   completedAt?: Date | null;
   createdAt: Date;
   word?: string;
+  arenaId?: number | null;
+  arenaWordIndex?: number | null;
 }
 
 export type GuessValidationStatus =
@@ -534,6 +536,8 @@ export class GameServiceImpl implements GameService {
       createdAt: game.createdAt,
       completedAt: game.completedAt,
       userData: game.userData,
+      arenaId: game.arenaId,
+      arenaWordIndex: game.arenaWordIndex,
       guesses: game.guesses.map((g) => {
         return {
           characters: g.characters.map((c) => {
