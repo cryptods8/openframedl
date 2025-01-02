@@ -25,6 +25,8 @@ export async function GET() {
     frame: {
       version: "next",
       name: "Framedl",
+      imageUrl: `${externalBaseUrl}/init-v2.png`,
+      buttonTitle: "Play",
       iconUrl: `${externalBaseUrl}/icon-v2.png`,
       splashImageUrl: `${externalBaseUrl}/splash-v2.png`,
       splashBackgroundColor: "#f3f0f9",

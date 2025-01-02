@@ -10,6 +10,35 @@ function toUserData(user: FrameContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
 }
 
+type SafeAreaInsets = {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+};
+
+function ClientContainer({
+  children,
+  safeAreaInsets,
+}: {
+  children: React.ReactNode;
+  safeAreaInsets?: SafeAreaInsets;
+}) {
+  return (
+    <div
+      className="w-full h-full flex flex-col items-center justify-center"
+      style={{
+        paddingTop: safeAreaInsets?.top,
+        paddingBottom: safeAreaInsets?.bottom,
+        paddingLeft: safeAreaInsets?.left,
+        paddingRight: safeAreaInsets?.right,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function AppFrame({
   config,
   gameType,
@@ -95,42 +124,48 @@ export function AppFrame({
 
   if (debug) {
     return (
-      <div className="w-full h-dvh flex flex-col items-center justify-center">
-        <div
-          className={`text-xs max-h-[100px] overflow-y-auto ${
-            error ? "text-red-500" : ""
-          }`}
-        >
-          {error ? error : JSON.stringify(context, null, 2)}
-          <button
-            className="bg-primary-500 text-white px-4 py-3 font-bold rounded-md"
-            onClick={() => openUrl(debug?.debugUrl || "https://www.google.com")}
+      <ClientContainer safeAreaInsets={context?.client.safeAreaInsets}>
+        <div className="w-full h-dvh flex flex-col items-center justify-center">
+          <div
+            className={`text-xs max-h-[100px] overflow-y-auto ${
+              error ? "text-red-500" : ""
+            }`}
           >
-            Test open url
-          </button>
+            {error ? error : JSON.stringify(context, null, 2)}
+            <button
+              className="bg-primary-500 text-white px-4 py-3 font-bold rounded-md"
+              onClick={() =>
+                openUrl(debug?.debugUrl || "https://www.google.com")
+              }
+            >
+              Test open url
+            </button>
+          </div>
+          <div className="flex-1 w-full">
+            <Game
+              game={loadedGame}
+              config={config}
+              userData={userData}
+              appFrame
+              gameType={gameType}
+              onShare={onShare}
+            />
+          </div>
         </div>
-        <div className="flex-1 w-full">
-          <Game
-            game={loadedGame}
-            config={config}
-            userData={userData}
-            appFrame
-            gameType={gameType}
-            onShare={onShare}
-          />
-        </div>
-      </div>
+      </ClientContainer>
     );
   }
 
   return (
-    <Game
-      game={loadedGame}
-      config={config}
-      userData={userData}
-      appFrame
-      gameType={gameType}
-      onShare={onShare}
-    />
+    <ClientContainer safeAreaInsets={context?.client.safeAreaInsets}>
+      <Game
+        game={loadedGame}
+        config={config}
+        userData={userData}
+        appFrame
+        gameType={gameType}
+        onShare={onShare}
+      />
+    </ClientContainer>
   );
 }
