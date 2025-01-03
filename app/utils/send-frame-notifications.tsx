@@ -79,10 +79,12 @@ export async function sendFrameNotifications({
 }: Notification): Promise<SendFrameNotificationResult[]> {
   const urlMap = recipients.reduce((acc, recipient) => {
     const { token, url } = recipient.notificationDetails;
-    if (!acc[url]) {
-      acc[url] = [];
+    if (token && url) {
+      if (!acc[url]) {
+        acc[url] = [];
+      }
+      acc[url]!.push(token);
     }
-    acc[url].push(token);
     return acc;
   }, {} as Record<string, string[]>)
 
