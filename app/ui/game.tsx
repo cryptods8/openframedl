@@ -336,6 +336,7 @@ export interface GameProps {
     text: string;
     url: string;
   }) => Promise<void>;
+  onGameOver?: () => void;
   gameType?: string;
   userChip?: React.ReactNode;
 }
@@ -348,6 +349,7 @@ export function Game({
   gameType,
   userChip,
   onShare,
+  onGameOver,
 }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
@@ -486,6 +488,12 @@ export function Game({
     },
     [setCurrentWord, isSubmitting, isGameOver]
   );
+
+  useEffect(() => {
+    if (isGameOver) {
+      onGameOver?.();
+    }
+  }, [isGameOver, onGameOver]);
 
   const handleNewGame = useCallback(
     (gameType: "practice" | "daily") => {

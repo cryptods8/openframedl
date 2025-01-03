@@ -161,6 +161,12 @@ function GameContainer({
     setSignInFailure(undefined);
   }, []);
 
+  const handleGameOver = useCallback(() => {
+    if (!context.client?.added) {
+      context.requestAddFrame();
+    }
+  }, [context]);
+
   const safeAreaInsets = context?.client?.safeAreaInsets;
 
   return (
@@ -184,6 +190,7 @@ function GameContainer({
               appFrame
               gameType={gameType}
               onShare={context.share}
+              onGameOver={handleGameOver}
               asGuest={asGuest}
               userChip={
                 asGuest ? (
@@ -265,6 +272,7 @@ interface ClientContext {
   client?: FrameContext["client"];
   share: ({ title, url }: { title: string; url: string }) => Promise<void>;
   openUrl: (url: string) => Promise<void>;
+  requestAddFrame: () => Promise<void>;
 }
 
 function useClientContext({
@@ -301,6 +309,11 @@ function useClientContext({
     return sdk.actions.openUrl(url);
   }, []);
 
+  const requestAddFrame = useCallback(() => {
+    sdk.actions.addFrame();
+    return Promise.resolve();
+  }, []);
+
   return {
     userData,
     userFid: context?.user?.fid,
@@ -308,6 +321,7 @@ function useClientContext({
     client: context?.client,
     share,
     openUrl,
+    requestAddFrame,
   };
 }
 
