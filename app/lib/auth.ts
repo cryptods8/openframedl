@@ -117,7 +117,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   cookies:
-    isProduction
+    (isProduction || !isProduction)
       ? {
           sessionToken: {
             name: "__Secure-next-auth.session-token",

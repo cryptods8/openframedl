@@ -322,7 +322,7 @@ function useSessionId() {
   };
 }
 
-interface GameProps {
+export interface GameProps {
   game?: GuessedGame;
   config: GameConfig;
   userData?: UserData & { fid?: number };
@@ -337,6 +337,7 @@ interface GameProps {
     url: string;
   }) => Promise<void>;
   gameType?: string;
+  userChip?: React.ReactNode;
 }
 
 export function Game({
@@ -345,6 +346,7 @@ export function Game({
   userData,
   appFrame,
   gameType,
+  userChip,
   onShare,
 }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
@@ -421,11 +423,12 @@ export function Game({
           gameId: currentGame?.id,
           userData: appFrame ? userData : undefined,
           userId: userData?.fid?.toString() || sessionId,
-          identityProvider: appFrame
-            ? userData
-              ? "fc_unauth"
-              : "anon"
-            : undefined,
+          identityProvider:
+            appFrame && sessionStatus !== "authenticated"
+              ? userData
+                ? "fc_unauth"
+                : "anon"
+              : undefined,
           gameType: appFrame ? gameType : undefined,
         }),
         headers: jwt
@@ -578,7 +581,9 @@ export function Game({
             Guess the word
           </div>
         </div>
-        {!appFrame && <SignIn />}
+        {userChip
+          ? userChip
+          : (!appFrame || sessionStatus === "authenticated") && <SignIn />}
       </div>
       <div className="relative flex-1 flex flex-col items-center justify-center w-full">
         <GameGrid

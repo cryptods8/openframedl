@@ -6,6 +6,7 @@ import { UserData } from "@/app/game/game-repository";
 
 export const dynamic = "force-dynamic";
 
+// TODO: remove this?
 export const GET = async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const fid = searchParams.get("fid");
@@ -17,7 +18,7 @@ export const GET = async (req: NextRequest) => {
 
   const game = await gameService.loadOrCreate({
     gameKey,
-    userId: fid ?? "",
+    userId: fid,
     identityProvider: "fc_unauth",
     isDaily: true,
   });
@@ -73,20 +74,17 @@ export const POST = async (req: NextRequest) => {
       );
     }
   }
-  const isUnauthenticated =
-    userKey.identityProvider === "anon" ||
-    userKey.identityProvider === "fc_unauth" ||
-    !!anonymous;
+
   const game = body.gameId
     ? await gameService.load(body.gameId)
     : await gameService.loadOrCreate(
         {
           ...userKey,
           gameKey:
-            isUnauthenticated && body.gameType === "daily"
+            body.gameType === "daily"
               ? gameService.getDailyKey()
               : Math.random().toString(36).substring(2),
-          isDaily: isUnauthenticated && body.gameType === "daily",
+          isDaily: body.gameType === "daily",
         },
         {
           userData: userData || undefined,

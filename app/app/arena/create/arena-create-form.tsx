@@ -158,7 +158,6 @@ export function ArenaCreateForm() {
       });
       if (response.ok) {
         const data = await response.json();
-        console.log("data", data);
         setCreatedArena({ ...data, config: payload });
         setIsDialogOpen(true);
       } else {

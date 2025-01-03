@@ -114,6 +114,7 @@ export function SignIn() {
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { jwt, clear: clearJwt } = useJwt();
 
   useEffect(() => {
@@ -152,12 +153,17 @@ export function SignIn() {
     });
   }, []);
 
-  const handleSignOut = useCallback(() => {
-    signOut();
-    clearJwt();
+  const handleSignOut = useCallback(async () => {
+    try {
+      setIsSigningOut(true);
+      clearJwt();
+      await signOut({ redirect: false });
+    } finally {
+      setIsSigningOut(false);
+    }
   }, [signOut, clearJwt]);
 
-  const isLoading = status === "loading" || isSigningIn;
+  const isLoading = status === "loading" || isSigningIn || isSigningOut;
   const userInfo = userInfoFromJwtOrSession(jwt, session);
 
   return (
