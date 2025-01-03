@@ -47,6 +47,7 @@ export const authOptions: NextAuthOptions = {
         },
       },
       async authorize(credentials, req) {
+        console.log("authorize", credentials);
         const jwt = credentials?.jwt;
         if (jwt) {
           const verifiedToken = verifyJwt(jwt);
@@ -77,6 +78,7 @@ export const authOptions: NextAuthOptions = {
           domain: domain,
           nonce: csrfToken,
         });
+        console.log("verifyResponse", verifyResponse);
         const { success, fid } = verifyResponse;
 
         if (!success) {
