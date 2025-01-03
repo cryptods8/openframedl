@@ -23,7 +23,7 @@ export async function GET() {
   const manifest = {
     accountAssociation,
     frame: {
-      version: "next",
+      version: "1",
       name: "Framedl",
       imageUrl: `${externalBaseUrl}/init-v2.png`,
       buttonTitle: "Play",
@@ -31,6 +31,7 @@ export async function GET() {
       splashImageUrl: `${externalBaseUrl}/splash-v2.png`,
       splashBackgroundColor: "#f3f0f9",
       homeUrl: `${externalBaseUrl}/app/v2`,
+      webhookUrl: `${externalBaseUrl}/api/frames/v2/webhook`,
     },
   };
   return NextResponse.json(manifest);

@@ -15,6 +15,14 @@
     {
       "path": "/api/bot/casts/daily/process",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/frames/v2/notifications/process?type=new",
+      "schedule": "10 0 * * *"
+    },
+    {
+      "path": "/api/frames/v2/notifications/process?type=late",
+      "schedule": "5 22 * * *"
     }
   ]
 }

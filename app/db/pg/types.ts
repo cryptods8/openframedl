@@ -17,6 +17,7 @@ export interface Database {
   reminder: ReminderTable;
   championshipSignup: ChampionshipSignupTable;
   arena: ArenaTable;
+  userSettings: UserSettingsTable;
 }
 
 interface UserKey {
@@ -89,6 +90,22 @@ export interface ReminderTable extends UserKey {
       }
     ]
   >;
+}
+
+export interface UserSettingsTable extends UserKey {
+  id: Generated<number>;
+
+  createdAt: ColumnType<Date, Date, never>;
+  updatedAt: Date;
+
+  notificationsEnabled: boolean;
+  notificationDetails: JSONColumnType<{
+    token: string;
+    url: string;
+  }> | null;
+  data: JSONColumnType<{
+    [key: string]: string | number | boolean | null | undefined;
+  }> | null;
 }
 
 export interface VCustomGameTable extends CustomGameTable {
@@ -175,3 +192,7 @@ export type DBChampionshipSignupInsert = Insertable<ChampionshipSignupTable>;
 export type DBArena = Selectable<ArenaTable>;
 export type DBArenaInsert = Insertable<ArenaTable>;
 export type DBArenaUpdate = Updateable<ArenaTable>;
+
+export type DBUserSettings = Selectable<UserSettingsTable>;
+export type DBUserSettingsInsert = Insertable<UserSettingsTable>;
+export type DBUserSettingsUpdate = Updateable<UserSettingsTable>;

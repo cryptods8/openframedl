@@ -16,6 +16,7 @@
     "@farcaster/auth-client": "^0.3.0",
     "@farcaster/auth-kit": "^0.6.0",
     "@farcaster/core": "^0.14.3",
+    "@farcaster/frame-node": "^0.0.11",
     "@farcaster/frame-sdk": "^0.0.22",
     "@headlessui/react": "^2.0.4",
     "@heroicons/react": "^2.1.3",
