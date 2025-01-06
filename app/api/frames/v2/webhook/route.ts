@@ -46,7 +46,7 @@ async function deleteUserNotificationDetails(userKey: UserKey, userSettings: DBU
 export async function POST(request: NextRequest) {
   const requestJson = await request.json();
 
-  console.log("requestJson", requestJson);
+  // console.log("requestJson", requestJson);
 
   if (!hubHttpUrl) {
     throw new Error("Hub HTTP URL is not set");

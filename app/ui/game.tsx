@@ -363,7 +363,7 @@ export function Game({
     currentGame?.status === "WON" || currentGame?.status === "LOST";
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
 
-  const [isWindowFocused, setIsWindowFocused] = useState(true);
+  const [isWindowFocused, setIsWindowFocused] = useState(document.hasFocus());
   const { status: sessionStatus } = useSession();
   const { jwt } = useJwt();
   const { sessionId } = useSessionId();

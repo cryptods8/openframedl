@@ -161,11 +161,11 @@ function GameContainer({
     setSignInFailure(undefined);
   }, []);
 
-  const handleGameOver = useCallback(() => {
-    if (!context.client?.added) {
+  useEffect(() => {
+    if (context.client && !context.client.added && !isFirstLoad) {
       context.requestAddFrame();
     }
-  }, [context]);
+  }, [context, isFirstLoad]);
 
   const safeAreaInsets = context?.client?.safeAreaInsets;
 
@@ -190,7 +190,6 @@ function GameContainer({
               appFrame
               gameType={gameType}
               onShare={context.share}
-              onGameOver={handleGameOver}
               asGuest={asGuest}
               userChip={
                 asGuest ? (
@@ -339,6 +338,7 @@ export function AppFrame({
   const clientContext = useClientContext({
     onLoad: () => {
       sdk.actions.ready();
+      window.focus();
     },
   });
 
