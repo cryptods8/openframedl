@@ -27,6 +27,7 @@ import { useJwt } from "../hooks/use-jwt";
 import { UserData } from "../game/game-repository";
 import Image from "next/image";
 import Link from "next/link";
+import UserStats from "./game/user-stats";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -58,11 +59,13 @@ function BackspaceIcon() {
 function GameKeyboardKey({
   keyboardKey,
   onPress,
+  compact,
   status,
 }: {
   keyboardKey: string;
   onPress: (key: string) => void;
   status?: GuessCharacter["status"];
+  compact?: boolean;
 }) {
   // Add state for tracking the repeat interval
   const [repeatInterval, setRepeatInterval] = useState<NodeJS.Timeout | null>(
@@ -119,9 +122,12 @@ function GameKeyboardKey({
   return (
     <button
       className={clsx(
-        "w-full h-12 font-semibold flex items-center justify-center select-none",
-        "active:outline active:outline-2 active:outline-primary-900/20 transition-all duration-100 rounded",
-        keyboardKey === "backspace" || keyboardKey === "enter"
+        "w-full font-semibold flex items-center justify-center select-none",
+        compact ? "h-8 text-xs" : "h-12",
+        "active:outline active:outline-2 active:outline-primary-900/20 transition-[outline] duration-100 rounded",
+        keyboardKey === "backspace" ||
+          keyboardKey === "enter" ||
+          keyboardKey === "pro"
           ? "text-xs"
           : "text-lg",
         status === "CORRECT"
@@ -132,7 +138,7 @@ function GameKeyboardKey({
           ? "bg-primary-950/40 text-white"
           : keyboardKey === "enter"
           ? "bg-primary-500 text-white"
-          : keyboardKey === "backspace"
+          : keyboardKey === "backspace" || keyboardKey === "pro"
           ? "bg-white"
           : "bg-primary-950/5"
       )}
@@ -155,48 +161,64 @@ function GameKeyboardKey({
 function KeyWrapper({
   children,
   className,
+  compact,
 }: {
   children: React.ReactNode;
   className?: string;
+  compact?: boolean;
 }) {
-  return <div className={`px-0.5 ${className}`}>{children}</div>;
+  return (
+    <div className={`${compact ? "px-[1px]" : "px-0.5"} ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 function Spacer() {
   return <div className="flex-[0.5_1_0%]" />;
 }
 
+type GamePlayMode = "normal" | "pro";
+
 function GameKeyboard({
   game,
   onKeyPress,
   onSubmit,
+  mode = "normal",
 }: {
   game?: GuessedGame;
   onKeyPress: (key: string) => void;
   onSubmit: () => void;
+  mode?: GamePlayMode;
 }) {
+  const compact = mode === "pro";
   return (
-    <div className="flex flex-col gap-1.5 items-center w-full">
+    <div className="flex flex-col items-center w-full gap-1.5">
       {KEYS.map((row, rowIndex) => (
         <div key={rowIndex} className="flex w-full">
           {rowIndex === KEYS.length - 1 && (
             <KeyWrapper className="flex-[1.5_1_0%]">
-              <GameKeyboardKey keyboardKey="enter" onPress={onSubmit} />
+              {!compact && (
+                <GameKeyboardKey keyboardKey="enter" onPress={onSubmit} />
+              )}
             </KeyWrapper>
           )}
           {rowIndex === 1 && <Spacer />}
           {row.map((key) => (
-            <KeyWrapper className="flex-1" key={key}>
+            <KeyWrapper className="flex-[1_1_0%]" key={key} compact={compact}>
               <GameKeyboardKey
                 keyboardKey={key}
                 status={game?.allGuessedCharacters[key]?.status}
                 onPress={onKeyPress}
+                compact={compact}
               />
             </KeyWrapper>
           ))}
           {rowIndex === KEYS.length - 1 && (
             <KeyWrapper className="flex-[1.5_1_0%]">
-              <GameKeyboardKey keyboardKey="backspace" onPress={onKeyPress} />
+              {!compact && (
+                <GameKeyboardKey keyboardKey="backspace" onPress={onKeyPress} />
+              )}
             </KeyWrapper>
           )}
           {rowIndex === 1 && <Spacer />}
@@ -235,10 +257,12 @@ function GameGrid({
   game,
   currentWord,
   submitting,
+  compact,
 }: {
   game?: GuessedGame;
   currentWord: string;
   submitting: boolean;
+  compact?: boolean;
 }) {
   const guesses = [...(game?.guesses || [])];
   if (currentWord) {
@@ -255,6 +279,7 @@ function GameGrid({
       placeholder={guesses.length === 0}
       full
       submitting={submitting}
+      compact={compact}
     />
   );
 }
@@ -362,6 +387,7 @@ export function Game({
   const isGameOver =
     currentGame?.status === "WON" || currentGame?.status === "LOST";
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
+  const [mode, setMode] = useState<GamePlayMode>("normal");
 
   const [isWindowFocused, setIsWindowFocused] = useState(document.hasFocus());
   const { status: sessionStatus } = useSession();
@@ -593,12 +619,58 @@ export function Game({
           ? userChip
           : (!appFrame || sessionStatus === "authenticated") && <SignIn />}
       </div>
-      <div className="relative flex-1 flex flex-col items-center justify-center w-full">
-        <GameGrid
-          game={currentGame}
-          currentWord={currentWord}
-          submitting={isSubmitting}
-        />
+      <div
+        className={`relative flex-1 flex flex-col items-center w-full ${
+          mode === "pro" ? "justify-start" : "justify-center"
+        } overflow-y-auto`}
+      >
+        <div className="flex flex-row gap-4 w-full px-4 items-center justify-center">
+          <GameGrid
+            game={currentGame}
+            currentWord={currentWord}
+            submitting={isSubmitting}
+            compact={mode === "pro"}
+          />
+          {mode === "pro" && (
+            <div className="flex-1">
+              <GameKeyboard
+                game={currentGame}
+                onKeyPress={() => {}}
+                onSubmit={() => {}}
+                mode={mode}
+              />
+            </div>
+          )}
+        </div>
+        {/* <div className="flex flex-row gap-2 pt-4 w-full px-4">
+          <div className="flex-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMode("normal")}
+            >
+              Normal
+            </Button>
+          </div>
+          <div className="flex-1">
+            <Button size="sm" variant="outline" onClick={() => setMode("pro")}>
+              Pro
+            </Button>
+          </div>
+        </div> */}
+        {mode === "pro" && (
+          // <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-primary-100">
+          <div className="w-full px-4 py-2">
+            <input
+              placeholder="Make a guess…"
+              type="text"
+              className="w-full h-12 border border-primary-400 active:border-primary-500 focus:outline-primary-500 rounded-md px-3"
+              autoFocus
+              onBlur={(e) => e.target.focus()}
+            />
+            {/* </div> */}
+          </div>
+        )}
         <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2">
           <Toast
             message={getValidationResultMessage(validationResult)}
@@ -646,6 +718,11 @@ export function Game({
               </span>
             )}
           </p>
+          {currentGame?.isDaily && currentGame.completedAt && (
+            <div className="w-full pt-2">
+              <UserStats game={currentGame} />
+            </div>
+          )}
           {currentGame && (
             <div className="flex flex-col gap-2 items-center w-full pt-4">
               <Button variant="primary" onClick={handleShare}>
@@ -678,23 +755,25 @@ export function Game({
           {currentGame?.status === "WON" && <GameConfetti />}
         </div>
       </Dialog>
-      <div className="w-[640px] max-w-full p-0.5 relative">
-        {!appFrame && (
-          <div className="absolute -top-12 right-4">
-            <GameOptionsMenu
-              onNewGame={handleNewGame}
-              showDaily={
-                sessionStatus === "authenticated" && !currentGame?.isDaily
-              }
-            />
-          </div>
-        )}
-        <GameKeyboard
-          game={currentGame}
-          onKeyPress={handleKeyPress}
-          onSubmit={handleSubmit}
-        />
-      </div>
+      {mode === "normal" && (
+        <div className="w-[640px] max-w-full p-0.5 relative">
+          {!appFrame && (
+            <div className="absolute -top-12 right-4">
+              <GameOptionsMenu
+                onNewGame={handleNewGame}
+                showDaily={
+                  sessionStatus === "authenticated" && !currentGame?.isDaily
+                }
+              />
+            </div>
+          )}
+          <GameKeyboard
+            game={currentGame}
+            onKeyPress={handleKeyPress}
+            onSubmit={handleSubmit}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -8,26 +8,28 @@ export function GameGuessGrid({
   full,
   submitting,
   placeholder,
+  compact,
 }: {
   guesses: Guess[];
   full?: boolean;
   submitting?: boolean;
   placeholder?: boolean;
+  compact?: boolean;
 }) {
   const arr = full ? fullArray : guesses;
   return (
-    <div className="flex flex-col gap-1">
+    <div className={`flex flex-col ${compact ? "gap-0.5" : "gap-1"}`}>
       {arr.map((_, i) => {
         const guess = guesses[i];
         const characters = guess?.characters || emptyGuess;
         const isLastGuess = i === guesses.length - 1;
         const hasSubmitAnimation = submitting && isLastGuess;
         return (
-          <div key={i} className="flex gap-1">
+          <div key={i} className={`flex ${compact ? "gap-0.5" : "gap-1"}`}>
             {characters.map((letter, j) => (
               <div
                 key={j}
-                className={`w-12 h-12 flex items-center justify-center font-bold text-2xl border-2 transition-[border-color,background-color] duration-100 ${
+                className={`flex items-center justify-center font-bold transition-[border-color,background-color] duration-100 ${
                   !letter
                     ? "bg-white border-primary-950/20"
                     : placeholder
@@ -45,6 +47,10 @@ export function GameGuessGrid({
                     : letter.character
                     ? "bg-primary-950/40 text-white border-transparent"
                     : "bg-primary-950/20 text-white border-transparent"
+                } ${
+                  compact
+                    ? "w-8 h-8 border text-base"
+                    : "w-12 h-12 border-2 text-2xl"
                 }`}
               >
                 <span
