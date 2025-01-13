@@ -389,7 +389,9 @@ export function Game({
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
   const [mode, setMode] = useState<GamePlayMode>("normal");
 
-  const [isWindowFocused, setIsWindowFocused] = useState(document.hasFocus());
+  const [isWindowFocused, setIsWindowFocused] = useState(
+    document.hasFocus() || !window.matchMedia('(hover: hover)').matches
+  );
   const { status: sessionStatus } = useSession();
   const { jwt } = useJwt();
   const { sessionId } = useSessionId();
