@@ -9,11 +9,11 @@ import { Game as GameComponent, GameProps } from "@/app/ui/game";
 import { GameGuessGrid } from "@/app/ui/game-guess-grid";
 import { ProgressBarIcon } from "@/app/ui/icons/progress-bar-icon";
 import { createComposeUrl } from "@/app/utils";
-import sdk, { FrameContext, SignIn as FrameSignIn } from "@farcaster/frame-sdk";
+import sdk, { SignIn as FrameSignIn, Context } from "@farcaster/frame-sdk";
 import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-function toUserData(user: FrameContext["user"]) {
+function toUserData(user: Context.FrameContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
 }
 
@@ -268,7 +268,7 @@ interface ClientContext {
   userData?: UserData;
   userFid?: number;
   isReady: boolean;
-  client?: FrameContext["client"];
+  client?: Context.FrameContext["client"];
   share: ({ title, url }: { title: string; url: string }) => Promise<void>;
   openUrl: (url: string) => Promise<void>;
   requestAddFrame: () => Promise<void>;
@@ -277,9 +277,9 @@ interface ClientContext {
 function useClientContext({
   onLoad,
 }: {
-  onLoad?: (ctx: FrameContext) => void;
+  onLoad?: (ctx: Context.FrameContext) => void;
 }): ClientContext {
-  const [context, setContext] = useState<FrameContext | undefined>();
+  const [context, setContext] = useState<Context.FrameContext | undefined>();
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const load = async () => {
