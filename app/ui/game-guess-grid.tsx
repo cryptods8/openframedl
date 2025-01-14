@@ -49,7 +49,7 @@ export function GameGuessGrid({
                     : "bg-primary-950/20 text-white border-transparent"
                 } ${
                   compact
-                    ? "w-8 h-8 border text-base"
+                    ? "w-7 h-7 border text-sm"
                     : "w-12 h-12 border-2 text-2xl"
                 }`}
               >

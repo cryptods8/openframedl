@@ -1,31 +1,28 @@
 import { getDailyGameKey } from "@/app/game/game-utils";
 import { gameService } from "@/app/game/game-service";
 import { NextServerPageProps } from "frames.js/next/types";
-import { Avatar } from "@/app/ui/avatar";
 import { LeaderboardDataItem } from "@/app/game/game-pg-repository";
 import { Button } from "@/app/ui/button/button";
 import { GameIdentityProvider } from "@/app/game/game-repository";
+import { LeaderboardEntry, LeaderboardEntryRow } from "./leaderboard-entry";
+import { pgDb } from "@/app/db/pg/pg-db";
+import { sql } from "kysely";
+import { LeaderboardNav } from "./leaderboard-nav";
 
-interface LeaderboardEntry {
-  id: string;
-  username: string | null;
-  avatar: string | null;
-  wonCount: number;
-  totalGuessCount: number;
-  score: number;
-  avg: number;
-  pos: string;
-  highlighted: boolean;
-}
+// interface LeaderboardEntry {
+//   id: string;
+//   username: string | null;
+//   avatar: string | null;
+//   wonCount: number;
+//   totalGuessCount: number;
+//   score: number;
+//   avg: number;
+//   pos: string;
+//   highlighted: boolean;
+// }
 
-function Score({ score }: { score: number }) {
-  const parts = score.toFixed(2).split(".");
-  return (
-    <div className="flex items-baseline">
-      <div>{parts[0]}</div>
-      <div className="opacity-50 text-xs">.{parts[1]}</div>
-    </div>
-  );
+interface LeaderboardEntryWithTotalScore extends LeaderboardEntry {
+  totalScore: number;
 }
 
 function entryToLeaderboardEntry(
@@ -33,33 +30,167 @@ function entryToLeaderboardEntry(
   highlighted: boolean,
   pos: string,
   days: number
-) {
+): LeaderboardEntryWithTotalScore {
   return {
     id: e.userId,
+    userId: e.userId,
     username: e.userData?.username ?? `!${e.userId}`,
     avatar: e.userData?.profileImage ?? null,
-    wonCount: e.wonCount,
-    totalGuessCount: e.totalGuessCount,
-    score: e.totalGuessCount / days,
-    avg: e.wonCount > 0 ? e.wonGuessCount / e.wonCount : 0,
+    value: e.wonCount,
+    // totalGuessCount: e.totalGuessCount,
+    totalScore: e.totalGuessCount,
+    // score: e.totalGuessCount / days,
+    score: e.wonCount > 0 ? e.wonGuessCount / e.wonCount : 0,
     pos,
     highlighted,
   };
 }
 
-export default async function LeaderboardPage({
-  searchParams,
-}: NextServerPageProps) {
-  const userIdParam = searchParams?.uid as string | undefined;
-  const dateParam = searchParams?.date as string | undefined;
-  const daysParam = searchParams?.days as string | undefined;
-  const gameHref = searchParams?.gh as string | undefined;
-  const ipParam = searchParams?.ip as GameIdentityProvider | undefined;
+type LeaderboardType = "SCORE" | "GAMES_WON" | "STREAK";
 
-  const days = daysParam != null ? parseInt(daysParam, 10) : 14;
-  const date = dateParam ?? getDailyGameKey(new Date());
-  const leaderboard = await gameService.loadLeaderboard(ipParam ?? "fc", {
-    userId: userIdParam,
+type LeaderboardEntries = (LeaderboardEntryWithTotalScore | null)[];
+
+async function getStreakLeaderboardEntries({
+  date,
+  userId,
+  ip,
+}: {
+  date: string;
+  userId?: string;
+  ip?: GameIdentityProvider;
+}): Promise<LeaderboardEntries> {
+  const entries = await pgDb
+    .with("daily_game", (db) =>
+      db
+        .selectFrom("game as g")
+        .select(["g.userId", "g.identityProvider", "g.gameKey"])
+        .where("g.isDaily", "=", true)
+        .where("g.gameKey", "<=", date)
+        .where("g.status", "=", "WON")
+    )
+    .with("streak", (db) =>
+      db
+        .selectFrom("daily_game")
+        .select([
+          "userId",
+          "identityProvider",
+          "gameKey",
+          sql<number>`(game_key::date - '2024-01-01'::date) - ROW_NUMBER() OVER (PARTITION BY user_id, identity_provider ORDER BY game_key::date)`.as(
+            "streakGroup"
+          ),
+        ])
+    )
+    .with("streak_length", (db) =>
+      db
+        .selectFrom("streak")
+        .select((s) => [
+          "userId",
+          "identityProvider",
+          s.fn.countAll().as("streakLength"),
+          s.fn.min("gameKey").as("streakStart"),
+          s.fn.max("gameKey").as("streakEnd"),
+        ])
+        .groupBy(["userId", "identityProvider", "streakGroup"])
+    )
+    .selectFrom("streak_length as sl")
+    .select((s) => [
+      "sl.userId",
+      "sl.identityProvider",
+      "sl.streakEnd",
+      s.ref("sl.streakLength").$castTo<number>().as("streakLength"),
+      sql<number>`RANK() OVER (ORDER BY sl.streak_length DESC)`.as("pos"),
+      s
+        .selectFrom("game as mg")
+        .select("mg.userData")
+        .where("mg.userId", "=", s.ref("sl.userId"))
+        .where("mg.identityProvider", "=", s.ref("sl.identityProvider"))
+        .where("mg.isDaily", "=", true)
+        .where("mg.gameKey", "=", s.ref("sl.streakEnd"))
+        .as("userData"),
+    ])
+    .where("sl.identityProvider", "=", ip ?? "fc")
+    .orderBy("sl.streakLength", "desc")
+    .limit(100)
+    .execute();
+
+  return entries.reduce((acc, e, idx) => {
+    const entry = {
+      id: `${e.userId}-${e.streakEnd}`,
+      userId: e.userId,
+      username: e.userData?.username ?? `!${e.userId}`,
+      avatar: e.userData?.profileImage ?? null,
+      value: e.streakLength,
+      totalScore: e.streakLength,
+      pos: `${e.pos}`,
+      highlighted: userId === e.userId,
+    };
+    acc.push(entry);
+    return acc;
+  }, [] as LeaderboardEntries);
+}
+
+async function getGamesWonLeaderboardEntries({
+  date,
+  userId,
+  ip,
+}: {
+  date: string;
+  userId?: string;
+  ip?: GameIdentityProvider;
+}): Promise<LeaderboardEntries> {
+  const entries = await pgDb
+    .selectFrom("game as g")
+    .select((db) => [
+      "g.userId",
+      db.fn.countAll().$castTo<number>().as("gamesWon"),
+      db
+        .selectFrom("game as mg")
+        .select("mg.userData")
+        .where("mg.userId", "=", db.ref("g.userId"))
+        .where("mg.identityProvider", "=", db.ref("g.identityProvider"))
+        .where("mg.isDaily", "=", true)
+        .where("mg.gameKey", "=", db.fn.max("g.gameKey"))
+        .as("userData"),
+    ])
+    .where("g.identityProvider", "=", ip ?? "fc")
+    .where("g.isDaily", "=", true)
+    .where("g.gameKey", "<=", date)
+    .where("g.status", "=", "WON")
+    .groupBy("g.userId")
+    .groupBy("g.identityProvider")
+    .orderBy("gamesWon", "desc")
+    .limit(100)
+    .execute();
+  return entries.reduce((acc, e, idx) => {
+    const prevE = acc[idx - 1];
+    const entry = {
+      id: e.userId,
+      userId: e.userId,
+      username: e.userData?.username ?? `!${e.userId}`,
+      avatar: e.userData?.profileImage ?? null,
+      value: e.gamesWon,
+      totalScore: e.gamesWon,
+      pos: prevE && prevE.totalScore === e.gamesWon ? prevE.pos : `${idx + 1}`,
+      highlighted: userId === e.userId,
+    };
+    acc.push(entry);
+    return acc;
+  }, [] as LeaderboardEntries);
+}
+
+async function getScoreLeaderboardEntries({
+  days,
+  date,
+  userId,
+  ip,
+}: {
+  days: number;
+  date: string;
+  userId?: string;
+  ip?: GameIdentityProvider;
+}): Promise<LeaderboardEntries> {
+  const leaderboard = await gameService.loadLeaderboard(ip ?? "fc", {
+    userId: userId,
     date,
     days,
     type: "DATE_RANGE",
@@ -67,11 +198,11 @@ export default async function LeaderboardPage({
   const { entries, found } = leaderboard.entries.reduce(
     (acc, e, idx) => {
       const prevE = acc.entries[idx - 1];
-      const found = userIdParam === e.userId;
+      const found = userId === e.userId;
       const entry = entryToLeaderboardEntry(
         e,
         found,
-        prevE && prevE.totalGuessCount === e.totalGuessCount
+        prevE && prevE.totalScore === e.totalGuessCount
           ? prevE.pos
           : `${idx + 1}`,
         days
@@ -81,25 +212,68 @@ export default async function LeaderboardPage({
       return acc;
     },
     { entries: [], found: false } as {
-      entries: (LeaderboardEntry | null)[];
+      entries: (LeaderboardEntryWithTotalScore | null)[];
       found: boolean;
     }
   );
-  if (userIdParam && !found && leaderboard.personalEntry) {
+  if (userId && !found && leaderboard.personalEntry) {
     entries.push(null);
     entries.push(
       entryToLeaderboardEntry(leaderboard.personalEntry, true, "X", days)
     );
   }
+  return entries;
+}
+
+export default async function LeaderboardPage({
+  searchParams,
+}: NextServerPageProps) {
+  const typeParam = searchParams?.type as LeaderboardType | undefined;
+  const userIdParam = searchParams?.uid as string | undefined;
+  const dateParam = searchParams?.date as string | undefined;
+  const daysParam = searchParams?.days as string | undefined;
+  const gameHref = searchParams?.gh as string | undefined;
+  const ipParam = searchParams?.ip as GameIdentityProvider | undefined;
+
+  let entries: LeaderboardEntries;
+  const date = dateParam ?? getDailyGameKey(new Date());
+  if (typeParam === "GAMES_WON") {
+    entries = await getGamesWonLeaderboardEntries({
+      date,
+      userId: userIdParam,
+      ip: ipParam,
+    });
+  } else if (typeParam === "STREAK") {
+    entries = await getStreakLeaderboardEntries({
+      date,
+      userId: userIdParam,
+      ip: ipParam,
+    });
+  } else {
+    const days = daysParam != null ? parseInt(daysParam, 10) : 14;
+
+    entries = await getScoreLeaderboardEntries({
+      days,
+      date,
+      userId: userIdParam,
+      ip: ipParam,
+    });
+  }
+
   return (
     <div
-      className={`w-full flex-1 max-w-xl pt-4 px-4 font-inter ${gameHref ? "pb-28" : "pb-8"}`}
+      className={`w-full flex-1 max-w-screen-sm pt-4 px-4 sm:px-8 font-inter ${
+        gameHref ? "pb-28" : "pb-8"
+      }`}
     >
-      <div className="w-full pb-4">
+      <div className="w-full pb-6 pt-2 px-2 flex gap-2 items-center flex-wrap justify-between">
         <div className="font-space font-semibold text-xl">
           Framedl Leaderboard
         </div>
         <div className="text-sm text-primary-900/50">{date}</div>
+      </div>
+      <div className="mb-4 -mx-4 sm:-mx-2">
+        <LeaderboardNav activeType={typeParam ?? "SCORE"} />
       </div>
       <div className="space-y-1">
         {entries.map((entry, idx) => {
@@ -110,45 +284,7 @@ export default async function LeaderboardPage({
               </div>
             );
           }
-          return (
-            <div
-              key={entry.id}
-              className={`flex items-center gap-5 py-2 px-3 w-full ${
-                entry.highlighted
-                  ? "font-bold rounded bg-primary-500 text-white"
-                  : ""
-              }`}
-            >
-              <div
-                className={`w-6 h-6 text-sm rounded bg-primary-900/10 flex items-center justify-center shrink-0 ${
-                  entry.pos === "1"
-                    ? "bg-primary-900/80 text-white"
-                    : entry.pos === "2"
-                    ? "bg-primary-900/60 text-white"
-                    : entry.pos === "3"
-                    ? "bg-primary-900/40 text-white"
-                    : "bg-primary-900/10"
-                }`}
-              >
-                {entry.pos}
-              </div>
-              <div className="shrink-0">
-                <Avatar avatar={entry.avatar} username={entry.username} />
-              </div>
-              <div className="shrink truncate overflow-hidden">
-                {entry.username}
-              </div>
-              <div
-                className={`flex-1 h-1 rounded-full ${
-                  entry.highlighted ? "bg-white/20" : "bg-primary-900/10"
-                }`}
-              />
-              <div className="font-mono">{entry.wonCount}</div>
-              <div className="w-8 flex justify-end font-mono">
-                <Score score={entry.avg} />
-              </div>
-            </div>
-          );
+          return <LeaderboardEntryRow key={entry.id} entry={entry} />;
         })}
       </div>
       {gameHref && (

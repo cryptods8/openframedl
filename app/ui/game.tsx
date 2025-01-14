@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import {
   GuessCharacter,
@@ -377,6 +377,7 @@ export function Game({
   onGameOver,
 }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
+  const [textInputWord, setTextInputWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationResult, setValidationResult] =
@@ -413,10 +414,11 @@ export function Game({
     (game: GuessedGame | undefined) => {
       setCurrentGame(game);
       setCurrentWord("");
+      setTextInputWord("");
       setValidationResult(null);
       setIsDialogOpen(game?.status === "WON" || game?.status === "LOST");
     },
-    [setCurrentGame, setCurrentWord, setIsDialogOpen, setValidationResult]
+    [setCurrentGame, setCurrentWord, setTextInputWord, setIsDialogOpen, setValidationResult]
   );
 
   useEffect(() => {
@@ -492,7 +494,7 @@ export function Game({
   ]);
 
   const handleKeyPress = useCallback(
-    (k: string) => {
+    (k: string) => {      
       if (isSubmitting || isGameOver) {
         return;
       }
@@ -534,6 +536,9 @@ export function Game({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) {
+        return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) {
         return;
       }
@@ -565,6 +570,31 @@ export function Game({
       window.open(createComposeUrl(fullText, url), "_blank");
     }
   };
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const scrollToInput = useCallback(() => {
+    if (inputRef.current) {
+      const inputBottom = inputRef.current.getBoundingClientRect().bottom;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const scrollOffset = inputBottom - viewportHeight + 12;
+      setCustomToastMessage(`[${scrollOffset}, ${viewportHeight}, ${inputBottom}]`);
+      setTimeout(() => window.scrollTo({ top: Math.max(scrollOffset, 0) }), 10);
+    }
+  }, [inputRef]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCustomToastMessage(`Resized: ${window.visualViewport?.height}`);
+      // setTimeout(() => scrollToInput(), 10);
+      // scrollToInput();
+    }
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => {
+      setCustomToastMessage(`Removed resize listener`);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+    }
+  }, [scrollToInput])
 
   if (config.isPro && !userData?.passOwnership) {
     return (
@@ -622,9 +652,9 @@ export function Game({
           : (!appFrame || sessionStatus === "authenticated") && <SignIn />}
       </div>
       <div
-        className={`relative flex-1 flex flex-col items-center w-full ${
+        className={`relative flex-1 flex flex-col items-center w-full max-w-xl ${
           mode === "pro" ? "justify-start" : "justify-center"
-        } overflow-y-auto`}
+        }`}
       >
         <div className="flex flex-row gap-4 w-full px-4 items-center justify-center">
           <GameGrid
@@ -641,6 +671,7 @@ export function Game({
                 onSubmit={() => {}}
                 mode={mode}
               />
+              {customToastMessage}
             </div>
           )}
         </div>
@@ -662,18 +693,41 @@ export function Game({
         </div> */}
         {mode === "pro" && (
           // <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-primary-100">
-          <div className="w-full px-4 py-2">
+          <div className="w-full flex gap-2 px-4 py-2">
             <input
+              ref={inputRef}
               placeholder="Make a guess…"
               type="text"
-              className="w-full h-12 border border-primary-400 active:border-primary-500 focus:outline-primary-500 rounded-md px-3"
+              className="flex-1 h-12 border border-primary-400 active:border-primary-500 focus:outline-primary-500 rounded-md px-3"
               autoFocus
-              onBlur={(e) => e.target.focus()}
+              // onBlur={scrollToInput}
+              // onFocus={scrollToInput}
+              onChange={(e) => {
+                const word = e.target.value;
+                setTextInputWord(word);
+                setCurrentWord(word.toLowerCase().substring(0, 5));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSubmit();
+                }
+              }}
+              value={textInputWord}
+              // disabled={isSubmitting}
             />
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              loading={isSubmitting}
+            >
+              ENTER
+            </Button>
             {/* </div> */}
           </div>
         )}
-        <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2">
+        <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-2 overflow-hidden py-4">
           <Toast
             message={getValidationResultMessage(validationResult)}
             isVisible={!!validationResult}

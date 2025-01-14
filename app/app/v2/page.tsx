@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { AppFrame } from "./app-frame";
 import { ProfileApp } from "@/app/profiles/profile-app";
 import { NextServerPageProps } from "frames.js/next/types";
+// import { Test } from "./test";
 
 export async function generateMetadata({
   searchParams,
@@ -38,6 +39,11 @@ export default function Page({ searchParams }: NextServerPageProps) {
   const gtParam = searchParams?.gt as string | undefined;
   const debugParam = searchParams?.dbg as string | undefined;
   const debugUrlParam = searchParams?.dbgUrl as string | undefined;
+  // if (!debugParam) {
+  //   return (
+  //     <Test />
+  //   )
+  // }
   return (
     <div className="w-full h-dvh min-h-full">
       <ProfileApp headerless>
