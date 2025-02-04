@@ -3,6 +3,7 @@ import { sendFrameNotifications } from "@/app/utils/send-frame-notifications";
 import { getDailyGameKey } from "@/app/game/game-utils";
 import { pgDb } from "@/app/db/pg/pg-db";
 import { FrameNotificationDetails } from "@farcaster/frame-sdk";
+import { isPro } from "@/app/constants";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -45,8 +46,9 @@ export async function GET(req: NextRequest) {
         )
       )
       .execute();
+    const name = isPro ? "Framedl PRO" : "Framedl";
     const title =
-      type === "new" ? "New daily Framedl" : "Do not miss your daily Framedl";
+      type === "new" ? `New daily ${name}` : `Do not miss your daily ${name}`;
     const body =
       type === "new"
         ? "Your daily game is ready!"

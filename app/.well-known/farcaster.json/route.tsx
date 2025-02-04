@@ -1,16 +1,24 @@
 import { NextResponse } from "next/server";
 
 // @ts-ignore
-import { externalBaseUrl, isProduction } from "@/app/constants";
+import { externalBaseUrl, isProduction, isPro } from "@/app/constants";
 
 const accountAssociation = isProduction
-  ? {
-      header:
-        "eyJmaWQiOjExMTI0LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4ZENjODlEZjVGYzhENDJDNTQ0MzM4ODUzMWFGMTU1MUUwRmJkNUNBZCJ9",
-      payload: "eyJkb21haW4iOiJmcmFtZWRsLnh5eiJ9",
-      signature:
-        "MHhhMzljN2EzZTJiZmU1NmZjZDM4YTgxNDkxMjk4YjcxZGZkNTk0ZmJmODBjN2I0YmUwNGU5ZjUwMTYyZjYyZTgzNDliNDllZGNjNjgzM2M0MmZiODZlNDMyMDNkYmU3YzlkZGJkNjJiYWU1M2Q5ZDllODY1YTk3MDk1YmMwODMzZTFj",
-    }
+  ? isPro
+    ? {
+        header:
+          "eyJmaWQiOjExMTI0LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4ZENjODlEZjVGYzhENDJDNTQ0MzM4ODUzMWFGMTU1MUUwRmJkNUNBZCJ9",
+        payload: "eyJkb21haW4iOiJwcm8uZnJhbWVkbC54eXoifQ",
+        signature:
+          "MHg1NzBmNGFkMmViMGViNDQxNTFmY2YzMWYyOGMzMmQyZThlMTBhZTNhZTUzMDUyNjg1NjM3ODg3NWYyNGE0MDEzNmQyNjVmZjU3NjM0NGU0NzczMTA2YWZmZTUyZTE5MjdiNjZlYTRjODYwYjc1MmU1NDVmMWFkMTJhNDA0MjdlYjFj",
+      }
+    : {
+        header:
+          "eyJmaWQiOjExMTI0LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4ZENjODlEZjVGYzhENDJDNTQ0MzM4ODUzMWFGMTU1MUUwRmJkNUNBZCJ9",
+        payload: "eyJkb21haW4iOiJmcmFtZWRsLnh5eiJ9",
+        signature:
+          "MHhhMzljN2EzZTJiZmU1NmZjZDM4YTgxNDkxMjk4YjcxZGZkNTk0ZmJmODBjN2I0YmUwNGU5ZjUwMTYyZjYyZTgzNDliNDllZGNjNjgzM2M0MmZiODZlNDMyMDNkYmU3YzlkZGJkNjJiYWU1M2Q5ZDllODY1YTk3MDk1YmMwODMzZTFj",
+      }
   : {
       header:
         "eyJmaWQiOjExMTI0LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4ZENjODlEZjVGYzhENDJDNTQ0MzM4ODUzMWFGMTU1MUUwRmJkNUNBZCJ9",
@@ -24,11 +32,17 @@ export async function GET() {
     accountAssociation,
     frame: {
       version: "1",
-      name: "Framedl",
-      imageUrl: `${externalBaseUrl}/init-v2.png`,
+      name: isPro ? "Framedl PRO" : "Framedl",
+      imageUrl: isPro
+        ? `${externalBaseUrl}/init-pro.png`
+        : `${externalBaseUrl}/init-v2.png`,
       buttonTitle: "Play",
-      iconUrl: `${externalBaseUrl}/icon-v2.png`,
-      splashImageUrl: `${externalBaseUrl}/splash-v2.png`,
+      iconUrl: isPro
+        ? `${externalBaseUrl}/icon-pro.png`
+        : `${externalBaseUrl}/icon-v2.png`,
+      splashImageUrl: isPro
+        ? `${externalBaseUrl}/splash-pro.png`
+        : `${externalBaseUrl}/splash-v2.png`,
       splashBackgroundColor: "#f3f0f9",
       homeUrl: `${externalBaseUrl}/app/v2`,
       webhookUrl: `${externalBaseUrl}/api/frames/v2/webhook`,

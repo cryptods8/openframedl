@@ -12,9 +12,12 @@ export async function generateMetadata({
 
   const imageUrl = id
     ? `${externalBaseUrl}/app/v2/frames/image?id=${id}`
+    : isPro
+    ? `${externalBaseUrl}/init-pro.png`
     : `${externalBaseUrl}/init-v2.png`;
+  const name = isPro ? "Framedl PRO" : "Framedl";
   return {
-    title: "Framedl by ds8",
+    title: `${name} by ds8`,
     description: "Wordle in a frame",
     other: {
       "fc:frame": JSON.stringify({
@@ -24,9 +27,11 @@ export async function generateMetadata({
           title: "Play",
           action: {
             type: "launch_frame",
-            name: "Framedl",
+            name,
             url: `${externalBaseUrl}/app/v2`,
-            splashImageUrl: `${externalBaseUrl}/splash-v2.png`,
+            splashImageUrl: isPro
+              ? `${externalBaseUrl}/splash-pro.png`
+              : `${externalBaseUrl}/splash-v2.png`,
             splashBackgroundColor: "#f3f0f9",
           },
         },
