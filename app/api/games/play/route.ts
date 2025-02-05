@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gameService, GuessedGame } from "@/app/game/game-service";
+import {
+  gameService,
+  GuessedGame,
+  PassRequiredError,
+} from "@/app/game/game-service";
 import { getUserInfoFromJwtOrSession } from "@/app/lib/auth";
 import { isPro } from "@/app/constants";
 import { UserData } from "@/app/game/game-repository";
+import { loadUserData } from "@/app/games/user-data";
 
 export const dynamic = "force-dynamic";
 
@@ -62,34 +67,49 @@ async function getUserInfoFromRequest(req: NextRequest, body: PlayRequest) {
 export const POST = async (req: NextRequest) => {
   const body: PlayRequest = await req.json();
 
-  const { userData, userKey, anonymous } = await getUserInfoFromRequest(
-    req,
-    body
-  );
-  if (isPro) {
-    if (!userData?.passOwnership) {
+  const { userKey } = await getUserInfoFromRequest(req, body);
+  // if (isPro) {
+  //   if (!userData?.passOwnership) {
+  //     return NextResponse.json(
+  //       { error: "Framedl PRO Pass is required to play!" },
+  //       { status: 401 }
+  //     );
+  //   }
+  // }
+
+  let game: GuessedGame | null = null;
+  try {
+    game = body.gameId
+      ? await gameService.load(body.gameId)
+      : await gameService.loadOrCreate(
+          {
+            ...userKey,
+            gameKey:
+              body.gameType === "daily"
+                ? gameService.getDailyKey()
+                : Math.random().toString(36).substring(2),
+            isDaily: body.gameType === "daily",
+          },
+          {
+            userData: async () => {
+              const d = await loadUserData(userKey);
+              console.log("loaded", d);
+              return d;
+            },
+          }
+        );
+  } catch (e) {
+    if (e instanceof PassRequiredError) {
       return NextResponse.json(
-        { error: "Framedl PRO Pass is required to play!" },
+        {
+          error: "Framedl PRO Pass is required to play!",
+          type: "pass_required",
+        },
         { status: 401 }
       );
     }
+    throw e;
   }
-
-  const game = body.gameId
-    ? await gameService.load(body.gameId)
-    : await gameService.loadOrCreate(
-        {
-          ...userKey,
-          gameKey:
-            body.gameType === "daily"
-              ? gameService.getDailyKey()
-              : Math.random().toString(36).substring(2),
-          isDaily: body.gameType === "daily",
-        },
-        {
-          userData: userData || undefined,
-        }
-      );
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }

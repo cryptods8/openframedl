@@ -170,8 +170,9 @@ export type GuessValidationStatus =
   | "INVALID_ALREADY_GUESSED";
 
 export type PreCreateFunction = () => Promise<GameWord>;
+export type LoadUserDataFunction = () => Promise<UserData>;
 export interface LoadOrCreateOptions {
-  userData?: UserData;
+  userData?: UserData | LoadUserDataFunction;
   srcGameId?: string;
   preCreate?: PreCreateFunction;
 }
@@ -242,6 +243,13 @@ interface WordCharacter {
 }
 
 const MAX_GUESSES = 6;
+
+export class PassRequiredError extends Error {
+  constructor(message: string = "Framedl PRO Pass is required to play!") {
+    super(message);
+    this.name = "PassRequiredError";
+  }
+}
 
 export class GameServiceImpl implements GameService {
   private readonly gameRepository: GameRepository = new GameRepositoryImpl();
@@ -470,13 +478,26 @@ export class GameServiceImpl implements GameService {
   ): Promise<GuessedGame> {
     const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
-      const { userData, srcGameId, preCreate } = options || {};
+      const {
+        userData: userDataProvider,
+        srcGameId,
+        preCreate,
+      } = options || {};
       const { word, customGame, arena, arenaWordIndex, initWords } = preCreate
         ? await preCreate()
         : await getWordForUserGameKey(key);
       let customMaker: CustomGameMaker | undefined;
       if (customGame) {
         customMaker = this.toCustomGameMaker(customGame);
+      }
+      const userData =
+        typeof userDataProvider === "function"
+          ? await userDataProvider()
+          : userDataProvider;
+      if (isPro) {
+        if (!userData?.passOwnership) {
+          throw new PassRequiredError();
+        }
       }
       const newGame = {
         ...key,

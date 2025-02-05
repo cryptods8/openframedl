@@ -352,6 +352,10 @@ export interface GameProps {
   config: GameConfig;
   userData?: UserData & { fid?: number };
   appFrame?: boolean;
+  error?: {
+    error: string;
+    type?: string;
+  };
   onShare?: ({
     title,
     text,
@@ -369,6 +373,7 @@ export interface GameProps {
 export function Game({
   game,
   config,
+  error,
   userData,
   appFrame,
   gameType,
@@ -391,7 +396,7 @@ export function Game({
   const [mode, setMode] = useState<GamePlayMode>("normal");
 
   const [isWindowFocused, setIsWindowFocused] = useState(
-    document.hasFocus() || !window.matchMedia('(hover: hover)').matches
+    document.hasFocus() || !window.matchMedia("(hover: hover)").matches
   );
   const { status: sessionStatus } = useSession();
   const { jwt } = useJwt();
@@ -418,7 +423,13 @@ export function Game({
       setValidationResult(null);
       setIsDialogOpen(game?.status === "WON" || game?.status === "LOST");
     },
-    [setCurrentGame, setCurrentWord, setTextInputWord, setIsDialogOpen, setValidationResult]
+    [
+      setCurrentGame,
+      setCurrentWord,
+      setTextInputWord,
+      setIsDialogOpen,
+      setValidationResult,
+    ]
   );
 
   useEffect(() => {
@@ -494,7 +505,7 @@ export function Game({
   ]);
 
   const handleKeyPress = useCallback(
-    (k: string) => {      
+    (k: string) => {
       if (isSubmitting || isGameOver) {
         return;
       }
@@ -576,9 +587,12 @@ export function Game({
   const scrollToInput = useCallback(() => {
     if (inputRef.current) {
       const inputBottom = inputRef.current.getBoundingClientRect().bottom;
-      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const viewportHeight =
+        window.visualViewport?.height || window.innerHeight;
       const scrollOffset = inputBottom - viewportHeight + 12;
-      setCustomToastMessage(`[${scrollOffset}, ${viewportHeight}, ${inputBottom}]`);
+      setCustomToastMessage(
+        `[${scrollOffset}, ${viewportHeight}, ${inputBottom}]`
+      );
       setTimeout(() => window.scrollTo({ top: Math.max(scrollOffset, 0) }), 10);
     }
   }, [inputRef]);
@@ -588,15 +602,19 @@ export function Game({
       setCustomToastMessage(`Resized: ${window.visualViewport?.height}`);
       // setTimeout(() => scrollToInput(), 10);
       // scrollToInput();
-    }
-    window.visualViewport?.addEventListener('resize', handleResize);
+    };
+    window.visualViewport?.addEventListener("resize", handleResize);
     return () => {
       setCustomToastMessage(`Removed resize listener`);
-      window.visualViewport?.removeEventListener('resize', handleResize);
-    }
-  }, [scrollToInput])
+      window.visualViewport?.removeEventListener("resize", handleResize);
+    };
+  }, [scrollToInput]);
 
-  if (config.isPro && !userData?.passOwnership) {
+  if (
+    config.isPro &&
+    ((currentGame && !currentGame.userData?.passOwnership) ||
+      error?.type === "pass_required")
+  ) {
     return (
       <div className="flex flex-col h-full w-full p-8 items-center justify-center text-center gap-8">
         <Link

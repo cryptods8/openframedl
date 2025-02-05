@@ -27,6 +27,11 @@ function Loading() {
   );
 }
 
+interface ErrorResponse {
+  error: string;
+  type?: string;
+}
+
 function Game({
   asGuest,
   fid,
@@ -34,6 +39,7 @@ function Game({
   ...props
 }: Omit<GameProps, "game"> & { fid?: number; asGuest: boolean }) {
   const [loadedGame, setLoadedGame] = useState<GuessedGame | undefined>();
+  const [error, setError] = useState<ErrorResponse | undefined>();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -53,8 +59,13 @@ function Game({
             gameType: gameType,
           }),
         });
-        const data = await resp.json();
-        setLoadedGame(data.data);
+        if (!resp.ok) {
+          const data = await resp.json();
+          setError(data);
+        } else {
+          const data = await resp.json();
+          setLoadedGame(data.data);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -68,7 +79,7 @@ function Game({
     return <Loading />;
   }
 
-  return <GameComponent {...props} gameType={gameType} game={loadedGame} />;
+  return <GameComponent {...props} gameType={gameType} error={error} game={loadedGame} />;
 }
 
 interface Config {
