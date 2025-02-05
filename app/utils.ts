@@ -25,11 +25,12 @@ export async function timeCall<T>(
   return result;
 }
 
-export function createComposeUrl(text: string, url: string): string {
+// TODO: improve
+export function createComposeUrl(text: string, url: string, config?: { isPro: boolean }): string {
   const params = new URLSearchParams();
   params.set("text", text);
   params.set("embeds[]", url);
-  params.set("channelKey", isPro ? "framedl-pro" : "framedl");
+  params.set("channelKey", (config ? config.isPro : isPro) ? "framedl-pro" : "framedl");
   return `https://warpcast.com/~/compose?${params.toString()}`;
 }
 

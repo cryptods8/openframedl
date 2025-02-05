@@ -287,8 +287,10 @@ interface ClientContext {
 
 function useClientContext({
   onLoad,
+  config,
 }: {
   onLoad?: (ctx: Context.FrameContext) => void;
+  config: Config;
 }): ClientContext {
   const [context, setContext] = useState<Context.FrameContext | undefined>();
   const [ready, setReady] = useState(false);
@@ -310,7 +312,7 @@ function useClientContext({
 
   const share = useCallback(
     ({ title, url }: { title: string; url: string }) => {
-      return sdk.actions.openUrl(createComposeUrl(title, url));
+      return sdk.actions.openUrl(createComposeUrl(title, url, { isPro: config.isPro }));
     },
     []
   );
@@ -351,6 +353,7 @@ export function AppFrame({
       sdk.actions.ready();
       window.focus();
     },
+    config,
   });
 
   if (!clientContext.isReady) {
