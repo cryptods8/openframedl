@@ -826,7 +826,8 @@ export function Game({
               {currentGame.isDaily && <NextGameMessage />}
             </div>
           )}
-          {currentGame?.status === "WON" && <GameConfetti />}
+          {/* disable confetti and see if the crash persists */}
+          {/* {currentGame?.status === "WON" && <GameConfetti />} */}
         </div>
       </Dialog>
       {mode === "normal" && (
