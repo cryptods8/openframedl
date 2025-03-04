@@ -8,6 +8,10 @@ import { isPro } from "@/app/constants";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+export const config = {
+  maxDuration: 200,
+};
+
 export async function GET(req: NextRequest) {
   if (
     req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`
@@ -54,6 +58,7 @@ export async function GET(req: NextRequest) {
         ? "Your daily game is ready!"
         : "You have last 2 hours to play your daily game!";
     // batch by 100
+    console.log("to notify", toNotify.length);
     for (let i = 0; i < toNotify.length; i += 100) {
       const recipients = toNotify
         .slice(i, i + 100)
@@ -66,14 +71,16 @@ export async function GET(req: NextRequest) {
           }
           return acc;
         }, [] as { fid: number; notificationDetails: FrameNotificationDetails }[]);
-      await sendFrameNotifications({ recipients, title, body });
-      if (i + 100 < toNotify.length) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+      const notificationResult = await sendFrameNotifications({ recipients, title, body });
+      console.log("sent", recipients.length, notificationResult);
+      // if (i + 100 < toNotify.length) {
+      //   await new Promise((resolve) => setTimeout(resolve, 50));
+      // }
     }
     console.log("notifications sent", toNotify.length);
     return NextResponse.json({ ok: true });
   } catch (e) {
+    console.error(e);
     return NextResponse.json(
       { ok: false, error: (e as any)?.message },
       { status: 500 }
