@@ -7,10 +7,7 @@ import { isPro } from "@/app/constants";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-export const config = {
-  maxDuration: 200,
-};
+export const maxDuration = 200;
 
 export async function GET(req: NextRequest) {
   if (
