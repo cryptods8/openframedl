@@ -53,6 +53,7 @@ export async function loadUsername(
   userKey: UserKey
 ): Promise<string | undefined> {
   switch (userKey.identityProvider) {
+    case "fc_unauth":
     case "fc": {
       const fid = parseInt(userKey.userId, 10);
       const options = { hubHttpUrl, hubRequestOptions };
@@ -62,6 +63,9 @@ export async function loadUsername(
     case "xmtp": {
       const ens = await getEnsFromAddress(userKey.userId);
       return ens ?? undefined;
+    }
+    case "anon": {
+      return undefined;
     }
     default: {
       throw new Error(
@@ -76,6 +80,7 @@ export async function loadUserData(userKey: UserKey): Promise<UserData> {
   let walletAddresses: string[] = [];
   let passOwnership: FramedlProPassOwnership | undefined | null = null;
   switch (userKey.identityProvider) {
+    case "fc_unauth":
     case "fc": {
       const fid = parseInt(userKey.userId, 10);
       const options = { hubHttpUrl, hubRequestOptions };
@@ -103,6 +108,10 @@ export async function loadUserData(userKey: UserKey): Promise<UserData> {
           username: ens,
         };
       }
+      break;
+    }
+    case "anon": {
+      userData = {};
       break;
     }
     default: {
