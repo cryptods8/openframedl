@@ -465,7 +465,7 @@
     ox "^0.4.4"
     zod "^3.24.1"
 
-"@farcaster/frame-core@0.0.24":
+"@farcaster/frame-core@0.0.24", "@farcaster/frame-core@^0.0.24":
   version "0.0.24"
   resolved "https://registry.yarnpkg.com/@farcaster/frame-core/-/frame-core-0.0.24.tgz#35c2403f561a74b6551e3032d6d57a730c3dc413"
   integrity sha512-iO/Jxz6mZBVUoLIY753Id5Yhn6DHBakQkIBXf0mreAcnjPGCMvKx/0xKEM3ns3M801PqoX7VLYO4q+kKxYzQ0A==
@@ -1256,6 +1256,11 @@
   dependencies:
     "@noble/hashes" "1.7.0"
 
+"@noble/ed25519@^2.2.3":
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/@noble/ed25519/-/ed25519-2.2.3.tgz#e189810490302b076e17895b667a06cbe54339f4"
+  integrity sha512-iHV8eI2mRcUmOx159QNrU8vTpQ/Xm70yJ2cTk3Trc86++02usfqFoNl6x0p3JN81ZDS/1gx6xiK0OwrgqCT43g==
+
 "@noble/hashes@1.3.2":
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.3.2.tgz#6f26dbc8fbc7205873ce3cee2f690eba0d421b39"
@@ -1275,6 +1280,11 @@
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.7.0.tgz#5d9e33af2c7d04fee35de1519b80c958b2e35e39"
   integrity sha512-HXydb0DgzTpDPwbVeDGCG1gIu7X6+AuU6Zl6av/E/KG8LMsvPntvq+w17CHRpKBmN6Ybdrt1eP3k4cj8DJa78w==
+
+"@noble/hashes@^1.7.1":
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.7.1.tgz#5738f6d765710921e7a751e00c20ae091ed8db0f"
+  integrity sha512-B8XBPsn4vT/KJAGqDzbwztd+6Yte3P4V7iafm24bxgDe/mlRuK6xmWPuCNrKt2vDafZ8MfJLlchDG/vYafQEjQ==
 
 "@noble/hashes@~1.3.0", "@noble/hashes@~1.3.2":
   version "1.3.3"
@@ -4275,15 +4285,21 @@ framer-motion@^11.11.11:
   dependencies:
     tslib "^2.4.0"
 
-frames.js@^0.19.4:
-  version "0.19.4"
-  resolved "https://registry.yarnpkg.com/frames.js/-/frames.js-0.19.4.tgz#47299ffbfdc3a774e4d9fe3c483b8cb30351e55e"
-  integrity sha512-QzKk6BRtrX8uPWeuHcdQ+xehfmok42a95M9VMm7I2Kt+gwmCC3avqAcJUsS9pmmf9Ftwc4EVLswkExRbDWKm2w==
+frames.js@^0.21.3:
+  version "0.21.3"
+  resolved "https://registry.yarnpkg.com/frames.js/-/frames.js-0.21.3.tgz#b07493c09bc650fee92c9390cdf206530282b523"
+  integrity sha512-A9J1jfYPGu/Ip+Ne2pFy/klcjDGUJLkAtWs1IL2iKc4JQ2dGTd9a8ROFW51oe2Oqp9xTxWIZz/UlHgkG8f3Cig==
   dependencies:
+    "@farcaster/frame-core" "^0.0.24"
+    "@noble/ed25519" "^2.2.3"
+    "@noble/hashes" "^1.7.1"
     "@vercel/og" "^0.6.3"
     cheerio "^1.0.0-rc.12"
+    ox "^0.4.4"
     protobufjs "^7.2.6"
+    type-fest "^4.28.1"
     viem "^2.7.8"
+    zod "^3.24.1"
 
 fs-constants@^1.0.0:
   version "1.0.0"
@@ -7325,6 +7341,11 @@ type-fest@^0.21.3:
   version "0.21.3"
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.21.3.tgz#d260a24b0198436e133fa26a524a6d65fa3b2e37"
   integrity sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==
+
+type-fest@^4.28.1:
+  version "4.37.0"
+  resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-4.37.0.tgz#7cf008bf77b63a33f7ca014fa2a3f09fd69e8937"
+  integrity sha512-S/5/0kFftkq27FPNye0XM1e2NsnoD/3FS+pBmbjmmtLT6I+i344KoOf7pvXreaFsDamWeaJX55nczA1m5PsBDg==
 
 type@^2.7.2:
   version "2.7.2"

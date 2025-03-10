@@ -11,12 +11,15 @@ export function GameBoard({
   game,
   isPublic,
   dark,
+  reveal
 }: {
   game: GuessedGame | null | undefined;
   isPublic?: boolean;
   dark?: boolean;
+  reveal?: 'none' | 'all' | 'correct_word'
 }) {
   const { guesses } = game || { guesses: [] };
+  reveal = reveal || (isPublic ? "none" : "all");
 
   const rows: ReactNode[] = [];
   for (let i = 0; i < MAX_GUESSES; i++) {
@@ -25,8 +28,9 @@ export function GameBoard({
     for (let j = 0; j < 5; j++) {
       const letter = guess ? guess.characters[j] : undefined;
       const char = letter ? letter.character : "";
+      const isRevealed = reveal === "all" || (reveal === "correct_word" && game?.status === "WON" && i === game.guessCount - 1);
       const { color, backgroundColor, borderColor } =
-        getGuessCharacterColorStyle(letter, !isPublic, dark);
+        getGuessCharacterColorStyle(letter, isRevealed, dark);
       cells.push(
         <div
           key={j}
@@ -42,7 +46,7 @@ export function GameBoard({
             borderColor,
           }}
         >
-          {isPublic ? "" : char.toUpperCase()}
+          {isRevealed ? char.toUpperCase() : ""}
         </div>
       );
     }

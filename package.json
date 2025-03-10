@@ -30,7 +30,7 @@
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.11",
-    "frames.js": "^0.19.4",
+    "frames.js": "^0.21.3",
     "jsonwebtoken": "^9.0.2",
     "kysely": "^0.27.3",
     "next": "14.1.1",
