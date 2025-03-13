@@ -16,7 +16,7 @@ export const externalBaseUrl =
 
 const fallbackHubHttpUrl = isProduction
   ? undefined
-  : "http://localhost:3010/hub";
+  : "https://hub.pinata.cloud"; //"http://localhost:3010/hub";
 
 const airstackApiKey = process.env["AIRSTACK_API_KEY"];
 

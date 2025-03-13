@@ -4,10 +4,8 @@ import {
   GuessedGame,
   PassRequiredError,
 } from "@/app/game/game-service";
-import { getUserInfoFromJwtOrSession } from "@/app/lib/auth";
-import { isPro } from "@/app/constants";
-import { UserData } from "@/app/game/game-repository";
 import { loadUserData } from "@/app/games/user-data";
+import { BaseUserRequest, getUserInfoFromRequest } from "../../api-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +29,9 @@ export const GET = async (req: NextRequest) => {
   return NextResponse.json(gameToResponse(game));
 };
 
-interface PlayRequest {
+interface PlayRequest extends BaseUserRequest {
   guess: string;
   gameId?: string;
-  userData?: UserData & { fid?: number };
-  identityProvider?: "fc_unauth" | "anon";
-  userId?: string;
   gameType?: string;
 }
 
@@ -46,28 +41,10 @@ function gameToResponse(game: GuessedGame) {
   };
 }
 
-async function getUserInfoFromRequest(req: NextRequest, body: PlayRequest) {
-  if (
-    (body.identityProvider === "fc_unauth" ||
-      body.identityProvider === "anon") &&
-    body.userId
-  ) {
-    return {
-      userData: { ...body.userData, passOwnership: undefined },
-      userKey: {
-        userId: body.userId,
-        identityProvider: body.identityProvider,
-      },
-    };
-  }
-  const jwt = req.headers.get("Authorization")?.split(" ")[1];
-  return getUserInfoFromJwtOrSession(jwt);
-}
-
 export const POST = async (req: NextRequest) => {
   const body: PlayRequest = await req.json();
 
-  const { userKey } = await getUserInfoFromRequest(req, body);
+  const { userKey, userData } = await getUserInfoFromRequest(req, body);
   // if (isPro) {
   //   if (!userData?.passOwnership) {
   //     return NextResponse.json(
@@ -92,9 +69,14 @@ export const POST = async (req: NextRequest) => {
           },
           {
             userData: async () => {
-              const d = await loadUserData(userKey);
-              console.log("loaded", d);
-              return d;
+              if (
+                userData &&
+                (userKey.identityProvider === "fc_unauth" ||
+                  userKey.identityProvider === "anon")
+              ) {
+                return userData;
+              }
+              return await loadUserData(userKey);
             },
           }
         );

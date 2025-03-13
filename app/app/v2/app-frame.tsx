@@ -1,7 +1,9 @@
 "use client";
 
+import { useAppConfig } from "@/app/contexts/app-config-context";
 import { UserData } from "@/app/game/game-repository";
 import { GuessedGame } from "@/app/game/game-service";
+import { useSessionId } from "@/app/hooks/use-session-id";
 import { FarcasterSession } from "@/app/lib/auth";
 import { SignIn } from "@/app/ui/auth/sign-in";
 import { Button } from "@/app/ui/button/button";
@@ -41,6 +43,9 @@ function Game({
   const [loadedGame, setLoadedGame] = useState<GuessedGame | undefined>();
   const [error, setError] = useState<ErrorResponse | undefined>();
   const [loading, setLoading] = useState(false);
+  const { sessionId } = useSessionId();
+
+  const userData = props.userData;
 
   useEffect(() => {
     const load = async () => {
@@ -50,7 +55,7 @@ function Game({
           method: "POST",
           body: JSON.stringify({
             userData: props.userData,
-            userId: fid?.toString(),
+            userId: fid?.toString() || sessionId,
             identityProvider: asGuest
               ? fid
                 ? "fc_unauth"
@@ -73,18 +78,20 @@ function Game({
       }
     };
     load();
-  }, [fid, gameType, asGuest]);
+  }, [fid, gameType, asGuest, sessionId, userData]);
 
   if (loading) {
     return <Loading />;
   }
 
-  return <GameComponent {...props} gameType={gameType} error={error} game={loadedGame} />;
-}
-
-interface Config {
-  externalBaseUrl: string;
-  isPro: boolean;
+  return (
+    <GameComponent
+      {...props}
+      gameType={gameType}
+      error={error}
+      game={loadedGame}
+    />
+  );
 }
 
 const placeholderGuesses = ["PLAY ", "YOUR ", "HEART", "OUT! "].map((w) => ({
@@ -95,12 +102,10 @@ const placeholderGuesses = ["PLAY ", "YOUR ", "HEART", "OUT! "].map((w) => ({
 
 function GameContainer({
   context,
-  config,
   gameType,
   debugPanel,
 }: {
   context: ClientContext;
-  config: Config;
   gameType?: string;
   debugPanel?: React.ReactNode;
 }) {
@@ -174,7 +179,9 @@ function GameContainer({
 
   useEffect(() => {
     if (context.client && !context.client.added && !isFirstLoad) {
-      context.requestAddFrame();
+      context.requestAddFrame().catch((e) => {
+        console.error(e);
+      });
     }
   }, [context, isFirstLoad]);
 
@@ -195,7 +202,6 @@ function GameContainer({
         {status === "authenticated" || asGuest ? (
           <div className="flex-1 w-full">
             <Game
-              config={config}
               userData={context.userData}
               fid={context.userFid}
               appFrame
@@ -282,16 +288,15 @@ interface ClientContext {
   client?: Context.FrameContext["client"];
   share: ({ title, url }: { title: string; url: string }) => Promise<void>;
   openUrl: (url: string) => Promise<void>;
-  requestAddFrame: () => Promise<void>;
+  requestAddFrame: () => Promise<boolean>;
 }
 
 function useClientContext({
   onLoad,
-  config,
 }: {
   onLoad?: (ctx: Context.FrameContext) => void;
-  config: Config;
 }): ClientContext {
+  const { isPro } = useAppConfig();
   const [context, setContext] = useState<Context.FrameContext | undefined>();
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -304,7 +309,7 @@ function useClientContext({
       setReady(true);
       load();
     }
-  }, [ready]);
+  }, [ready, onLoad]);
 
   const userData = useMemo(() => {
     return context?.user ? toUserData(context.user) : undefined;
@@ -312,18 +317,23 @@ function useClientContext({
 
   const share = useCallback(
     ({ title, url }: { title: string; url: string }) => {
-      return sdk.actions.openUrl(createComposeUrl(title, url, { isPro: config.isPro }));
+      return sdk.actions.openUrl(createComposeUrl(title, url, { isPro }));
     },
-    []
+    [isPro]
   );
 
   const openUrl = useCallback((url: string) => {
     return sdk.actions.openUrl(url);
   }, []);
 
-  const requestAddFrame = useCallback(() => {
-    sdk.actions.addFrame();
-    return Promise.resolve();
+  const requestAddFrame = useCallback(async () => {
+    try {
+      await sdk.actions.addFrame();
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
   }, []);
 
   return {
@@ -338,23 +348,19 @@ function useClientContext({
 }
 
 export function AppFrame({
-  config,
   gameType,
   debug,
 }: {
-  config: Config;
   gameType?: string;
   debug?: {
     debugUrl?: string;
   };
 }) {
-  const clientContext = useClientContext({
-    onLoad: () => {
-      sdk.actions.ready();
-      window.focus();
-    },
-    config,
-  });
+  const onLoad = useCallback(() => {
+    sdk.actions.ready();
+    window.focus();
+  }, []);
+  const clientContext = useClientContext({ onLoad });
 
   if (!clientContext.isReady) {
     return null;
@@ -377,7 +383,6 @@ export function AppFrame({
   return (
     <GameContainer
       context={clientContext}
-      config={config}
       gameType={gameType}
       debugPanel={debugPanel}
     />

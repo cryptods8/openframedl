@@ -71,6 +71,18 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  @keyframes border-slide {
+    from {
+      stroke-dashoffset: 33;
+    }
+    to {
+      stroke-dashoffset: -66;
+    }
+  }
+
+  .animate-border-slide {
+    animation: border-slide 5s linear infinite;
+  }
 }
 
 @layer base {

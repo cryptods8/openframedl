@@ -1,14 +1,9 @@
-import { FramedlProPassOwnership } from "../pro/pass-ownership";
 import { db } from "./../db/db";
+import { UserDataColumn } from "../db/pg/types";
 import { v4 as uuidv4 } from "uuid";
 import answers from "../words/answer-words";
 
-export interface UserData {
-  displayName?: string | null | undefined;
-  username?: string | null | undefined;
-  bio?: string | null | undefined;
-  profileImage?: string | null | undefined;
-  passOwnership?: FramedlProPassOwnership | null | undefined;
+export interface UserData extends Partial<UserDataColumn> {
 }
 
 export type GameIdentityProvider = "xmtp" | "fc" | "lens" | "anon" | "fc_unauth";

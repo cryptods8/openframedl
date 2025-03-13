@@ -23,6 +23,7 @@ import {
   DBGameInsert,
   DBGameUpdate,
   DBGameView,
+  GameData,
 } from "../db/pg/types";
 import { v4 as uuidv4 } from "uuid";
 import { addDaysToDate, getDailyGameKey } from "./game-utils";
@@ -153,6 +154,7 @@ export interface PublicGuessedGame {
   isCustom: boolean;
   isDaily: boolean;
   userData?: UserData | null;
+  gameData?: GameData | null;
   customMaker?: CustomGameMaker;
   completedAt?: Date | null;
   createdAt: Date;
@@ -557,6 +559,7 @@ export class GameServiceImpl implements GameService {
       createdAt: game.createdAt,
       completedAt: game.completedAt,
       userData: game.userData,
+      gameData: game.gameData,
       arenaId: game.arenaId,
       arenaWordIndex: game.arenaWordIndex,
       guesses: game.guesses.map((g) => {
@@ -748,6 +751,7 @@ export class GameServiceImpl implements GameService {
       guessCount: game.guessCount,
       isHardMode: game.isHardMode,
       userData: game.userData ? game.userData : null,
+      gameData: game.gameData ? game.gameData : null,
       srcGameId: game.srcGameId || null,
       arenaId: game.arenaId || null,
       arenaWordIndex: game.arenaWordIndex || null,
@@ -1033,6 +1037,7 @@ export class GameServiceImpl implements GameService {
             }
           : null,
         // non-existent in old schema
+        gameData: null,
         srcGameId: null,
         arenaId: null,
         arenaWordIndex: null,
@@ -1049,6 +1054,7 @@ export class GameServiceImpl implements GameService {
               : new Date()
             : null,
         guesses: JSON.stringify(gg.originalGuesses),
+        gameData: null,
         userData: gg.userData ? JSON.stringify(gg.userData) : null,
       });
     }

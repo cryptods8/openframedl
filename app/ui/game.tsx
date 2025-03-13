@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import {
   GuessCharacter,
@@ -24,10 +24,15 @@ import { createComposeUrl } from "../utils";
 import { GameOptionsMenu } from "./game/game-options-menu";
 import { useSession } from "next-auth/react";
 import { useJwt } from "../hooks/use-jwt";
+import { useSessionId } from "../hooks/use-session-id";
 import { UserData } from "../game/game-repository";
 import Image from "next/image";
 import Link from "next/link";
 import UserStats from "./game/user-stats";
+import { GameCompletedDialog } from "./game-completed-dialog";
+import { useAppConfig } from "../contexts/app-config-context";
+import { toast } from "./toasts/toast";
+import { BaseUserRequest } from "../api/api-utils";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -284,72 +289,8 @@ function GameGrid({
   );
 }
 
-function NextGameMessage() {
-  // calculate time until tomorrow 00UTC
-  const now = new Date();
-  const tomorrow = addDaysToDate(now, 1);
-  tomorrow.setUTCHours(0, 0, 0, 0);
-  const diff = tomorrow.getTime() - now.getTime();
-  const minutes = Math.floor(diff / (1000 * 60));
-  return (
-    <div className="text-sm text-primary-900/50">
-      Next game starts in {formatDurationSimple(minutes)}
-    </div>
-  );
-}
-
-function isPracticeGame(game: GuessedGame) {
-  return !game.isDaily && !game.isCustom && !game.arena;
-}
-
-function getGameHref(
-  game: GuessedGame,
-  options: {
-    config: GameConfig;
-    jwt?: string;
-    appFrame?: boolean;
-  }
-) {
-  const url = new URL(
-    `${options.config.externalBaseUrl}/app${options.appFrame ? "/v2" : ""}`
-  );
-  url.searchParams.set("id", game.id);
-  if (options.jwt) {
-    url.searchParams.set("jwt", options.jwt);
-  }
-  return url.toString();
-}
-
-interface GameConfig {
-  externalBaseUrl: string;
-  isPro: boolean;
-}
-
-function useSessionId() {
-  function generateId() {
-    const id = Math.random().toString(36).substring(2);
-    return id;
-  }
-  function getSessionId() {
-    if (typeof localStorage !== "undefined") {
-      const savedId = localStorage.getItem("game_sessionId");
-      if (!savedId) {
-        const id = generateId();
-        localStorage.setItem("game_sessionId", id);
-        return id;
-      }
-      return savedId;
-    }
-    return generateId();
-  }
-  return {
-    sessionId: getSessionId(),
-  };
-}
-
 export interface GameProps {
   game?: GuessedGame;
-  config: GameConfig;
   userData?: UserData & { fid?: number };
   appFrame?: boolean;
   error?: {
@@ -372,11 +313,9 @@ export interface GameProps {
 
 export function Game({
   game,
-  config,
   error,
   userData,
   appFrame,
-  gameType,
   userChip,
   onShare,
   onGameOver,
@@ -385,8 +324,16 @@ export function Game({
   const [textInputWord, setTextInputWord] = useState("");
   const [currentGame, setCurrentGame] = useState(game);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [validationResult, setValidationResult] =
-    useState<GuessValidationStatus | null>(null);
+  // const [validationResult, setValidationResult] =
+  //   useState<GuessValidationStatus | null>(null);
+  const setValidationResult = useCallback(
+    (result: GuessValidationStatus | null) => {
+      if (result) {
+        toast(getValidationResultMessage(result));
+      }
+    },
+    []
+  );
   const [customToastMessage, setCustomToastMessage] = useState<string | null>(
     null
   );
@@ -401,6 +348,7 @@ export function Game({
   const { status: sessionStatus } = useSession();
   const { jwt } = useJwt();
   const { sessionId } = useSessionId();
+  const config = useAppConfig();
 
   useEffect(() => {
     const onFocus = () => setIsWindowFocused(true);
@@ -436,6 +384,22 @@ export function Game({
     handleGameChange(game);
   }, [game, handleGameChange]);
 
+  const userId = userData?.fid?.toString() || sessionId;
+  const identityProvider =
+    appFrame && sessionStatus !== "authenticated"
+      ? userData
+        ? "fc_unauth"
+        : "anon"
+      : undefined;
+  
+  const anonUserInfo: BaseUserRequest = useMemo(() => {
+    return {
+      userId,
+      identityProvider,
+      userData: userData,
+    }
+  }, [userId, identityProvider, userData])
+
   const handleSubmit = useCallback(async () => {
     if (isSubmitting) {
       return;
@@ -464,15 +428,7 @@ export function Game({
         body: JSON.stringify({
           guess: currentWord,
           gameId: currentGame?.id,
-          userData: appFrame ? userData : undefined,
-          userId: userData?.fid?.toString() || sessionId,
-          identityProvider:
-            appFrame && sessionStatus !== "authenticated"
-              ? userData
-                ? "fc_unauth"
-                : "anon"
-              : undefined,
-          gameType: appFrame ? gameType : undefined,
+          ...anonUserInfo,
         }),
         headers: jwt
           ? {
@@ -498,6 +454,7 @@ export function Game({
     isSubmitting,
     isGameOver,
     jwt,
+    anonUserInfo,
     setIsDialogOpen,
     setValidationResult,
     setCurrentWord,
@@ -537,12 +494,25 @@ export function Game({
   }, [isGameOver, onGameOver]);
 
   const handleNewGame = useCallback(
-    (gameType: "practice" | "daily") => {
-      if (gameType === "practice") {
-        handleGameChange(undefined);
+    async (gameType: "practice" | "daily") => {
+      const resp = await fetch("/api/games/play", {
+        method: "POST",
+        body: JSON.stringify({
+          ...anonUserInfo,
+          gameType,
+        }),
+        headers: jwt
+          ? {
+              Authorization: `Bearer ${jwt}`,
+            }
+          : {},
+      });
+      const data = await resp.json();
+      if (data.data) {
+        handleGameChange(data.data);
       }
     },
-    [handleGameChange]
+    [handleGameChange, jwt, anonUserInfo]
   );
 
   useEffect(() => {
@@ -597,18 +567,21 @@ export function Game({
     }
   }, [inputRef]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setCustomToastMessage(`Resized: ${window.visualViewport?.height}`);
-      // setTimeout(() => scrollToInput(), 10);
-      // scrollToInput();
-    };
-    window.visualViewport?.addEventListener("resize", handleResize);
-    return () => {
-      setCustomToastMessage(`Removed resize listener`);
-      window.visualViewport?.removeEventListener("resize", handleResize);
-    };
-  }, [scrollToInput]);
+  // useEffect(() => {
+  //   const handleResize = () => {
+  //     setCustomToastMessage(`Resized: ${window.visualViewport?.height}`);
+  //     // setTimeout(() => scrollToInput(), 10);
+  //     // scrollToInput();
+  //   };
+  //   window.visualViewport?.addEventListener("resize", handleResize);
+  //   return () => {
+  //     setCustomToastMessage(`Removed resize listener`);
+  //     window.visualViewport?.removeEventListener("resize", handleResize);
+  //   };
+  // }, [scrollToInput]);
+  const handleDialogClose = useCallback(() => {
+    setIsDialogOpen(false);
+  }, [setIsDialogOpen]);
 
   if (
     config.isPro &&
@@ -745,103 +718,32 @@ export function Game({
             {/* </div> */}
           </div>
         )}
-        <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-2 overflow-hidden py-4">
+        {/* <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-2 overflow-hidden py-4">
           <Toast
             message={getValidationResultMessage(validationResult)}
             isVisible={!!validationResult}
             onClose={() => setValidationResult(null)}
           />
-          <Toast
-            message={customToastMessage || ""}
-            isVisible={!!customToastMessage}
-            onClose={() => setCustomToastMessage(null)}
-          />
-        </div>
+        </div> */}
       </div>
-      <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
-        <div className="w-full flex flex-col gap-2">
-          <p className="w-full text-left text-xl font-space font-bold">
-            {currentGame?.status === "WON"
-              ? "You won! 🎉"
-              : "Better luck next time!"}
-          </p>
-          <p className="w-full text-left text-primary-900/50 leading-snug">
-            {currentGame?.status === "WON" ? (
-              <span>
-                You found the word{" "}
-                {currentGame?.word && (
-                  <span className="font-bold">
-                    {currentGame.word.toUpperCase()}{" "}
-                  </span>
-                )}
-                in {currentGame.guesses.length}
-                {currentGame.isHardMode ? "* " : " "}
-                {currentGame.guesses.length === 1 ? "attempt" : "attempts"}
-              </span>
-            ) : (
-              <span>
-                You ran out of guesses.{" "}
-                {currentGame?.word && (
-                  <span>
-                    <span>The correct word was </span>
-                    <span className="font-bold">
-                      {currentGame.word.toUpperCase()}
-                    </span>
-                  </span>
-                )}
-              </span>
-            )}
-          </p>
-          {currentGame?.isDaily && currentGame.completedAt && (
-            <div className="w-full pt-2">
-              <UserStats game={currentGame} />
-            </div>
-          )}
-          {currentGame && (
-            <div className="flex flex-col gap-2 items-center w-full pt-4">
-              <Button variant="primary" onClick={handleShare}>
-                Share
-              </Button>
-              {isPracticeGame(currentGame) ? (
-                <Button
-                  variant="outline"
-                  onClick={() => handleNewGame("practice")}
-                  size="sm"
-                >
-                  New Practice
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  href={`/app/leaderboard?uid=${
-                    currentGame.userId
-                  }&gh=${encodeURIComponent(
-                    getGameHref(currentGame, { config, jwt, appFrame })
-                  )}&ip=${currentGame.identityProvider}`}
-                >
-                  Leaderboard
-                </Button>
-              )}
-              {currentGame.isDaily && <NextGameMessage />}
-            </div>
-          )}
-          {/* disable confetti and see if the crash persists */}
-          {/* {currentGame?.status === "WON" && <GameConfetti />} */}
-        </div>
-      </Dialog>
+      <GameCompletedDialog
+        isOpen={isDialogOpen}
+        onClose={handleDialogClose}
+        onShare={handleShare}
+        onNewGame={handleNewGame}
+        game={currentGame}
+        isAppFrame={appFrame}
+        anonUserInfo={anonUserInfo}
+      />
       {mode === "normal" && (
         <div className="w-[640px] max-w-full p-0.5 relative">
-          {!appFrame && (
-            <div className="absolute -top-12 right-4">
-              <GameOptionsMenu
-                onNewGame={handleNewGame}
-                showDaily={
-                  sessionStatus === "authenticated" && !currentGame?.isDaily
-                }
-              />
-            </div>
-          )}
+          <div className="absolute -top-12 right-4">
+            <GameOptionsMenu
+              onNewGame={handleNewGame}
+              showDaily={!currentGame?.isDaily}
+              isAppFrame={appFrame}
+            />
+          </div>
           <GameKeyboard
             game={currentGame}
             onKeyPress={handleKeyPress}

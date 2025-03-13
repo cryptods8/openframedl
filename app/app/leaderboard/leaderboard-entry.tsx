@@ -26,10 +26,12 @@ function Score({ score }: { score: number }) {
 }
 
 export function LeaderboardEntryRow({ entry }: { entry: LeaderboardEntry }) {
-
+  
+  const userId = entry.userId;
+  
   const handleUserClick = useCallback(() => {
-    sdk.actions.viewProfile({ fid: parseInt(entry.userId, 10) });
-  }, []);
+    sdk.actions.viewProfile({ fid: parseInt(userId, 10) });
+  }, [userId]);
 
   return (
     <div

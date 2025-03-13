@@ -8,6 +8,7 @@ import {
   DBGameUpdate,
   DBGameView,
   UserDataColumn,
+  GameData,
 } from "../db/pg/types";
 import {
   GameIdentityProvider,
@@ -67,6 +68,7 @@ function gameViewQuery() {
       "g.guessCount",
       "g.isHardMode",
       "g.userData",
+      "g.gameData",
       "g.srcGameId",
       "g.arenaId",
       "g.customUserId",

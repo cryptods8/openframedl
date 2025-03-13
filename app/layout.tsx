@@ -4,6 +4,7 @@ import "./globals.css";
 import "@farcaster/auth-kit/styles.css";
 import { isPro } from "./constants";
 import { Providers } from "./api/providers/providers";
+import { Toaster } from "./ui/toasts/toaster";
 
 export const metadata: Metadata = {
   title: "Framedl by ds8",
@@ -26,6 +27,7 @@ export default function RootLayout({
         <div className="w-full min-h-dvh flex flex-col items-center justify-center font-inter">
           <Providers>{children}</Providers>
         </div>
+        <Toaster />
       </body>
     </html>
   );

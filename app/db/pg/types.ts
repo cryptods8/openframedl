@@ -25,6 +25,14 @@ interface UserKey {
   identityProvider: "xmtp" | "fc" | "lens" | "anon" | "fc_unauth";
 }
 
+export interface MintMetadata {
+  tokenId?: string;
+  hash: string;
+  chainId: number;
+  timestamp: number;
+  walletAddress: string;
+}
+
 export interface UserDataColumn {
   displayName: string | null | undefined;
   username: string | null | undefined;
@@ -36,6 +44,12 @@ export interface UserDataColumn {
 type UserDataColumnType = JSONColumnType<UserDataColumn>;
 
 export type GameStatus = "WON" | "LOST" | "IN_PROGRESS";
+
+export interface GameData {
+  mints: MintMetadata[] | null | undefined;
+}
+
+type GameDataColumnType = JSONColumnType<GameData>;
 
 export interface GameTable extends UserKey {
   id: string;
@@ -54,6 +68,7 @@ export interface GameTable extends UserKey {
   isHardMode: boolean;
 
   userData: UserDataColumnType | null;
+  gameData: GameDataColumnType | null;
   srcGameId: string | null;
 
   arenaId: number | null;
