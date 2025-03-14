@@ -12,6 +12,7 @@ import { Button } from "./button/button";
 import { decodeEventLog, parseEther } from "viem";
 import { MintMetadata } from "../db/pg/types";
 
+const MINT_PRICE = process.env.NEXT_PUBLIC_GAME_NFT_MINT_PRICE || "0.0004";
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAME_NFT_CA;
 const CONTRACT_ABI = [
   {
@@ -201,7 +202,7 @@ export function MintButton({
         abi: CONTRACT_ABI,
         functionName: "mintGame",
         args: [gameId],
-        value: parseEther("0.0004"),
+        value: parseEther(MINT_PRICE),
       });
     } catch (error) {
       if (!isUserRejectionError(error)) {

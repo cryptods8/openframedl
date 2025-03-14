@@ -15,6 +15,7 @@ import { MintMetadata } from "../db/pg/types";
 import { BaseUserRequest } from "../api/api-utils";
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAME_NFT_CA;
+const MINT_PRICE = process.env.NEXT_PUBLIC_GAME_NFT_MINT_PRICE || "0.0004";
 
 function NextGameMessage() {
   // calculate time until tomorrow 00UTC
@@ -248,7 +249,7 @@ function MintDialogContent({
           Skip
         </Button>
         <span className="text-center text-primary-900/50 text-xs">
-          {"Minting costs 0.0004Ξ"}
+          {`Minting costs ${MINT_PRICE}Ξ`}
         </span>
       </div>
     </div>
