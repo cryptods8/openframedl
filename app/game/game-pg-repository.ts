@@ -186,7 +186,7 @@ export async function findAllByFilter(
       }
       return eb.and(conditions);
     })
-    .orderBy("createdAt", "desc")
+    .orderBy(["createdAt desc", "id desc"])
     .offset(filter.offset || 0)
     .limit(filter.limit || 100)
     .selectAll()

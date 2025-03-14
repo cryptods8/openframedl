@@ -6,7 +6,11 @@ import { IconButton } from "../button/icon-button";
 import { GameGuessGrid } from "../game-guess-grid";
 import { createComposeUrl } from "../../utils";
 import Link from "next/link";
-import { ShareIcon } from "@heroicons/react/16/solid";
+import { ShareIcon, PlusCircleIcon } from "@heroicons/react/16/solid";
+import { GameMintDialogContent } from "../game/game-mint-dialogue-content";
+import { Dialog } from "../dialog";
+import { useCallback, useState } from "react";
+import { toast } from "../toasts/toast";
 
 function ShareIconButton({ game }: { game: PublicGuessedGame }) {
   const origin =
@@ -31,6 +35,18 @@ function ShareIconButton({ game }: { game: PublicGuessedGame }) {
   );
 }
 
+function MintActionButton({
+  onClick,
+}: {
+  onClick: () => void;
+}) {
+  return (
+    <IconButton title="Mint" onClick={onClick}>
+      <PlusCircleIcon className="size-4" />
+    </IconButton>
+  );
+}
+
 export type GameEntryContext = "PROFILE" | "GALLERY";
 
 export function GalleryGameEntry(props: {
@@ -40,6 +56,21 @@ export function GalleryGameEntry(props: {
 }) {
   const { game, number, context } = props;
   const { identityProvider, userId, guesses, userData } = game;
+  const [isMintDialogOpen, setIsMintDialogOpen] = useState(false);
+
+  const handleCloseMintDialog = useCallback(() => {
+    setIsMintDialogOpen(false);
+  }, []);
+
+  const handleOpenMintDialog = useCallback(() => {
+    setIsMintDialogOpen(true);
+  }, []);
+
+  const handleMint = useCallback(() => {
+    setIsMintDialogOpen(false);
+    toast("Minted ✨");
+  }, []);
+
   return (
     <div className="p-4 flex flex-col gap-4 bg-white rounded border border-primary-200">
       <GameGuessGrid guesses={guesses} full />
@@ -57,7 +88,8 @@ export function GalleryGameEntry(props: {
                   }`}
                   className="text-primary-900 underline hover:text-primary-700"
                 >
-                  {formatGameKey(game)}{game.isHardMode ? "*" : ""}
+                  {formatGameKey(game)}
+                  {game.isHardMode ? "*" : ""}
                 </Link>
               ) : (
                 <Link
@@ -75,9 +107,19 @@ export function GalleryGameEntry(props: {
           </div>
         </div>
         <div className="text-primary-200">
+          <MintActionButton onClick={handleOpenMintDialog} />
+        </div>
+        <div className="text-primary-200">
           <ShareIconButton game={game} />
         </div>
       </div>
+      <Dialog open={isMintDialogOpen} onClose={handleCloseMintDialog}>
+        {isMintDialogOpen && (
+          <div className="w-full">
+            <GameMintDialogContent game={game} onMint={handleMint} />
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }

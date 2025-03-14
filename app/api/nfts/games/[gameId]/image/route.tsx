@@ -1,10 +1,11 @@
-import { externalBaseUrl, isPro } from "@/app/constants";
+import { isPro } from "@/app/constants";
 import { gameService } from "@/app/game/game-service";
 import { formatGameKey, getDailyGameKey } from "@/app/game/game-utils";
 import { options } from "@/app/generate-image";
 import { BasicLayout } from "@/app/image-ui/basic-layout";
 import { GameBoard } from "@/app/image-ui/game-board";
-import { primaryColor, lightColor } from "@/app/image-ui/image-utils";
+import { lightColor } from "@/app/image-ui/image-utils";
+import { createImageResponse } from "@/app/utils/image-response";
 import { ImageResponse } from "@vercel/og";
 import { NextResponse } from "next/server";
 
@@ -49,31 +50,28 @@ export async function GET(
   request: Request,
   { params }: { params: { gameId: string } }
 ) {
+  const isPreview = new URL(request.url).searchParams.get("preview") === "true";
+  const startTime = Date.now();
+  console.log(`[NFT Image] Starting generation for gameId: ${params.gameId}`);
+  
   try {
     const { gameId } = params;
 
+    // console.log(`[NFT Image] Loading game data - ${Date.now() - startTime}ms`);
+    const gameLoadStart = Date.now();
     const game = await gameService.load(gameId);
+    // console.log(`[NFT Image] Game data loaded in ${Date.now() - gameLoadStart}ms`);
+    
     if (!game) {
+      // console.log(`[NFT Image] Game not found - ${Date.now() - startTime}ms`);
       return NextResponse.json(
         { success: false, error: "Game not found" },
         { status: 404 }
       );
     }
-    if (game.arenaId) {
-      return NextResponse.json(
-        { success: false, error: "Game is an arena game" },
-        { status: 400 }
-      );
-    }
-    if (game.isCustom) {
-      return NextResponse.json(
-        { success: false, error: "Game is a custom game" },
-        { status: 400 }
-      );
-    }
 
     const todayKey = getDailyGameKey(new Date());
-    const canRevealWord = isPro || !game.isDaily || game.gameKey < todayKey;
+    const canRevealWord = !game.isCustom && !game.arenaId && (!game.isDaily || (isPro && game.gameKey < todayKey));
 
     // Set cache duration based on game status and word reveal
     const cacheDuration =
@@ -84,8 +82,12 @@ export async function GET(
     const formattedGameKey = formatGameKey(game);
     const username = game.userData?.username || game.userId;
     const framedlTitle = isPro ? "Framedl PRO" : "Framedl";
+    
+    // console.log(`[NFT Image] Starting image generation - ${Date.now() - startTime}ms`);
+    const imageGenStart = Date.now();
+    
     // Generate the NFT image
-    const resp = new ImageResponse(
+    const resp = createImageResponse(
       (
         <BasicLayout>
           <div
@@ -139,18 +141,23 @@ export async function GET(
         </BasicLayout>
       ),
       {
-        ...options,
         width: 800,
         height: 800,
+        optimize: isPreview,
       }
     );
+    
+    // console.log(`[NFT Image] Image generation completed in ${Date.now() - imageGenStart}ms`);
+    
     resp.headers.set(
       "Cache-Control",
       `public, max-age=${cacheDuration}, s-maxage=${cacheDuration}`
     );
+    
+    console.log(`[NFT Image] Total processing time: ${Date.now() - startTime}ms`);
     return resp;
   } catch (error) {
-    console.error("Error generating game NFT image:", error);
+    console.error(`[NFT Image] Error generating game NFT image after ${Date.now() - startTime}ms:`, error);
     return new NextResponse("Error generating image", { status: 500 });
   }
 }

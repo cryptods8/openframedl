@@ -17,21 +17,9 @@ export async function GET(
         { status: 404 }
       );
     }
-    if (game.arenaId) {
-      return NextResponse.json(
-        { success: false, error: "Game is an arena game" },
-        { status: 400 }
-      );
-    }
-    if (game.isCustom) {
-      return NextResponse.json(
-        { success: false, error: "Game is a custom game" },
-        { status: 400 }
-      );
-    }
 
     const todayKey = getDailyGameKey(new Date());
-    const canRevealWord = isPro || !game.isDaily || game.gameKey < todayKey;
+    const canRevealWord = !game.isCustom && !game.arenaId && (!game.isDaily || (isPro && game.gameKey < todayKey));
 
     // Set cache duration based on game status and word reveal
     const cacheDuration = (!game.completedAt || !canRevealWord) 
@@ -46,7 +34,7 @@ export async function GET(
         attributes: [
           {
             "trait_type": "Date Played",
-            "value": game.gameKey
+            "value": game.isDaily ? game.gameKey : getDailyGameKey(game.createdAt)
           },
           {
             "trait_type": "Score",
