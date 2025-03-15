@@ -14,10 +14,14 @@ export function GameOptionsMenu({
   onNewGame,
   showDaily,
   isAppFrame,
+  mode,
+  onModeChange,
 }: {
   onNewGame: (gameType: "practice" | "daily") => void;
   showDaily?: boolean;
   isAppFrame?: boolean;
+  mode?: "normal" | "pro";
+  onModeChange?: (mode: "normal" | "pro") => void;
 }) {
   return (
     <Menu>
@@ -76,6 +80,24 @@ export function GameOptionsMenu({
               >
                 <span>Create ARENA</span>
               </Link>
+            </MenuItem>
+          )}
+          {onModeChange && <MenuSeparator className="my-1 h-px bg-primary-200" />}
+          {onModeChange && (
+            <MenuItem>
+              <button
+                onClick={() =>
+                  onModeChange(mode === "normal" ? "pro" : "normal")
+                }
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
+              >
+                <div className="flex flex-col items-start text-left">
+                  <div>{`Switch input mode`}</div>
+                  <div className="text-xs text-primary-900/60 font-normal">
+                    {`Switch between custom and native keyboard`}
+                  </div>
+                </div>
+              </button>
             </MenuItem>
           )}
         </MenuItems>

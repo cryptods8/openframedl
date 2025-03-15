@@ -19,7 +19,7 @@ export async function GET(
     }
 
     const todayKey = getDailyGameKey(new Date());
-    const canRevealWord = !game.isCustom && !game.arenaId && (!game.isDaily || (isPro && game.gameKey < todayKey));
+    const canRevealWord = !game.isCustom && !game.arenaId && (!game.isDaily || (isPro || game.gameKey < todayKey));
 
     // Set cache duration based on game status and word reveal
     const cacheDuration = (!game.completedAt || !canRevealWord) 

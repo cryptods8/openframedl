@@ -33,6 +33,7 @@ import { GameCompletedDialog } from "./game-completed-dialog";
 import { useAppConfig } from "../contexts/app-config-context";
 import { toast } from "./toasts/toast";
 import { BaseUserRequest } from "../api/api-utils";
+import { useLocalStorage } from "../hooks/use-local-storage";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -334,13 +335,10 @@ export function Game({
     },
     []
   );
-  const [customToastMessage, setCustomToastMessage] = useState<string | null>(
-    null
-  );
   const isGameOver =
     currentGame?.status === "WON" || currentGame?.status === "LOST";
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
-  const [mode, setMode] = useState<GamePlayMode>("normal");
+  const [mode, setMode] = useLocalStorage<GamePlayMode>("inputMode", "normal");
 
   const [isWindowFocused, setIsWindowFocused] = useState(
     document.hasFocus() || !window.matchMedia("(hover: hover)").matches
@@ -391,16 +389,19 @@ export function Game({
         ? "fc_unauth"
         : "anon"
       : undefined;
-  
+
   const anonUserInfo: BaseUserRequest = useMemo(() => {
     return {
       userId,
       identityProvider,
       userData: userData,
-    }
-  }, [userId, identityProvider, userData])
+    };
+  }, [userId, identityProvider, userData]);
 
   const handleSubmit = useCallback(async () => {
+    if (mode === "pro") {
+      inputRef.current?.focus();
+    }
     if (isSubmitting) {
       return;
     }
@@ -449,6 +450,7 @@ export function Game({
       setIsSubmitting(false);
     }
   }, [
+    mode,
     currentWord,
     currentGame,
     isSubmitting,
@@ -554,31 +556,23 @@ export function Game({
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const scrollToInput = useCallback(() => {
-    if (inputRef.current) {
-      const inputBottom = inputRef.current.getBoundingClientRect().bottom;
-      const viewportHeight =
-        window.visualViewport?.height || window.innerHeight;
-      const scrollOffset = inputBottom - viewportHeight + 12;
-      setCustomToastMessage(
-        `[${scrollOffset}, ${viewportHeight}, ${inputBottom}]`
-      );
-      setTimeout(() => window.scrollTo({ top: Math.max(scrollOffset, 0) }), 10);
+  useEffect(() => {
+    const handleScroll = () => {
+      if (mode !== "pro") {
+        return;
+      }
+      const viewHeight = window.visualViewport?.height ?? window.innerHeight;
+      const scrollY = window.scrollY;
+      const inputBottom = scrollY + (inputRef.current?.getBoundingClientRect().bottom ?? 0);
+      const newScrollY = Math.max(0, inputBottom - viewHeight + 10);
+      window.scroll({ top: newScrollY, behavior: 'instant' });
     }
-  }, [inputRef]);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    }
+  }, [mode])
 
-  // useEffect(() => {
-  //   const handleResize = () => {
-  //     setCustomToastMessage(`Resized: ${window.visualViewport?.height}`);
-  //     // setTimeout(() => scrollToInput(), 10);
-  //     // scrollToInput();
-  //   };
-  //   window.visualViewport?.addEventListener("resize", handleResize);
-  //   return () => {
-  //     setCustomToastMessage(`Removed resize listener`);
-  //     window.visualViewport?.removeEventListener("resize", handleResize);
-  //   };
-  // }, [scrollToInput]);
   const handleDialogClose = useCallback(() => {
     setIsDialogOpen(false);
   }, [setIsDialogOpen]);
@@ -662,7 +656,6 @@ export function Game({
                 onSubmit={() => {}}
                 mode={mode}
               />
-              {customToastMessage}
             </div>
           )}
         </div>
@@ -684,13 +677,23 @@ export function Game({
         </div> */}
         {mode === "pro" && (
           // <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-primary-100">
-          <div className="w-full flex gap-2 px-4 py-2">
+          <div className="w-full flex gap-2 px-4 py-2 relative">
+            <div className="absolute -top-12 right-4">
+              <GameOptionsMenu
+                onNewGame={handleNewGame}
+                mode={mode}
+                onModeChange={setMode}
+                showDaily={!currentGame?.isDaily}
+                isAppFrame={appFrame}
+              />
+            </div>
             <input
               ref={inputRef}
               placeholder="Make a guess…"
               type="text"
               className="flex-1 h-12 border border-primary-400 active:border-primary-500 focus:outline-primary-500 rounded-md px-3"
               autoFocus
+              disabled={!currentGame || isGameOver}
               // onBlur={scrollToInput}
               // onFocus={scrollToInput}
               onChange={(e) => {
@@ -718,13 +721,6 @@ export function Game({
             {/* </div> */}
           </div>
         )}
-        {/* <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-2 overflow-hidden py-4">
-          <Toast
-            message={getValidationResultMessage(validationResult)}
-            isVisible={!!validationResult}
-            onClose={() => setValidationResult(null)}
-          />
-        </div> */}
       </div>
       <GameCompletedDialog
         isOpen={isDialogOpen}
@@ -742,6 +738,8 @@ export function Game({
               onNewGame={handleNewGame}
               showDaily={!currentGame?.isDaily}
               isAppFrame={appFrame}
+              mode={mode}
+              onModeChange={setMode}
             />
           </div>
           <GameKeyboard
