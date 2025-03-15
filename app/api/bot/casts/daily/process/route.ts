@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
         channelId: "framedl",
         embeds: [
           {
-            url: `${externalBaseUrl}/?app=1`,
+            url: `${externalBaseUrl}/app/v2`,
           },
         ],
       }

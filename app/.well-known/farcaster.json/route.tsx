@@ -33,6 +33,7 @@ export async function GET() {
     frame: {
       version: "1",
       name: isPro ? "Framedl PRO" : "Framedl",
+      tagline: isPro ? "Competitive Wordle in a frame" : "Wordle in a frame",
       imageUrl: isPro
         ? `${externalBaseUrl}/init-pro.png`
         : `${externalBaseUrl}/init-v2.png`,
