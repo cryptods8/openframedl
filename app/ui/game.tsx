@@ -6,19 +6,15 @@ import {
   GuessCharacter,
   GuessedGame,
   GuessValidationStatus,
+  GameMetadata,
 } from "../game/game-service";
 import { GameGuessGrid } from "./game-guess-grid";
-import { Toast } from "./toast";
-import { GameConfetti } from "./game-confetti";
 import { Button } from "./button/button";
 import {
-  addDaysToDate,
   buildShareableResult,
-  formatDurationSimple,
   formatGameKey,
 } from "../game/game-utils";
 import { createCast } from "../lib/cast";
-import { Dialog } from "./dialog";
 import { SignIn } from "./auth/sign-in";
 import { createComposeUrl } from "../utils";
 import { GameOptionsMenu } from "./game/game-options-menu";
@@ -28,7 +24,6 @@ import { useSessionId } from "../hooks/use-session-id";
 import { UserData } from "../game/game-repository";
 import Image from "next/image";
 import Link from "next/link";
-import UserStats from "./game/user-stats";
 import { GameCompletedDialog } from "./game-completed-dialog";
 import { useAppConfig } from "../contexts/app-config-context";
 import { toast } from "./toasts/toast";
@@ -291,7 +286,7 @@ function GameGrid({
 }
 
 export interface GameProps {
-  game?: GuessedGame;
+  game?: GuessedGame & { metadata?: GameMetadata | null };
   userData?: UserData & { fid?: number };
   appFrame?: boolean;
   error?: {
@@ -573,6 +568,13 @@ export function Game({
     }
   }, [mode])
 
+  const replacedScore = currentGame?.metadata?.replacedScore;
+  useEffect(() => {
+    if (replacedScore != null && !currentGame?.completedAt && currentGame?.isDaily) {
+      toast(`Win in ${replacedScore} to keep your average`);
+    }
+  }, [replacedScore, currentGame])
+
   const handleDialogClose = useCallback(() => {
     setIsDialogOpen(false);
   }, [setIsDialogOpen]);
@@ -659,24 +661,7 @@ export function Game({
             </div>
           )}
         </div>
-        {/* <div className="flex flex-row gap-2 pt-4 w-full px-4">
-          <div className="flex-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setMode("normal")}
-            >
-              Normal
-            </Button>
-          </div>
-          <div className="flex-1">
-            <Button size="sm" variant="outline" onClick={() => setMode("pro")}>
-              Pro
-            </Button>
-          </div>
-        </div> */}
         {mode === "pro" && (
-          // <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-primary-100">
           <div className="w-full flex gap-2 px-4 py-2 relative">
             <div className="absolute -top-12 right-4">
               <GameOptionsMenu
@@ -694,8 +679,6 @@ export function Game({
               className="flex-1 h-12 border border-primary-400 active:border-primary-500 focus:outline-primary-500 rounded-md px-3"
               autoFocus
               disabled={!currentGame || isGameOver}
-              // onBlur={scrollToInput}
-              // onFocus={scrollToInput}
               onChange={(e) => {
                 const word = e.target.value;
                 setTextInputWord(word);
@@ -707,7 +690,6 @@ export function Game({
                 }
               }}
               value={textInputWord}
-              // disabled={isSubmitting}
             />
             <Button
               size="sm"
@@ -718,7 +700,6 @@ export function Game({
             >
               ENTER
             </Button>
-            {/* </div> */}
           </div>
         )}
       </div>

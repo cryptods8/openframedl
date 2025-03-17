@@ -225,7 +225,7 @@ export interface GameService {
     identityProvider: GameIdentityProvider,
     options: LoadLeaderboardOptions
   ): Promise<PersonalLeaderboard>;
-  loadReplacedScore(game: GuessedGame): Promise<number | null>;
+  loadReplacedScore(game: UserGameKey): Promise<number | null>;
   loadCustomGameMaker(customId: string): Promise<CustomGameMaker | null>;
   loadUserData(userKey: UserKey): Promise<UserData | null>;
   getDailyKey(): string;
@@ -235,6 +235,10 @@ export interface GameService {
 export interface PersonalLeaderboard extends Leaderboard {
   personalEntry?: LeaderboardDataItem;
   personalEntryIndex?: number;
+}
+
+export interface GameMetadata {
+  replacedScore?: number | null;
 }
 
 const GUESS_PATTERN = /^[A-Za-z]{5}$/;
@@ -1074,7 +1078,7 @@ export class GameServiceImpl implements GameService {
     return inserts;
   }
 
-  async loadReplacedScore(game: GuessedGame): Promise<number | null> {
+  async loadReplacedScore(game: UserGameKey): Promise<number | null> {
     if (!game.isDaily) {
       return null;
     }
