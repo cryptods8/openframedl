@@ -396,6 +396,8 @@ export async function loadLeaderboardEntries(
         .where("mg.identityProvider", "=", s.ref("gk.identityProvider"))
         .where("mg.isDaily", "=", true)
         .where("mg.gameKey", "=", s.fn.max("g.gameKey"))
+        .orderBy("mg.createdAt", "desc")
+        .limit(1)
         .as("userData"),
     ])
     .where((x) =>

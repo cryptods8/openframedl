@@ -106,6 +106,8 @@ async function getStreakLeaderboardEntries({
         .where("mg.identityProvider", "=", s.ref("sl.identityProvider"))
         .where("mg.isDaily", "=", true)
         .where("mg.gameKey", "=", s.ref("sl.streakEnd"))
+        .orderBy("mg.createdAt", "desc")
+        .limit(1)
         .as("userData"),
     ])
     .where("sl.identityProvider", "=", ip ?? "fc")
@@ -150,6 +152,8 @@ async function getGamesWonLeaderboardEntries({
         .where("mg.identityProvider", "=", db.ref("g.identityProvider"))
         .where("mg.isDaily", "=", true)
         .where("mg.gameKey", "=", db.fn.max("g.gameKey"))
+        .orderBy("mg.createdAt", "desc")
+        .limit(1)
         .as("userData"),
     ])
     .where("g.identityProvider", "=", ip ?? "fc")
