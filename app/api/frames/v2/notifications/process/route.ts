@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         ? isPro
           ? "Your daily game is ready!"
           : `${yesterdayWord.toUpperCase()} stumped many! Can you crack today's word?`
-        : "You have last 2 hours to play your daily game!";
+        : "You have 2 hours left to play your daily game!";
     // batch by 100
     console.log("to notify", toNotify.length);
     for (let i = 0; i < toNotify.length; i += 100) {
