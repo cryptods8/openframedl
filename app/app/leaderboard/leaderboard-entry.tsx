@@ -26,9 +26,8 @@ function Score({ score }: { score: number }) {
 }
 
 export function LeaderboardEntryRow({ entry }: { entry: LeaderboardEntry }) {
-  
   const userId = entry.userId;
-  
+
   const handleUserClick = useCallback(() => {
     sdk.actions.viewProfile({ fid: parseInt(userId, 10) });
   }, [userId]);
@@ -36,7 +35,9 @@ export function LeaderboardEntryRow({ entry }: { entry: LeaderboardEntry }) {
   return (
     <div
       className={`flex items-center gap-5 py-2 px-3 w-full ${
-        entry.highlighted ? "font-bold text-white bg-primary-800 rounded-md" : ""
+        entry.highlighted
+          ? "font-bold text-white bg-primary-800 rounded-md"
+          : ""
       }`}
     >
       <div
@@ -52,11 +53,20 @@ export function LeaderboardEntryRow({ entry }: { entry: LeaderboardEntry }) {
       >
         {entry.pos}
       </div>
-      <div className="flex items-center gap-2 shrink cursor-pointer" onClick={handleUserClick} role="button">
+      <div
+        className="flex items-center gap-2 shrink cursor-pointer"
+        onClick={handleUserClick}
+        role="button"
+      >
         <div className="shrink-0">
           <Avatar avatar={entry.avatar} username={entry.username} />
         </div>
-        <div className="shrink truncate overflow-hidden">{entry.username}</div>
+        <div
+          className="shrink truncate overflow-hidden"
+          title={`${entry.username} (${entry.userId})`}
+        >
+          {entry.username}
+        </div>
       </div>
       <div
         className={`flex-1 h-1 rounded-full ${
