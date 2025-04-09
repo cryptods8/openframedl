@@ -21,6 +21,10 @@
       "schedule": "10 0 * * *"
     },
     {
+      "path": "/api/frames/v2/notifications/process?type=mid",
+      "schedule": "5 16 * * *"
+    },
+    {
       "path": "/api/frames/v2/notifications/process?type=late",
       "schedule": "5 22 * * *"
     }

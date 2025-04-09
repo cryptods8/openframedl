@@ -64,12 +64,18 @@ export async function GET(req: NextRequest) {
     const name = isPro ? "Framedl PRO" : "Framedl";
     const yesterdayWord = await getYesterdaysWord("fc");
     const title =
-      type === "new" ? `New daily ${name}` : `Do not miss your daily ${name}`;
+      type === "new"
+        ? `New daily ${name}`
+        : type === "mid"
+        ? `Have you played ${name} today?`
+        : `Do not miss your daily ${name}`;
     const body =
       type === "new"
         ? isPro
           ? "Your daily game is ready!"
           : `${yesterdayWord.toUpperCase()} stumped many! Can you crack today's word?`
+        : type === "mid"
+        ? "Just here, in your notifs, reminding my own business..."
         : "You have 2 hours left to play your daily game!";
     // batch by 100
     console.log("to notify", toNotify.length);
