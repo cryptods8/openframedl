@@ -23,14 +23,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const url = `${externalBaseUrl}/app/v2`;
     const cast = await neynarClient.publishCast(
       process.env.NEYNAR_SIGNER_UUID,
-      `New day, new Framedl is out there\n\nLFG! 🟩🟨⬜`,
+      `New day, new Framedl is out there\n\nLFG! 🟩🟨⬜\n\n${url}`,
       {
         channelId: "framedl",
         embeds: [
           {
-            url: `${externalBaseUrl}/app/v2`,
+            url,
           },
         ],
       }
