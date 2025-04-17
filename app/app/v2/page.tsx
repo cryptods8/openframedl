@@ -10,9 +10,12 @@ export async function generateMetadata({
   searchParams,
 }: NextServerPageProps): Promise<Metadata> {
   const id = searchParams?.id;
+  const cw = searchParams?.cw;
 
   const imageUrl = id
     ? `${externalBaseUrl}/app/v2/frames/image?id=${id}`
+    : cw 
+    ? `${externalBaseUrl}/app/v2/frames/image?cw=${cw}`
     : isPro
     ? `${externalBaseUrl}/init-pro.png`
     : `${externalBaseUrl}/init-v2.png`;
@@ -42,9 +45,11 @@ export async function generateMetadata({
 }
 
 export default function Page({ searchParams }: NextServerPageProps) {
+  const cwParam = searchParams?.cw as string | undefined;
   const gtParam = searchParams?.gt as string | undefined;
   const debugParam = searchParams?.dbg as string | undefined;
   const debugUrlParam = searchParams?.dbgUrl as string | undefined;
+  const gameType = gtParam ? gtParam : cwParam ? 'custom' : 'daily';
   // if (!debugParam) {
   //   return (
   //     <Test />
@@ -55,8 +60,9 @@ export default function Page({ searchParams }: NextServerPageProps) {
       <AppConfigProvider config={{ externalBaseUrl, isPro }}>
         <ProfileApp headerless>
           <AppFrame
-            gameType={gtParam || "daily"}
+            gameType={gameType}
             debug={debugParam === "1" ? { debugUrl: debugUrlParam } : undefined}
+            customWordId={cwParam}
           />
         </ProfileApp>
       </AppConfigProvider>

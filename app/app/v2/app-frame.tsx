@@ -38,8 +38,9 @@ function Game({
   asGuest,
   fid,
   gameType,
+  customWordId,
   ...props
-}: Omit<GameProps, "game"> & { fid?: number; asGuest: boolean }) {
+}: Omit<GameProps, "game"> & { fid?: number; asGuest: boolean, customWordId?: string }) {
   const [loadedGame, setLoadedGame] = useState<GuessedGame | undefined>();
   const [error, setError] = useState<ErrorResponse | undefined>();
   const [loading, setLoading] = useState(false);
@@ -61,7 +62,8 @@ function Game({
                 ? "fc_unauth"
                 : "anon"
               : undefined,
-            gameType: gameType,
+            gameType,
+            gameKey: customWordId ? `custom_${customWordId}` : undefined,
           }),
         });
         if (!resp.ok) {
@@ -104,10 +106,12 @@ function GameContainer({
   context,
   gameType,
   debugPanel,
+  customWordId,
 }: {
   context: ClientContext;
   gameType?: string;
   debugPanel?: React.ReactNode;
+  customWordId?: string;
 }) {
   const { data: session, status } = useSession() as {
     data: FarcasterSession | null;
@@ -206,6 +210,7 @@ function GameContainer({
               fid={context.userFid}
               appFrame
               gameType={gameType}
+              customWordId={customWordId}
               onShare={context.share}
               asGuest={asGuest}
               userChip={
@@ -350,8 +355,10 @@ function useClientContext({
 export function AppFrame({
   gameType,
   debug,
+  customWordId,
 }: {
   gameType?: string;
+  customWordId?: string;
   debug?: {
     debugUrl?: string;
   };
@@ -384,6 +391,7 @@ export function AppFrame({
     <GameContainer
       context={clientContext}
       gameType={gameType}
+      customWordId={customWordId}
       debugPanel={debugPanel}
     />
   );

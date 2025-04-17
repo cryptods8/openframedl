@@ -15,11 +15,15 @@ interface PlayRequest extends BaseUserRequest {
   guess: string;
   gameId?: string;
   gameType?: string;
+  gameKey?: string;
 }
 
 function gameToResponse(game: GuessedGame, metadata: GameMetadata | null) {
   return {
-    data: game.completedAt != null ? { ...game, metadata } : { ...game, word: "", metadata },
+    data:
+      game.completedAt != null
+        ? { ...game, metadata }
+        : { ...game, word: "", metadata },
   };
 }
 
@@ -33,32 +37,22 @@ async function loadReplacedScore(gameKey: UserGameKey) {
 }
 
 async function loadOrCreateGame(
-  userKey: UserKey,
-  userData: UserData | null | undefined,
-  gameType: string | undefined
-): Promise<{ game: GuessedGame, replacedScore?: number | null }> {
-  const isDaily = gameType === "daily";
-  const gameKey = isDaily
-    ? gameService.getDailyKey()
-    : Math.random().toString(36).substring(2);
-  const userGameKey = {
-    ...userKey,
-    gameKey,
-    isDaily,
-  };
+  userGameKey: UserGameKey,
+  userData: UserData | null | undefined
+): Promise<{ game: GuessedGame; replacedScore?: number | null }> {
   const loadGamePromise = gameService.loadOrCreate(userGameKey, {
     userData: async () => {
       if (
         userData &&
-        (userKey.identityProvider === "fc_unauth" ||
-          userKey.identityProvider === "anon")
+        (userGameKey.identityProvider === "fc_unauth" ||
+          userGameKey.identityProvider === "anon")
       ) {
         return userData;
       }
-      return await loadUserData(userKey);
+      return await loadUserData(userGameKey);
     },
   });
-  if (isDaily) {
+  if (userGameKey.isDaily) {
     const [game, replacedScore] = await Promise.all([
       loadGamePromise,
       loadReplacedScore(userGameKey),
@@ -82,7 +76,21 @@ export const POST = async (req: NextRequest) => {
     if (body.gameId) {
       game = await gameService.load(body.gameId);
     } else {
-      const { game: newGame, replacedScore } = await loadOrCreateGame(userKey, userData, body.gameType);
+      const isDaily = body.gameType === "daily";
+      const gameKey = isDaily
+        ? gameService.getDailyKey()
+        : body.gameKey
+        ? body.gameKey
+        : Math.random().toString(36).substring(2);
+      const userGameKey = {
+        ...userKey,
+        gameKey,
+        isDaily,
+      };
+      const { game: newGame, replacedScore } = await loadOrCreateGame(
+        userGameKey,
+        userData
+      );
       game = newGame;
       metadata = { replacedScore };
     }

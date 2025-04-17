@@ -12,6 +12,7 @@ import { useLocalStorage } from "../hooks/use-local-storage";
 import { toast } from "./toasts/toast";
 import { BaseUserRequest } from "../api/api-utils";
 import { GameMintDialogContent } from "./game/game-mint-dialogue-content";
+import { CorrectWordDisplay } from "./correct-word-display";
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAME_NFT_CA;
 
@@ -126,9 +127,9 @@ export function GameCompletedDialog({
               <span>
                 You found the word{" "}
                 {game?.word && (
-                  <span className="font-bold">{game.word.toUpperCase()} </span>
+                  <CorrectWordDisplay word={game.word} />
                 )}
-                in {game.guesses.length}
+                {" "}in {game.guesses.length}
                 {game.isHardMode ? "* " : " "}
                 {game.guesses.length === 1 ? "attempt" : "attempts"}
               </span>
@@ -138,7 +139,7 @@ export function GameCompletedDialog({
                 {game?.word && (
                   <span>
                     <span>The correct word was </span>
-                    <span className="font-bold">{game.word.toUpperCase()}</span>
+                    <CorrectWordDisplay word={game.word} />
                   </span>
                 )}
               </span>
