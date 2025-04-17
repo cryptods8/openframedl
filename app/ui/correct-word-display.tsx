@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  Popover,
-  PopoverButton,
-  PopoverPanel,
-} from "@headlessui/react";
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { QuestionMarkCircleIcon } from "@heroicons/react/16/solid";
 
 interface CorrectWordDisplayProps {

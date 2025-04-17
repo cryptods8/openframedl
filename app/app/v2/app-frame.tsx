@@ -55,7 +55,7 @@ function Game({
         const resp = await fetch(`/api/games/play`, {
           method: "POST",
           body: JSON.stringify({
-            userData: props.userData,
+            userData,
             userId: fid?.toString() || sessionId,
             identityProvider: asGuest
               ? fid
@@ -80,7 +80,7 @@ function Game({
       }
     };
     load();
-  }, [fid, gameType, asGuest, sessionId, userData]);
+  }, [fid, gameType, asGuest, sessionId, userData, customWordId]);
 
   if (loading) {
     return <Loading />;

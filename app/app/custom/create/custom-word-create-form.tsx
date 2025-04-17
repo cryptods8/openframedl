@@ -166,8 +166,9 @@ export function CustomWordCreateForm() {
               </Switch>
             </div>
             <HeadlessDescription className="text-xs text-primary-900/50 px-1 mt-1.5">
-              The word will be visible to players. The primary goal would then
-              be to use it to "draw" a pattern using this word.
+              {
+                'The word will be visible to players. The primary goal would then be to use it to "draw" a pattern using this word.'
+              }
             </HeadlessDescription>
           </Field>
         </div>
