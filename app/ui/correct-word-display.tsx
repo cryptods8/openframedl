@@ -5,7 +5,6 @@ import {
   Popover,
   PopoverButton,
   PopoverPanel,
-  PopoverBackdrop,
 } from "@headlessui/react";
 import { QuestionMarkCircleIcon } from "@heroicons/react/16/solid";
 
@@ -106,7 +105,7 @@ export function CorrectWordDisplay({ word }: CorrectWordDisplayProps) {
         className="flex origin-top flex-col transition duration-200 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 border border-primary-200 bg-white p-6 rounded-md shadow-lg font-inter"
       >
         {isLoading ? (
-          <p className="text-sm text-primary-900/50 italic">Loading...</p>
+          <p className="text-sm text-primary-900/50 italic">{"Loading..."}</p>
         ) : definition ? (
           "error" in definition ? (
             <p className="text-sm text-red-500">{definition.error}</p>
@@ -120,16 +119,16 @@ export function CorrectWordDisplay({ word }: CorrectWordDisplayProps) {
                   {def.phonetic && (
                     <span className="font-bold">{def.phonetic}</span>
                   )}
-                  {def.phonetic && <span className="mx-1">·</span>}
+                  {def.phonetic && <span className="mx-1">{"·"}</span>}
                   <span className="italic">{def.partOfSpeech}</span>
-                  <span className="mx-2">·</span>
+                  <span className="mx-2">{"·"}</span>
                   <span>{def.definition}</span>
                 </li>
               ))}
             </ol>
           )
         ) : (
-          <p className="text-sm text-primary-900/50">No definition found</p>
+          <p className="text-sm text-primary-900/50">{"No definition found"}</p>
         )}
       </PopoverPanel>
     </Popover>
