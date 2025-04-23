@@ -28,6 +28,10 @@ const accountAssociation = isProduction
     };
 
 export async function GET() {
+  const ogImageUrl = isPro
+    ? `${externalBaseUrl}/og-image-pro.png`
+    : `${externalBaseUrl}/og-image.png`; // same as heroImageUrl
+
   const manifest = {
     accountAssociation,
     frame: {
@@ -37,7 +41,9 @@ export async function GET() {
         ? `${externalBaseUrl}/icon-pro.png`
         : `${externalBaseUrl}/icon-v2.png`,
       name: isPro ? "Framedl PRO" : "Framedl",
-      subtitle: isPro ? "Daily competitive wordle game mini app" : "Daily wordle game mini app", // 30 characters, no emojis or special characters
+      subtitle: isPro
+        ? "Daily competitive wordle game mini app"
+        : "Daily wordle game mini app", // 30 characters, no emojis or special characters
       // store page
       description:
         "Guess a word in 6 tries. The word changes every day. Share your results on Farcaster.", // 170 characters, no emojis or special characters
@@ -48,15 +54,13 @@ export async function GET() {
         ? ["leaderboard", "prize", "degen", "wordle", "game"]
         : ["leaderboard", "competitive", "wordle", "game", "logic"], // Use 3–5 high-volume terms; no spaces, no repeats, no brand names. Use singular form.
       // promotional assets
-      // heroImageUrl: "", // Promotional display image on top of the mini app store, 1200 x 630px (1.91:1)
-      tagline: isPro
-        ? "Guess a word in 6 tries"
-        : "Guess a word in 6 tries", // Use for time-sensitive promos or CTAs. Keep copy active (e.g., “Grow, Raid & Rise in Stoke Fire”). 30 characters
+      heroImageUrl: ogImageUrl, // Promotional display image on top of the mini app store, 1200 x 630px (1.91:1)
+      tagline: isPro ? "Guess a word in 6 tries" : "Guess a word in 6 tries", // Use for time-sensitive promos or CTAs. Keep copy active (e.g., “Grow, Raid & Rise in Stoke Fire”). 30 characters
       // sharing
       ogTitle: isPro ? "Framedl PRO" : "Framedl", // 30 characters
       ogDescription:
         "Guess a word in 6 tries. The word changes every day. Share your results on Farcaster.", // 100 characters
-      // ogImageUrl: "", // same as heroImageUrl
+      ogImageUrl, // same as heroImageUrl
       imageUrl: isPro
         ? `${externalBaseUrl}/init-pro.png`
         : `${externalBaseUrl}/init-v2.png`,
