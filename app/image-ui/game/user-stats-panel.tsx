@@ -87,7 +87,6 @@ export function UserStatsPanel(props: UserStatsPanelProps) {
   for (let i = 6; i >= 0; i--) {
     const currentDate = addDaysToDate(startDate, -i);
     const dateKey = getDailyGameKey(currentDate);
-    console.log("dateKey", dateKey, currentGameKey);
     const result = last30Map[dateKey];
     last7.push(
       <div
