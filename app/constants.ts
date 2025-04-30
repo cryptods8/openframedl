@@ -14,19 +14,26 @@ export const externalBaseUrl =
   process.env["EXTERNAL_BASE_URL"] ||
   baseUrl;
 
-const fallbackHubHttpUrl = isProduction
-  ? undefined
-  : "https://hub.pinata.cloud"; //"http://localhost:3010/hub";
+const HUB_CONFIGS = [
+  {
+    httpUrl: "https://hub-api.neynar.com",
+    requestOptions: {
+      api_key: process.env["NEYNAR_API_KEY"] || "NEYNAR_FRAMES_JS",
+    },
+  },
+  {
+    httpUrl: "https://hub.pinata.cloud",
+    requestOptions: undefined,
+  },
+] as const;
 
-const airstackApiKey = process.env["AIRSTACK_API_KEY"];
+const envHubHttpUrl = process.env["FRAME_HUB_HTTP_URL"];
+const envHubRequestOptions = process.env["FRAME_HUB_REQUEST_OPTIONS"]
+  ? JSON.parse(process.env["FRAME_HUB_REQUEST_OPTIONS"])
+  : null;
 
-export const hubHttpUrl = airstackApiKey
-  ? "https://hubs.airstack.xyz"
-  : process.env["FRAME_HUB_HTTP_URL"] || fallbackHubHttpUrl;
-export const hubRequestOptions = airstackApiKey
-  ? {
-      headers: { "x-airstack-hubs": airstackApiKey },
-    }
-  : undefined;
+export const hubHttpUrl = envHubHttpUrl || HUB_CONFIGS[0].httpUrl;
+export const hubRequestOptions =
+  envHubRequestOptions || HUB_CONFIGS[0].requestOptions;
 
 export const isPro = process.env.FRAMEDL_PRO === "true";

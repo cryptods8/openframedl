@@ -1,17 +1,15 @@
 /* eslint-disable react/jsx-key */
 import { Button } from "frames.js/next";
-import { getUserDataForFid } from "frames.js";
 import { frames } from "../../../frames";
 import {
   externalBaseUrl,
-  hubHttpUrl,
-  hubRequestOptions,
 } from "@/app/constants";
 import {
   findChampionshipSignupByUserId,
   saveChampionshipSignup,
 } from "@/app/game/championship-signup-pg-repository";
 import { createComposeUrl } from "@/app/utils";
+import { loadUserData } from "@/app/games/user-data";
 
 const handle = frames(async (ctx) => {
   const { message, validationResult, searchParams } = ctx;
@@ -24,11 +22,8 @@ const handle = frames(async (ctx) => {
   const srcId = searchParams?.sid ? parseInt(searchParams.sid, 10) : null;
   let alreadySignedUp: boolean = false;
   if (fid) {
-    const options = { hubHttpUrl, hubRequestOptions };
-    const userData = await getUserDataForFid({
-      fid,
-      options,
-    });
+    const userKey = { userId: fid.toString(), identityProvider: "fc" as const };
+    const userData = await loadUserData(userKey);
     const existingSignup = await findChampionshipSignupByUserId(
       fid.toString(),
       "fc",
@@ -39,8 +34,7 @@ const handle = frames(async (ctx) => {
       alreadySignedUp = true;
     } else {
       signupId = await saveChampionshipSignup({
-        userId: fid.toString(),
-        identityProvider: "fc",
+        ...userKey,
         roundNumber: 2,
         userData: userData ? JSON.stringify(userData) : null,
         createdAt: new Date(),

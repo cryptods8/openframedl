@@ -5,10 +5,8 @@ import { v4 as uuid } from "uuid";
 import { frames } from "../frames";
 import * as customGameRepo from "../../game/custom-game-pg-repository";
 import { createComposeUrl } from "../../utils";
-import { hubHttpUrl, hubRequestOptions } from "../../constants";
-import { getUserDataForFid } from "frames.js";
-import { getEnsFromAddress } from "../../get-ens";
 import { DBCustomGameInsert } from "../../db/pg/types";
+import { loadUserData } from "../user-data";
 
 // 5-letter word regex
 const wordRegex = /^[a-z]{5}$/;
@@ -50,22 +48,7 @@ const handleRequest = frames(async (ctx) => {
         ],
       };
     }
-    let userData;
-    if (userKey.identityProvider === "fc") {
-      const options = { hubHttpUrl, hubRequestOptions };
-      userData = await getUserDataForFid({
-        fid: parseInt(userKey.userId, 10),
-        options,
-      });
-    } else if (userKey.identityProvider === "xmtp") {
-      const ens = await getEnsFromAddress(userKey.userId);
-      if (ens) {
-        userData = {
-          displayName: ens,
-          username: ens,
-        };
-      }
-    }
+    const userData = await loadUserData(userKey);
     const customGame: DBCustomGameInsert = {
       id: uuid(),
       word,

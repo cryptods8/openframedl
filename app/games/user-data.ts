@@ -1,6 +1,4 @@
 import {
-  getAddressesForFid,
-  getUserDataForFid,
   UserDataReturnType,
 } from "frames.js";
 
@@ -9,8 +7,9 @@ import {
   checkPassOwnership,
   FramedlProPassOwnership,
 } from "@/app/pro/pass-ownership";
-import { hubHttpUrl, hubRequestOptions, isPro } from "@/app/constants";
+import { isPro } from "@/app/constants";
 import { getEnsFromAddress } from "@/app/get-ens";
+import { getUserDataForFid, getAddressesForFid } from "@/app/lib/hub";
 
 async function loadFidFromWc(username: string): Promise<number | undefined> {
   const resp = await fetch(
@@ -56,8 +55,7 @@ export async function loadUsername(
     case "fc_unauth":
     case "fc": {
       const fid = parseInt(userKey.userId, 10);
-      const options = { hubHttpUrl, hubRequestOptions };
-      const userData = await getUserDataForFid({ fid, options });
+      const userData = await getUserDataForFid(fid);
       return userData?.username;
     }
     case "xmtp": {
@@ -83,12 +81,11 @@ export async function loadUserData(userKey: UserKey): Promise<UserData> {
     case "fc_unauth":
     case "fc": {
       const fid = parseInt(userKey.userId, 10);
-      const options = { hubHttpUrl, hubRequestOptions };
-      const userDataPromise = getUserDataForFid({ fid, options });
+      const userDataPromise = getUserDataForFid(fid);
       if (isPro) {
         const [userDataRes, addressesRes] = await Promise.all([
           userDataPromise,
-          getAddressesForFid({ fid, options }),
+          getAddressesForFid(fid),
         ]);
         userData = userDataRes;
         walletAddresses = (addressesRes as { address: string }[]).map(

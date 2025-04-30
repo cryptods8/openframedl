@@ -1,21 +1,20 @@
-import {
-  ParseWebhookEvent,
-  parseWebhookEvent,
-  createVerifyAppKeyWithHub,
-} from "@farcaster/frame-node";
+import { ParseWebhookEvent, parseWebhookEvent } from "@farcaster/frame-node";
 import { NextRequest } from "next/server";
-// import {
-//   deleteUserNotificationDetails,
-//   setUserNotificationDetails,
-// } from "~/lib/kv";
-// import { sendFrameNotification } from "~/lib/notifs";
 import { sendFrameNotifications } from "@/app/utils/send-frame-notifications";
-import { hubHttpUrl, hubRequestOptions } from "@/app/constants";
 import { UserKey } from "@/app/game/game-repository";
-import { findUserSettingsByUserKey, insertUserSettings, updateUserSettings } from "@/app/game/user-settings-pg-repository";
+import {
+  findUserSettingsByUserKey,
+  insertUserSettings,
+  updateUserSettings,
+} from "@/app/game/user-settings-pg-repository";
 import { DBUserSettings } from "@/app/db/pg/types";
+import { createVerifyAppKey } from "@/app/lib/hub";
 
-async function setUserNotificationDetails(userKey: UserKey, userSettings: DBUserSettings | undefined, notificationDetails: { token: string, url: string }) {
+async function setUserNotificationDetails(
+  userKey: UserKey,
+  userSettings: DBUserSettings | undefined,
+  notificationDetails: { token: string; url: string }
+) {
   if (userSettings) {
     await updateUserSettings(userKey, {
       notificationDetails: JSON.stringify(notificationDetails),
@@ -33,7 +32,10 @@ async function setUserNotificationDetails(userKey: UserKey, userSettings: DBUser
   }
 }
 
-async function deleteUserNotificationDetails(userKey: UserKey, userSettings: DBUserSettings | undefined) {
+async function deleteUserNotificationDetails(
+  userKey: UserKey,
+  userSettings: DBUserSettings | undefined
+) {
   if (!userSettings) {
     return;
   }
@@ -46,15 +48,7 @@ async function deleteUserNotificationDetails(userKey: UserKey, userSettings: DBU
 export async function POST(request: NextRequest) {
   const requestJson = await request.json();
 
-  // console.log("requestJson", requestJson);
-
-  if (!hubHttpUrl) {
-    throw new Error("Hub HTTP URL is not set");
-  }
-  const verifyAppKeyWithHub = createVerifyAppKeyWithHub(
-    hubHttpUrl,
-    hubRequestOptions
-  );
+  const verifyAppKeyWithHub = createVerifyAppKey();
 
   let data;
   try {
@@ -98,7 +92,11 @@ export async function POST(request: NextRequest) {
   switch (event.event) {
     case "frame_added":
       if (event.notificationDetails) {
-        await setUserNotificationDetails(userKey, userSettings, event.notificationDetails);
+        await setUserNotificationDetails(
+          userKey,
+          userSettings,
+          event.notificationDetails
+        );
         await sendFrameNotifications({
           recipients: [{ fid, notificationDetails: event.notificationDetails }],
           title: "Welcome to Framedl",
@@ -114,7 +112,11 @@ export async function POST(request: NextRequest) {
 
       break;
     case "notifications_enabled":
-      await setUserNotificationDetails(userKey, userSettings, event.notificationDetails);
+      await setUserNotificationDetails(
+        userKey,
+        userSettings,
+        event.notificationDetails
+      );
       await sendFrameNotifications({
         recipients: [{ fid, notificationDetails: event.notificationDetails }],
         title: "Framedl notifications enabled",

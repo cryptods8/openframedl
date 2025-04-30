@@ -1,12 +1,7 @@
 import { CoreMiddleware, openframes } from "frames.js/middleware";
 import { createFrames as coreCreateFrames } from "frames.js/core";
 import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
-import {
-  baseUrl,
-  externalBaseUrl,
-  hubHttpUrl,
-  hubRequestOptions,
-} from "../constants";
+import { baseUrl, externalBaseUrl } from "../constants";
 import {
   CreateFramesFunctionDefinition,
   FrameHandlerFunction,
@@ -15,7 +10,7 @@ import {
   FramesRequestHandlerFunctionOptions,
   JsonValue,
 } from "frames.js/types";
-import { validateFrameMessage } from "frames.js";
+import { validateFrameMessage } from "@/app/lib/hub";
 import { maintenanceMiddleware } from "./maintenanceMiddleware";
 import { signUrl } from "../signer";
 import { UserKey } from "../game/game-repository";
@@ -131,10 +126,7 @@ const validationMiddleware: FramesMiddleware<
   }
 
   // ignore message
-  const { message, ...validationResult } = await validateFrameMessage(payload, {
-    hubHttpUrl,
-    hubRequestOptions,
-  });
+  const { message, ...validationResult } = await validateFrameMessage(payload);
 
   return next({ validationResult });
 };

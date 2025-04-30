@@ -1,16 +1,13 @@
 /* eslint-disable react/jsx-key */
 import { Button, error } from "frames.js/core";
 import { createCustomFrames } from "@/app/games/frames";
-import { getUserDataForFid } from "frames.js";
-import { hubHttpUrl, hubRequestOptions } from "@/app/constants";
 import {
-  ArenaWithGames,
   findArenaWithGamesById,
   updateArena,
 } from "@/app/game/arena-pg-repository";
 import { getArenaAvailabilityProperties } from "../../arena-utils";
 import { createComposeUrl } from "@/app/utils";
-import { UserData } from "@/app/game/game-repository";
+import { loadUsername } from "@/app/games/user-data";
 
 const frames = createCustomFrames({});
 
@@ -98,12 +95,9 @@ export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
   }
 
   // check if arena exists
-  const [arena, userData] = await Promise.all([
+  const [arena, username] = await Promise.all([
     findArenaWithGamesById(numArenaId),
-    getUserDataForFid({
-      fid: parseInt(userKey.userId, 10),
-      options: { hubHttpUrl, hubRequestOptions },
-    }),
+    loadUsername(userKey),
   ]);
   if (!arena) {
     return error("Arena not found");
@@ -134,7 +128,7 @@ export const POST = createCustomFrames<ArenaJoinFrameState>({})(async (ctx) => {
     arena.members.push({
       userId: userKey.userId,
       identityProvider: userKey.identityProvider,
-      username: userData?.username,
+      username,
     });
     const { games, ...rest } = arena;
     await updateArena(arena.id, {

@@ -15,6 +15,7 @@ import { Dialog } from "@/app/ui/dialog";
 import { createCast } from "@/app/lib/cast";
 import { createComposeUrl } from "@/app/utils";
 import { useJwt } from "@/app/hooks/use-jwt";
+import { motion } from "framer-motion";
 
 function Label({
   children,
@@ -36,6 +37,37 @@ function Label({
     >
       {children}
     </HeadlessLabel>
+  );
+}
+
+function WordGrid({ word }: { word: string }) {
+  return (
+    <div className="flex flex-row -mx-1 md:-mx-2 w-full">
+      {Array.from({ length: 5 }).map((_, index) => {
+        const letter = word[index];
+        return (
+          <div key={index} className="p-1 md:p-2 aspect-square w-[20%] flex">
+            <motion.div
+              key={letter}
+              className="w-full h-full"
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div
+                className={`text-2xl md:text-4xl font-bold w-full h-full flex items-center justify-center ${
+                  letter
+                    ? "bg-green-600 text-white"
+                    : "border-2 border-primary-900/10"
+                }`}
+              >
+                {letter}
+              </div>
+            </motion.div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -67,6 +99,13 @@ function InputField({
       )}
     </Field>
   );
+}
+
+function normalizeWord(word: string) {
+  return word
+    .toUpperCase()
+    .substring(0, 5)
+    .replace(/[^A-Z]/g, "");
 }
 
 export function CustomWordCreateForm() {
@@ -148,7 +187,7 @@ export function CustomWordCreateForm() {
             step={1}
             value={word}
             onChange={(e) =>
-              setWord((e.target.value || "").toUpperCase().substring(0, 5))
+              setWord(normalizeWord(e.target.value || ""))
             }
             helperText="Enter the 5-letter word. Can be made-up, if you want"
           />
@@ -171,6 +210,9 @@ export function CustomWordCreateForm() {
               }
             </HeadlessDescription>
           </Field>
+        </div>
+        <div>
+          <WordGrid word={word} />
         </div>
       </div>
       <div className="flex flex-row justify-end pt-4 pb-8">
