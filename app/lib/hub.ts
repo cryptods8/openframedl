@@ -13,6 +13,7 @@ function getHubOptions(): {
   hubHttpUrl: string;
   hubRequestOptions: Record<string, string>;
 } {
+  console.log('options', hubHttpUrl, hubRequestOptions);
   return {
     hubHttpUrl: hubHttpUrl,
     hubRequestOptions: hubRequestOptions,
