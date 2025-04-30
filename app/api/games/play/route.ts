@@ -49,7 +49,9 @@ async function loadOrCreateGame(
       ) {
         return userData;
       }
-      return await loadUserData(userGameKey);
+      const d = await loadUserData(userGameKey);
+      console.log("userData", userGameKey, d);
+      return d;
     },
   });
   if (userGameKey.isDaily) {
@@ -96,6 +98,7 @@ export const POST = async (req: NextRequest) => {
     }
   } catch (e) {
     if (e instanceof PassRequiredError) {
+      console.log("PassRequiredError", e, userKey, userData);
       return NextResponse.json(
         {
           error: "Framedl PRO Pass is required to play!",
@@ -107,12 +110,14 @@ export const POST = async (req: NextRequest) => {
     throw e;
   }
   if (!game) {
+    console.log("Game not found", userKey, body);
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
   const isOwner =
     game.userId === userKey.userId &&
     game.identityProvider === userKey.identityProvider;
   if (!isOwner) {
+    console.log("Unauthorized", game, userKey);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!body.guess) {
@@ -121,6 +126,7 @@ export const POST = async (req: NextRequest) => {
   const guess = body.guess.trim().toLowerCase();
   const validationResult = gameService.validateGuess(game, guess);
   if (validationResult !== "VALID") {
+    console.log("Invalid guess", guess, validationResult);
     return NextResponse.json(
       { error: "Invalid guess", validationResult },
       { status: 400 }
