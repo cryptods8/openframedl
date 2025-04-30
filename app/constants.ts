@@ -16,7 +16,7 @@ export const externalBaseUrl =
 
 const HUB_CONFIGS = [
   {
-    httpUrl: "https://hub-api.neynar.com",
+    httpUrl: "https://snapchain-api.neynar.com",
     requestOptions: {
       api_key: process.env["NEYNAR_API_KEY"] || "NEYNAR_FRAMES_JS",
       "x-api-key": process.env["NEYNAR_API_KEY"] || "NEYNAR_FRAMES_JS",
