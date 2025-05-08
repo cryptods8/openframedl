@@ -80,7 +80,7 @@ const steps: Step[] = [
   {
     label: "How many words?",
     description:
-      "Enter the number of words you want to play with. Default is 5, maximum is 9.",
+      "Enter the number of words you want to play with. Default is 5, maximum is 24.",
     render: ({ state }: StepRendererArgs) => {
       if (!state.wordCount) {
         return null;
