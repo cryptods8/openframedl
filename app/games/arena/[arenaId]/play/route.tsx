@@ -10,7 +10,7 @@ import {
   PassOwnershipCheckFailedImage,
 } from "@/app/generate-image";
 import { findArenaWithGamesById } from "@/app/game/arena-pg-repository";
-import { GuessedGame, PreCreateFunction } from "@/app/game/game-service";
+import { gameService, GuessedGame, PreCreateFunction } from "@/app/game/game-service";
 import {
   getArenaAvailabilityProperties,
   getArenaGamesForUser,
@@ -112,7 +112,9 @@ export const POST = createCustomFrames<ArenaPlayFrameState>({})(async (ctx) => {
       preCreateLoader = async () => {
         const arenaWordIndex = games.length;
         return {
-          word: arena.config.words[arenaWordIndex]!,
+          word: arena.config.randomWords
+            ? gameService.generateRandomWords(1)[0]!
+            : arena.config.words[arenaWordIndex]!,
           arena: arena,
           arenaWordIndex,
           initWords: arena.config.initWords || undefined,

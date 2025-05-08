@@ -228,13 +228,13 @@ export function ArenaCreateForm() {
             type="number"
             placeholder="5"
             min={1}
-            max={9}
+            max={24}
             step={1}
             value={wordCount ?? ""}
             onChange={(e) =>
               setWordCount(e.target.value ? parseInt(e.target.value, 10) : null)
             }
-            helperText="The number of words in the arena. Default is 5, minimum is 1, maximum is 9."
+            helperText="The number of words in the arena. Default is 5, minimum is 1, maximum is 24."
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

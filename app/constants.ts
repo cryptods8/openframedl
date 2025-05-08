@@ -31,7 +31,7 @@ const HUB_CONFIGS = [
 ] as const;
 
 const envHubHttpUrl = process.env["FRAME_HUB_HTTP_URL"];
-const envHubRequestOptions = process.env["FRAME_HUB_REQUEST_OPTIONS"]
+const envHubRequestOptions = process.env["FRAME_HUB_REQUEST_OPTIONS"] && envHubHttpUrl
   ? JSON.parse(process.env["FRAME_HUB_REQUEST_OPTIONS"])
   : null;
 

@@ -13,7 +13,6 @@ import { primaryColor } from "@/app/image-ui/image-utils";
 import { BasicLayout } from "@/app/image-ui/basic-layout";
 import { ArenaTitle } from "@/app/image-ui/arena/arena-title";
 import { createImageResponse } from "@/app/utils/image-response";
-import { options } from "@/app/generate-image";
 import { GameStatus } from "@/app/db/pg/types";
 import { ClockIcon } from "@/app/image-ui/icons/ClockIcon";
 import { CheckIcon } from "@/app/image-ui/icons/CheckIcon";
@@ -178,7 +177,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
 
   return {
     players: allPlayers,
-    gamesTotal: arena.config.words.length,
+    gamesTotal: 24, //arena.config.words.length,
   };
 }
 
@@ -225,35 +224,49 @@ function renderGameStats(
   gamesTotal: number,
   withFiller?: boolean
 ) {
+  const compact = gamesTotal > 9;
+  const style = { gap: "0.5rem" } as React.CSSProperties;
+  if (compact) {
+    style.maxWidth = "24rem";
+  }
   return (
     <div
       tw={`flex flex-wrap items-center ${withFiller ? "w-full" : ""}`}
-      style={{ gap: "0.5rem" }}
+      style={style}
     >
       {[
         Array.from({ length: gamesTotal }).map((_, idx) => {
           const g = p.games[idx];
+          const itemStyle =
+            g && g.status !== "IN_PROGRESS"
+              ? g.status === "WON"
+                ? {
+                    color: "white",
+                    backgroundColor: "green",
+                    fontWeight: 500,
+                  }
+                : {
+                    color: "white",
+                    backgroundColor: "red",
+                    fontWeight: 500,
+                  }
+              : {
+                  color: primaryColor(0.54),
+                  backgroundColor: primaryColor(0.12),
+                };
           return (
             <div
               key={idx}
-              tw="flex w-12 h-12 rounded items-center justify-center text-3xl relative"
+              tw={`flex rounded items-center justify-center text-3xl relative ${
+                compact ? "w-6 h-6" : "w-12 h-12"
+              }`}
               style={
-                g && g.status !== "IN_PROGRESS"
-                  ? g.status === "WON"
-                    ? {
-                        color: "white",
-                        backgroundColor: "green",
-                        fontWeight: 500,
-                      }
-                    : {
-                        color: "white",
-                        backgroundColor: "red",
-                        fontWeight: 500,
-                      }
-                  : {
-                      color: primaryColor(0.54),
-                      backgroundColor: primaryColor(0.12),
+                compact && itemStyle.fontWeight
+                  ? {
+                      color: itemStyle.backgroundColor,
+                      fontWeight: itemStyle.fontWeight,
                     }
+                  : itemStyle
               }
             >
               {g && g.status !== "IN_PROGRESS"

@@ -176,6 +176,7 @@ export type ArenaConfig = {
   words: string[];
   suddenDeath: boolean | null | undefined;
   initWords: string[] | null | undefined;
+  randomWords: boolean | null | undefined;
 };
 
 export interface ArenaTable extends AuthoredTable {

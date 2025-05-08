@@ -100,6 +100,7 @@ const handle = frames(async (ctx) => {
       words: gameService.generateRandomWords(state.wordCount ?? 1),
       suddenDeath: null,
       initWords: null,
+      randomWords: null,
     } satisfies ArenaConfig;
     const userData = await loadUserData(userKey);
     const arena = {
@@ -144,8 +145,8 @@ const handle = frames(async (ctx) => {
   if (state.step === 3 && step === 4) {
     if (input) {
       const words = parseInt(input, 10);
-      if (isNaN(words) || words < 1 || words > 9) {
-        return error("Invalid number of words, must be between 1 and 9.");
+      if (isNaN(words) || words < 1 || words > 24) {
+        return error("Invalid number of words, must be between 1 and 24.");
       }
       nextState.wordCount = words;
     } else {

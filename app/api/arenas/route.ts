@@ -18,6 +18,7 @@ export interface ArenaCreateRequest {
   audienceSize: number;
   suddenDeath: boolean;
   initWords: string[];
+  randomWords: boolean;
 }
 
 const allowedApiKeys = process.env.ALLOWED_API_KEYS?.split(",") ?? [];
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
     audience,
     suddenDeath,
     initWords,
+    randomWords,
   } = (await req.json()) as Partial<ArenaCreateRequest>;
 
   const config = {
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
     words: gameService.generateRandomWords(wordCount ?? 5),
     suddenDeath: suddenDeath ?? null,
     initWords: initWords ?? null,
+    randomWords: randomWords ?? null,
   } satisfies ArenaConfig;
   const arena = {
     createdAt: new Date(),
