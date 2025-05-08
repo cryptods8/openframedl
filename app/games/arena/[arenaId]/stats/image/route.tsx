@@ -177,7 +177,7 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
 
   return {
     players: allPlayers,
-    gamesTotal: 24, //arena.config.words.length,
+    gamesTotal: arena.config.words.length,
   };
 }
 
