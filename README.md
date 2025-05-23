@@ -1,6 +1,6 @@
 # Framedl - Wordle Farcaster Frame
 
-Next.JS frame app built on top of the [Frames.js](https://framesjs.org) framework by [@df](https://warpcast.com/df)
+Next.JS frame app built on top of the [Frames.js](https://framesjs.org) framework by [@df](https://farcaster.xyz/df)
 
 ## Quickstart
 
@@ -40,7 +40,7 @@ Decentralized social network built on Ethereum. Come [join us](https://farcaster
 
 ### Who are you?
 
-[ds8](https://warpcast.com/ds8)
+[ds8](https://farcaster.xyz/ds8)
 
 ### License
 

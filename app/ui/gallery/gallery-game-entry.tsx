@@ -28,7 +28,7 @@ function ShareIconButton({ game }: { game: PublicGuessedGame }) {
   );
   return (
     <a href={href} target="_blank" rel="noopener noreferrer">
-      <IconButton title="Share to Warpcast">
+      <IconButton title="Share to Farcaster">
         <ShareIcon className="size-4" />
       </IconButton>
     </a>

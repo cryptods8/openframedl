@@ -24,7 +24,7 @@ export const maintenanceMiddleware: FramesMiddleware<any, FramesContext<any>> = 
         <Button action="post" target={`${baseUrl}${ctx.basePath}`}>
           Try again
         </Button>,
-        <Button action="link" target={"https://warpcast.com/ds8"}>
+        <Button action="link" target={"https://farcaster.xyz/ds8"}>
           Support
         </Button>,
       ],

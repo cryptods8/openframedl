@@ -32,7 +32,7 @@ export default async function Home() {
       <div>
         Framedl Word of the Day by{" "}
         <Link
-          href="https://warpcast.com/ds8"
+          href="https://farcaster.xyz/ds8"
           className="underline hover:text-primary-900/80"
         >
           ds8

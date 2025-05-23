@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   const res = await fetch(
-    `https://client.warpcast.com/v2/search-users?q=${encodeURIComponent(
+    `https://client.farcaster.xyz/v2/search-users?q=${encodeURIComponent(
       query ?? ""
     )}&limit=40`
   ).then((res) => res.json());

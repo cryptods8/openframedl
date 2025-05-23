@@ -31,7 +31,7 @@ export function createComposeUrl(text: string, url: string, config?: { isPro: bo
   params.set("text", text);
   params.set("embeds[]", url);
   params.set("channelKey", (config ? config.isPro : isPro) ? "framedl-pro" : "framedl");
-  return `https://warpcast.com/~/compose?${params.toString()}`;
+  return `https://farcaster.xyz/~/compose?${params.toString()}`;
 }
 
 export function toUrlSearchParams(

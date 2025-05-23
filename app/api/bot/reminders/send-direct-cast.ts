@@ -30,7 +30,7 @@ export async function sendDirectCastWithRetries(cast: DirectCast) {
 export async function sendDirectCast(cast: DirectCast) {
   const apiKey = process.env.WARPCAST_DC_API_KEY;
 
-  fetch("https://api.warpcast.com/v2/ext-send-direct-cast", {
+  fetch("https://api.farcaster.xyz/v2/ext-send-direct-cast", {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${apiKey}`,

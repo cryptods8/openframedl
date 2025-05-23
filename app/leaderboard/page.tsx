@@ -34,7 +34,7 @@ export default async function Home() {
       <div>
         Framedl Leaderboard by{" "}
         <Link
-          href="https://warpcast.com/ds8"
+          href="https://farcaster.xyz/ds8"
           className="underline hover:text-slate-700"
         >
           ds8

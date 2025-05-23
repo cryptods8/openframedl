@@ -13,7 +13,7 @@ import { getUserDataForFid, getAddressesForFid } from "@/app/lib/hub";
 
 async function loadFidFromWc(username: string): Promise<number | undefined> {
   const resp = await fetch(
-    `https://api.warpcast.com/v2/user-by-username?username=${username}`
+    `https://api.farcaster.xyz/v2/user-by-username?username=${username}`
   );
   const { result } = (await resp.json()) as {
     result: { user: { fid: number } };

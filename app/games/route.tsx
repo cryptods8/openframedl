@@ -71,7 +71,7 @@ const handleRequest = frames(async (ctx) => {
       buttons: [
         <Button
           action="link"
-          target={`https://warpcast.com/~/composer-action?url=${encodeURIComponent(
+          target={`https://farcaster.xyz/~/composer-action?url=${encodeURIComponent(
             ctx.createExternalUrl("/api/actions/app")
           )}`}
         >

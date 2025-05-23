@@ -58,7 +58,7 @@ See you at the tournament!
   const apiKey = process.env.MY_DC_API_KEY;
 
   console.log(`[${new Date().toISOString()}] sending`, fid);
-  const resp = await fetch("https://api.warpcast.com/v2/ext-send-direct-cast", {
+  const resp = await fetch("https://api.farcaster.xyz/v2/ext-send-direct-cast", {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${apiKey}`,
