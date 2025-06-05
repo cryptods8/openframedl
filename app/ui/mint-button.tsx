@@ -1,4 +1,5 @@
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
+import { getDataSuffix, submitReferral } from "@divvi/referral-sdk";
 import React from "react";
 import {
   useAccount,
@@ -152,6 +153,10 @@ export function MintButton({
   React.useEffect(() => {
     if (hash && chainId && address && !mintStartedHandled.current) {
       mintStartedHandled.current = true;
+      submitReferral({
+        txHash: hash,
+        chainId,
+      });
       onMintStarted({ hash, chainId, walletAddress: address });
       mintStartedHandled.current = false;
     }
@@ -196,6 +201,10 @@ export function MintButton({
         await switchChain({ chainId: CHAIN_CONFIG.id });
         return;
       }
+      const dataSuffix = getDataSuffix({
+        consumer: '0x000Cbf0BEC88214AAB15bC1Fa40d3c30b3CA97a9',
+        providers: ['0xc95876688026be9d6fa7a7c33328bd013effa2bb'],
+      })
 
       writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -203,6 +212,7 @@ export function MintButton({
         functionName: "mintGame",
         args: [gameId],
         value: parseEther(MINT_PRICE),
+        dataSuffix: `0x${dataSuffix}`,
       });
     } catch (error) {
       if (!isUserRejectionError(error)) {
