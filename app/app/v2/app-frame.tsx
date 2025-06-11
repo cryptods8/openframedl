@@ -14,6 +14,7 @@ import { composeCast, createComposeUrl } from "@/app/utils";
 import sdk, { SignIn as FrameSignIn, Context } from "@farcaster/frame-sdk";
 import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { HapticsTest } from "./haptics-test";
 
 function toUserData(user: Context.FrameContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
@@ -389,6 +390,7 @@ export function AppFrame({
       >
         Test open url
       </button>
+      <HapticsTest />
     </div>
   ) : undefined;
 

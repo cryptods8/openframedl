@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ProgressBarIcon } from "../icons/progress-bar-icon";
+import { useHaptics } from "@/app/hooks/use-haptics";
+import { useCallback } from "react";
 
 interface CommonProps {
   variant?: "primary" | "secondary" | "outline";
@@ -17,15 +21,26 @@ interface BaseLinkProps
   href: string;
 }
 
-type ButtonProps = BaseButtonProps | BaseLinkProps;
+type ButtonProps = (BaseButtonProps | BaseLinkProps) & {
+  haptics?: "light" | "medium" | "heavy" | "soft" | "rigid" | "none";
+};
 
 export function Button({
   children,
   variant = "primary",
   size = "md",
   loading = false,
+  onClick,
+  haptics = "light",
   ...props
 }: ButtonProps) {
+  const { impact } = useHaptics();
+  const handleClick = useCallback(async (e: React.MouseEvent<HTMLButtonElement> | React.MouseEvent<HTMLAnchorElement>) => {
+    if (haptics !== "none") {
+      await impact(haptics);
+    }
+    onClick?.(e as any);
+  }, [onClick, impact, haptics]);
   const className = `w-full flex items-center justify-center text-center font-semibold rounded-md border transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed ${
     variant === "primary"
       ? "bg-primary-500 text-white hover:bg-primary-600 disabled:hover:bg-primary-500 active:bg-primary-700 disabled:active:bg-primary-500 border-transparent"
@@ -41,13 +56,13 @@ export function Button({
   }`;
   if ("href" in props) {
     return (
-      <Link className={className} {...props}>
+      <Link className={className} onClick={handleClick} {...props}>
         {children}
       </Link>
     );
   }
   return (
-    <button className={className} {...props}>
+    <button className={className} onClick={handleClick} {...props}>
       {loading && (
         <div
           className={`animate-spin ${

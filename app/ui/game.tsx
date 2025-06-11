@@ -10,10 +10,7 @@ import {
 } from "../game/game-service";
 import { GameGuessGrid } from "./game-guess-grid";
 import { Button } from "./button/button";
-import {
-  buildShareableResult,
-  formatGameKey,
-} from "../game/game-utils";
+import { buildShareableResult, formatGameKey } from "../game/game-utils";
 import { createCast } from "../lib/cast";
 import { SignIn } from "./auth/sign-in";
 import { createComposeUrl } from "../utils";
@@ -29,6 +26,7 @@ import { useAppConfig } from "../contexts/app-config-context";
 import { toast } from "./toasts/toast";
 import { BaseUserRequest } from "../api/api-utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
+import { useHaptics } from "../hooks/use-haptics";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -342,6 +340,7 @@ export function Game({
   const { jwt } = useJwt();
   const { sessionId } = useSessionId();
   const config = useAppConfig();
+  const { impact, notification } = useHaptics();
 
   useEffect(() => {
     const onFocus = () => setIsWindowFocused(true);
@@ -393,7 +392,14 @@ export function Game({
     };
   }, [userId, identityProvider, userData]);
 
+  useEffect(() => {
+    if (isGameOver && !isSubmitting) {
+      notification("success");
+    }
+  }, [isGameOver, notification, isSubmitting]);
+
   const handleSubmit = useCallback(async () => {
+    impact("medium");
     if (mode === "pro") {
       inputRef.current?.focus();
     }
@@ -452,6 +458,7 @@ export function Game({
     isGameOver,
     jwt,
     anonUserInfo,
+    impact,
     setIsDialogOpen,
     setValidationResult,
     setCurrentWord,
@@ -460,6 +467,7 @@ export function Game({
 
   const handleKeyPress = useCallback(
     (k: string) => {
+      impact("light");
       if (isSubmitting || isGameOver) {
         return;
       }
@@ -481,7 +489,7 @@ export function Game({
         });
       }
     },
-    [setCurrentWord, isSubmitting, isGameOver]
+    [setCurrentWord, isSubmitting, isGameOver, impact]
   );
 
   useEffect(() => {
@@ -558,22 +566,27 @@ export function Game({
       }
       const viewHeight = window.visualViewport?.height ?? window.innerHeight;
       const scrollY = window.scrollY;
-      const inputBottom = scrollY + (inputRef.current?.getBoundingClientRect().bottom ?? 0);
+      const inputBottom =
+        scrollY + (inputRef.current?.getBoundingClientRect().bottom ?? 0);
       const newScrollY = Math.max(0, inputBottom - viewHeight + 10);
-      window.scroll({ top: newScrollY, behavior: 'instant' });
-    }
-    window.addEventListener('scroll', handleScroll);
+      window.scroll({ top: newScrollY, behavior: "instant" });
+    };
+    window.addEventListener("scroll", handleScroll);
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-    }
-  }, [mode])
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [mode]);
 
   const replacedScore = currentGame?.metadata?.replacedScore;
   useEffect(() => {
-    if (replacedScore != null && !currentGame?.completedAt && currentGame?.isDaily) {
+    if (
+      replacedScore != null &&
+      !currentGame?.completedAt &&
+      currentGame?.isDaily
+    ) {
       toast(`Win in ${replacedScore} to keep your average`);
     }
-  }, [replacedScore, currentGame])
+  }, [replacedScore, currentGame]);
 
   const handleDialogClose = useCallback(() => {
     setIsDialogOpen(false);
@@ -586,26 +599,21 @@ export function Game({
   ) {
     return (
       <div className="flex flex-col h-full w-full p-8 items-center justify-center text-center gap-8">
-        <Link
-          href="https://zora.co/collect/base:0x402ae0eb018c623b14ad61268b786edd4ad87c56/1"
-          target="_blank"
-        >
-          <div className="overflow-hidden rounded-md shadow-xl shadow-primary-500/5 max-w-xl hover:scale-105 transition-all duration-150 active:scale-100 active:shadow-primary-500/0">
-            <Image
-              src="/pro-full.png"
-              alt="Framedl PRO"
-              className="w-full aspect-square"
-              width={2048}
-              height={2048}
-            />
-          </div>
-        </Link>
+        <div className="overflow-hidden rounded-md shadow-xl shadow-primary-500/5 max-w-xl hover:scale-105 transition-all duration-150 active:scale-100 active:shadow-primary-500/0">
+          <Image
+            src="/pro-full.png"
+            alt="Framedl PRO"
+            className="w-full aspect-square"
+            width={2048}
+            height={2048}
+          />
+        </div>
         <div>
           <p className="text-xl font-semibold text-primary-900/50">
             Framedl PRO Pass is required to play
           </p>
           <p className="text-primary-900/50 mt-2">
-            Click on the image to go to Zora and buy the Framedl PRO Pass
+            Contact ds8 to get the Framedl PRO Pass
           </p>
         </div>
       </div>

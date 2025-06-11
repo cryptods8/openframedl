@@ -1,14 +1,26 @@
 import clsx from "clsx";
 import {
   Menu,
-  MenuButton,
-  MenuItem,
+  MenuButton as HeadlessMenuButton,
+  MenuItem as HeadlessMenuItem,
   MenuItems,
   MenuSeparator,
   Transition,
 } from "@headlessui/react";
 import { EllipsisVerticalIcon } from "@heroicons/react/16/solid";
 import Link from "next/link";
+
+import { useHaptics } from "@/app/hooks/use-haptics";
+
+function MenuButton({ children, ...props }: React.ComponentProps<typeof HeadlessMenuButton>) {
+  const { impact } = useHaptics();
+  return <HeadlessMenuButton {...props} onClick={() => impact("light")}>{children}</HeadlessMenuButton>;
+}
+
+function MenuItem({ children, ...props }: React.ComponentProps<typeof HeadlessMenuItem>) {
+  const { impact } = useHaptics();
+  return <HeadlessMenuItem {...props} onClick={() => impact("light")}>{children}</HeadlessMenuItem>;
+}
 
 export function GameOptionsMenu({
   onNewGame,
@@ -23,10 +35,11 @@ export function GameOptionsMenu({
   mode?: "normal" | "pro";
   onModeChange?: (mode: "normal" | "pro") => void;
 }) {
+  const { impact } = useHaptics();
   return (
     <Menu>
       <MenuButton
-        onKeyDown={(e) => {
+        onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
           if (e.key.toLowerCase() === "enter") {
             e.preventDefault();
           }
