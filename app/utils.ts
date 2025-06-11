@@ -34,6 +34,18 @@ export function createComposeUrl(text: string, url: string, config?: { isPro: bo
   return `https://farcaster.xyz/~/compose?${params.toString()}`;
 }
 
+export function composeCast(text: string, url: string, config?: { isPro: boolean }): {
+  text: string;
+  embeds: [] | [string] | [string, string];
+  channelKey?: string;
+} {
+  return {
+    text,
+    embeds: [url],
+    channelKey: (config ? config.isPro : isPro) ? "framedl-pro" : "framedl",
+  };
+}
+
 export function toUrlSearchParams(
   obj: Record<string, string | string[] | undefined>,
   options?: { allowedParams?: string[] }

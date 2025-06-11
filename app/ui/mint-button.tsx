@@ -207,6 +207,7 @@ export function MintButton({
       })
 
       writeContract({
+        account: address,
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CONTRACT_ABI,
         functionName: "mintGame",

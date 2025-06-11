@@ -10,7 +10,7 @@ import { Button } from "@/app/ui/button/button";
 import { Game as GameComponent, GameProps } from "@/app/ui/game";
 import { GameGuessGrid } from "@/app/ui/game-guess-grid";
 import { ProgressBarIcon } from "@/app/ui/icons/progress-bar-icon";
-import { createComposeUrl } from "@/app/utils";
+import { composeCast, createComposeUrl } from "@/app/utils";
 import sdk, { SignIn as FrameSignIn, Context } from "@farcaster/frame-sdk";
 import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -136,7 +136,10 @@ function GameContainer({
       setAsGuest(false);
       setSignInFailure(undefined);
       const nonce = await getNonce();
-      const result = await sdk.actions.signIn({ nonce });
+      const result = await sdk.actions.signIn({
+        nonce,
+        acceptAuthAddress: true
+      });
 
       await signIn("credentials", {
         message: result.message,
@@ -321,8 +324,10 @@ function useClientContext({
   }, [context?.user]);
 
   const share = useCallback(
-    ({ title, url }: { title: string; url: string }) => {
-      return sdk.actions.openUrl(createComposeUrl(title, url, { isPro }));
+    async ({ title, url }: { title: string; url: string }) => {
+      // return sdk.actions.openUrl(createComposeUrl(title, url, { isPro }));
+      await sdk.actions.composeCast(composeCast(title, url, { isPro }));
+      return;
     },
     [isPro]
   );
