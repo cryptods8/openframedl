@@ -19,14 +19,13 @@ import { useSession } from "next-auth/react";
 import { useJwt } from "../hooks/use-jwt";
 import { useSessionId } from "../hooks/use-session-id";
 import { UserData } from "../game/game-repository";
-import Image from "next/image";
-import Link from "next/link";
 import { GameCompletedDialog } from "./game-completed-dialog";
 import { useAppConfig } from "../contexts/app-config-context";
 import { toast } from "./toasts/toast";
 import { BaseUserRequest } from "../api/api-utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
 import { useHaptics } from "../hooks/use-haptics";
+import { ProPassRequiredScreen } from "./game/pro-pass-required-screen";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -597,27 +596,7 @@ export function Game({
     ((currentGame && !currentGame.userData?.passOwnership) ||
       error?.type === "pass_required")
   ) {
-    return (
-      <div className="flex flex-col h-full w-full p-8 items-center justify-center text-center gap-8">
-        <div className="overflow-hidden rounded-md shadow-xl shadow-primary-500/5 max-w-xl hover:scale-105 transition-all duration-150 active:scale-100 active:shadow-primary-500/0">
-          <Image
-            src="/pro-full.png"
-            alt="Framedl PRO"
-            className="w-full aspect-square"
-            width={2048}
-            height={2048}
-          />
-        </div>
-        <div>
-          <p className="text-xl font-semibold text-primary-900/50">
-            Framedl PRO Pass is required to play
-          </p>
-          <p className="text-primary-900/50 mt-2">
-            Contact ds8 to get the Framedl PRO Pass
-          </p>
-        </div>
-      </div>
-    );
+    return <ProPassRequiredScreen />;
   }
 
   return (

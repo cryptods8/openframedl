@@ -27,6 +27,7 @@
     "@tanstack/react-query": "^5.63.0",
     "@upstash/redis": "^1.28.4",
     "@vercel/og": "^0.6.3",
+    "@withfabric/protocol-sdks": "^2.0.2",
     "@xmtp/frames-validator": "^0.6.2",
     "alchemy-sdk": "^3.2.1",
     "canvas-confetti": "^1.9.3",

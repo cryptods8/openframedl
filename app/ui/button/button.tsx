@@ -21,7 +21,7 @@ interface BaseLinkProps
   href: string;
 }
 
-type ButtonProps = (BaseButtonProps | BaseLinkProps) & {
+export type ButtonProps = (BaseButtonProps | BaseLinkProps) & {
   haptics?: "light" | "medium" | "heavy" | "soft" | "rigid" | "none";
 };
 

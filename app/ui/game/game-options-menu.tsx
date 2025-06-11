@@ -35,7 +35,6 @@ export function GameOptionsMenu({
   mode?: "normal" | "pro";
   onModeChange?: (mode: "normal" | "pro") => void;
 }) {
-  const { impact } = useHaptics();
   return (
     <Menu>
       <MenuButton
