@@ -398,7 +398,7 @@ export function Game({
   }, [isGameOver, notification, isSubmitting]);
 
   const handleSubmit = useCallback(async () => {
-    impact("medium");
+    impact("light");
     if (mode === "pro") {
       inputRef.current?.focus();
     }
@@ -466,7 +466,7 @@ export function Game({
 
   const handleKeyPress = useCallback(
     (k: string) => {
-      impact("light");
+      // impact("light");
       if (isSubmitting || isGameOver) {
         return;
       }
