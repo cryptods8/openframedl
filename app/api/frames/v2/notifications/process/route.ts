@@ -75,8 +75,8 @@ export async function GET(req: NextRequest) {
           ? "Your daily game is ready!"
           : `${yesterdayWord.toUpperCase()} stumped many! Can you crack today's word?`
         : type === "mid"
-        ? "Just here, in your notifs, reminding my own business..."
-        : "You have 2 hours left to play your daily game!";
+        ? "Just here, in your notifs, reminding my own business…"
+        : "You have 4 hours left to play your daily game!";
     // batch by 100
     console.log("to notify", toNotify.length);
     for (let i = 0; i < toNotify.length; i += 100) {
