@@ -41,7 +41,7 @@ function MintActionButton({
   onClick: () => void;
 }) {
   return (
-    <IconButton title="Mint" onClick={onClick}>
+    <IconButton title="Collect" onClick={onClick}>
       <PlusCircleIcon className="size-4" />
     </IconButton>
   );
@@ -68,7 +68,7 @@ export function GalleryGameEntry(props: {
 
   const handleMint = useCallback(() => {
     setIsMintDialogOpen(false);
-    toast("Minted ✨");
+    toast("Collected ✨");
   }, []);
 
   return (

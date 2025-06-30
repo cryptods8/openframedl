@@ -206,7 +206,7 @@ function GameContainer({
       }}
     >
       {debugPanel}
-      <div className="flex-1 w-full flex flex-col items-center justify-center">
+      <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center">
         {status === "authenticated" || asGuest ? (
           <div className="flex-1 w-full">
             <Game
@@ -252,7 +252,7 @@ function GameContainer({
           )
         )}
         {status === "unauthenticated" && !asGuest && (
-          <div className="flex flex-col gap-2 w-full p-4">
+          <div className="flex flex-col gap-2 w-full max-w-sm p-4">
             <Button
               variant="primary"
               onClick={handleSignIn}

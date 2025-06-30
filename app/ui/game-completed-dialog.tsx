@@ -91,7 +91,7 @@ export function GameCompletedDialog({
   const handleMint = () => {
     if (game) {
       setShowMintOverlay(false);
-      toast("Minted ✨");
+      toast("Collected ✨");
     }
   };
 
@@ -161,7 +161,7 @@ export function GameCompletedDialog({
                   onClick={handleShowMintOverlay}
                   size="sm"
                 >
-                  Mint NFT
+                  Collect NFT
                 </Button>
               )}
               {isPracticeGame(game) ? (

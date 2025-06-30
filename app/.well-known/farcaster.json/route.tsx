@@ -42,7 +42,7 @@ export async function GET() {
         : `${externalBaseUrl}/icon-v2.png`,
       name: isPro ? "Framedl PRO" : "Framedl",
       subtitle: isPro
-        ? "Daily competitive wordle game mini app"
+        ? "Daily competitive wordle game"
         : "Daily wordle game mini app", // 30 characters, no emojis or special characters
       // store page
       description:

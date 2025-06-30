@@ -7,11 +7,34 @@ import { GameStatus, MintMetadata } from "@/app/db/pg/types";
 import { MintButton } from "../mint-button";
 import { Button } from "../button/button";
 import { AnimatePresence, motion } from "framer-motion";
+import { Switch } from "@headlessui/react";
+import { useLocalStorage } from "@/app/hooks/use-local-storage";
 
 const MINT_PRICE = process.env.NEXT_PUBLIC_GAME_NFT_MINT_PRICE || "0.0004";
+const ERC20_TOKEN_CONFIG = process.env.NEXT_PUBLIC_GAME_NFT_ERC20_TOKEN_CONFIG;
+// const ERC20_TOKEN_CONFIG =
+//   process.env.NEXT_PUBLIC_GAME_NFT_ERC20_TOKEN_CONFIG ||
+//   '{ "address": "0x4ed4e862860bed51a9570b96d89af5e1b0efefed", "decimals": 18, "name": "DEGEN", "symbol": "DEGEN", "price": "50" }';
+
+function safeParseJson<T>(json?: string | undefined | null): T | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    return null;
+  }
+}
+
+const erc20MintingTokenConfig = safeParseJson<{
+  address: `0x${string}`;
+  decimals: number;
+  name: string;
+  symbol: string;
+  price: string;
+}>(ERC20_TOKEN_CONFIG);
 
 interface GameMintDialogContentProps {
-  game: { id: string, status: GameStatus };
+  game: { id: string; status: GameStatus };
   anonUserInfo?: BaseUserRequest;
   onMint: () => void;
   onSkip?: () => void;
@@ -88,7 +111,7 @@ function NFTPreview({ src }: { src: string }) {
       >
         <AnimatePresence>
           {isImageLoading && (
-            <motion.div 
+            <motion.div
               className="absolute inset-0 bg-white rounded-lg overflow-hidden"
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -107,7 +130,7 @@ function NFTPreview({ src }: { src: string }) {
           className="w-full h-full object-cover rounded-lg shadow-xl"
           style={{
             background:
-              "linear-gradient(145deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)"
+              "linear-gradient(145deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)",
           }}
           onLoad={handleImageLoad}
         />
@@ -144,9 +167,33 @@ async function postMint(
 ) {
   const response = await fetch(`/api/games/${gameId}/mints`, {
     method: "POST",
-    body: JSON.stringify({ hash, chainId, tokenId, walletAddress, ...anonUserInfo }),
+    body: JSON.stringify({
+      hash,
+      chainId,
+      tokenId,
+      walletAddress,
+      ...anonUserInfo,
+    }),
   });
   return await response.json();
+}
+
+function SwitchElement({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={`text-center text-sm flex-1 z-10 delay-50 transition-all duration-200 ${
+        active ? "text-primary-900/80 font-semibold" : "text-primary-900/50"
+      }`}
+    >
+      {children}
+    </span>
+  );
 }
 
 export function GameMintDialogContent({
@@ -156,6 +203,10 @@ export function GameMintDialogContent({
   anonUserInfo,
 }: GameMintDialogContentProps) {
   const gameId = game.id;
+  const [erc20MintingEnabled, setErc20MintingEnabled] = useLocalStorage(
+    `erc20MintingEnabled/${erc20MintingTokenConfig?.address ?? "default"}`,
+    !!erc20MintingTokenConfig
+  );
   const handleMintStarted = useCallback(
     ({
       hash,
@@ -183,7 +234,7 @@ export function GameMintDialogContent({
   );
   const handleMintError = useCallback((error: string | undefined) => {
     console.error(error);
-    toast("Minting failed (" + error + ")");
+    toast("Collecting failed (" + error + ")");
   }, []);
   return (
     <div className="max-w-sm w-full flex flex-col items-center gap-4">
@@ -193,7 +244,7 @@ export function GameMintDialogContent({
       <div className="w-full flex flex-col gap-2">
         <h2 className="w-full text-center text-xl font-space font-bold">
           {game.status === "WON"
-            ? "Mint your achievement!"
+            ? "Collect your achievement!"
             : "You'll get 'em next time!"}
         </h2>
         <p className="w-full text-center text-primary-900/50 leading-snug">
@@ -203,20 +254,61 @@ export function GameMintDialogContent({
         </p>
       </div>
       <div className="flex flex-col gap-2 items-center w-full pt-4">
-        <MintButton
-          gameId={game.id}
-          onMintStarted={handleMintStarted}
-          onMint={handleMint}
-          onError={handleMintError}
-        />
+        {erc20MintingTokenConfig && erc20MintingEnabled ? (
+          <MintButton
+            gameId={game.id}
+            onMintStarted={handleMintStarted}
+            onMint={handleMint}
+            onError={handleMintError}
+            erc20Token={erc20MintingTokenConfig}
+          />
+        ) : (
+          <MintButton
+            gameId={game.id}
+            onMintStarted={handleMintStarted}
+            onMint={handleMint}
+            onError={handleMintError}
+          />
+        )}
         {onSkip && (
           <Button variant="outline" size="sm" onClick={onSkip}>
             Skip
           </Button>
         )}
-        <span className="text-center text-primary-900/50 text-xs">
-          {`Minting costs ${MINT_PRICE}Ξ`}
-        </span>
+        {erc20MintingTokenConfig && (
+          <Switch
+            checked={erc20MintingEnabled}
+            onChange={setErc20MintingEnabled}
+            className="relative flex h-10 w-full items-center rounded-full bg-primary-500/5 mt-2"
+          >
+            <div
+              className={`h-10 p-1 w-[50%] rounded-full absolute transition-all duration-200 ${
+                erc20MintingEnabled ? "left-0" : "left-[50%]"
+              }`}
+            >
+              <div
+                className={
+                  "w-full h-8 rounded-full bg-white border border-primary-500/20 shadow-sm shadow-primary-500/10"
+                }
+              />
+            </div>
+            <SwitchElement active={erc20MintingEnabled}>
+              {`Use ${erc20MintingTokenConfig?.symbol}`}
+            </SwitchElement>
+            <SwitchElement
+              active={!erc20MintingEnabled}
+            >{`Use ETH`}</SwitchElement>
+          </Switch>
+        )}
+        {erc20MintingTokenConfig && erc20MintingEnabled ? (
+          <span className="text-center text-primary-900/50 text-xs">
+            {`Collecting costs ${erc20MintingTokenConfig.price} \$${erc20MintingTokenConfig.symbol}`}
+          </span>
+        ) : (
+          <span className="text-center text-primary-900/50 text-xs">
+            {`Collecting costs ${MINT_PRICE}Ξ`}
+          </span>
+        )}
       </div>
     </div>
   );
