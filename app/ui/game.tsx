@@ -240,6 +240,8 @@ function getValidationResultMessage(
       return "Not a valid word";
     case "INVALID_ALREADY_GUESSED":
       return "Already guessed";
+    case "INVALID_HARD_MODE":
+      return "You have to use hard mode";
     default:
       return "";
   }

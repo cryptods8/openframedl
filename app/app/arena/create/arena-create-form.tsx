@@ -17,8 +17,6 @@ import { FarcasterUser } from "./search-users";
 import { ArenaCreateRequest } from "@/app/api/arenas/route";
 import { Dialog } from "@/app/ui/dialog";
 import { buildArenaShareText } from "@/app/game/arena-utils";
-import { createCast } from "@/app/lib/cast";
-import { createComposeUrl } from "@/app/utils";
 import { useJwt } from "@/app/hooks/use-jwt";
 import { IconButton } from "@/app/ui/button/icon-button";
 import { useSharing } from "@/app/hooks/use-sharing";
@@ -111,6 +109,7 @@ export function ArenaCreateForm() {
   const [initWord, setInitWord] = useState("");
   const [initWords, setInitWords] = useState<string[]>([]);
   const [initWordsEnabled, setInitWordsEnabled] = useState(false);
+  const [isHardModeRequired, setIsHardModeRequired] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -151,6 +150,7 @@ export function ArenaCreateForm() {
       randomWords: !sameWordsForEveryone,
       initWords:
         initWordsEnabled && initWords.length > 0 ? initWords : undefined,
+      isHardModeRequired,
     };
 
     try {
@@ -303,6 +303,23 @@ export function ArenaCreateForm() {
             </div>
             <HeadlessDescription className="text-xs text-primary-900/50 px-1 mt-1.5">
               Each player will get the same words for the arena
+            </HeadlessDescription>
+          </Field>
+        </div>
+        <div>
+          <Field>
+            <div className="flex flex-row items-center">
+              <Label position="left">Hard mode required</Label>
+              <Switch
+                checked={isHardModeRequired}
+                onChange={setIsHardModeRequired}
+                className="group inline-flex h-6 w-11 items-center rounded-full bg-primary-200 transition data-[checked]:bg-primary-500 disabled:opacity-50"
+              >
+                <span className="size-4 translate-x-1 rounded-full bg-white transition group-data-[checked]:translate-x-6" />
+              </Switch>
+            </div>
+            <HeadlessDescription className="text-xs text-primary-900/50 px-1 mt-1.5">
+              Players have to use hard mode to guess the word
             </HeadlessDescription>
           </Field>
         </div>

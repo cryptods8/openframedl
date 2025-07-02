@@ -138,6 +138,7 @@ export interface GuessedGame extends Omit<DBGame, "guesses"> {
   status: "IN_PROGRESS" | "WON" | "LOST";
   word: string;
   isHardMode: boolean;
+  isHardModeRequired: boolean | null;
   isCustom: boolean;
   customMaker?: CustomGameMaker;
   arena?: DBArena;
@@ -151,6 +152,7 @@ export interface PublicGuessedGame {
   guesses: Guess[];
   status: "IN_PROGRESS" | "WON" | "LOST";
   isHardMode: boolean;
+  isHardModeRequired: boolean | null;
   isCustom: boolean;
   isDaily: boolean;
   userData?: UserData | null;
@@ -169,7 +171,8 @@ export type GuessValidationStatus =
   | "INVALID_SIZE"
   | "INVALID_FORMAT"
   | "INVALID_WORD"
-  | "INVALID_ALREADY_GUESSED";
+  | "INVALID_ALREADY_GUESSED"
+  | "INVALID_HARD_MODE";
 
 export type PreCreateFunction = () => Promise<GameWord>;
 export type LoadUserDataFunction = () => Promise<UserData>;
@@ -362,11 +365,8 @@ export class GameServiceImpl implements GameService {
     return (game as gameRepo.DBGameViewWithArena).arenaUserId != null;
   }
 
-  toGuessedGame(
-    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
-  ): GuessedGame {
-    const word = game.word;
-    const wordCharacters = word.split("").reduce((acc, c, idx) => {
+  private toWordCharacters(word: string): Record<string, WordCharacter> {
+    return word.split("").reduce((acc, c, idx) => {
       if (!acc[c]) {
         acc[c] = { count: 0, positions: {} };
       }
@@ -374,6 +374,13 @@ export class GameServiceImpl implements GameService {
       acc[c]!.positions[idx] = true;
       return acc;
     }, {} as Record<string, WordCharacter>);
+  }
+
+  toGuessedGame(
+    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
+  ): GuessedGame {
+    const word = game.word;
+    const wordCharacters = this.toWordCharacters(word);
     // guessed - correct, wrong position, incorrect
     const allGuessedCharacters: Record<string, GuessCharacter> = {};
     const guesses: Guess[] = [];
@@ -517,6 +524,7 @@ export class GameServiceImpl implements GameService {
         status: "IN_PROGRESS" as const,
         guessCount: 0,
         isHardMode: true,
+        isHardModeRequired: arena?.config.isHardModeRequired ?? null,
         arenaId: arena?.id,
         arenaWordIndex,
       };
@@ -557,6 +565,7 @@ export class GameServiceImpl implements GameService {
       identityProvider: game.identityProvider,
       gameKey: game.gameKey,
       isHardMode: game.isHardMode,
+      isHardModeRequired: game.isHardModeRequired,
       isCustom: game.isCustom,
       isDaily: game.isDaily,
       customMaker: game.customMaker,
@@ -754,6 +763,7 @@ export class GameServiceImpl implements GameService {
       status: game.status,
       guessCount: game.guessCount,
       isHardMode: game.isHardMode,
+      isHardModeRequired: game.isHardModeRequired,
       userData: game.userData ? game.userData : null,
       gameData: game.gameData ? game.gameData : null,
       srcGameId: game.srcGameId || null,
@@ -876,6 +886,16 @@ export class GameServiceImpl implements GameService {
       !game.customMaker?.isArt
     ) {
       return "INVALID_ALREADY_GUESSED";
+    }
+    if (game.isHardModeRequired) {
+      const prevGuess = game.guesses[game.guesses.length - 1];
+      if (prevGuess) {
+        const wordCharacters = this.toWordCharacters(game.word);
+        const isHardMode = this.isHardMode(prevGuess.characters, this.toGuessCharacters(wordCharacters, formattedGuess));
+        if (!isHardMode) {
+          return "INVALID_HARD_MODE";
+        }
+      }
     }
     return "VALID";
   }
@@ -1029,6 +1049,7 @@ export class GameServiceImpl implements GameService {
         completedAt: null,
         guessCount: game.guesses.length,
         isHardMode: false,
+        isHardModeRequired: null,
         userData: game.userData
           ? {
               displayName: game.userData.displayName ?? null,

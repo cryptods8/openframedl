@@ -67,6 +67,8 @@ export interface GameTable extends UserKey {
   guessCount: number;
   isHardMode: boolean;
 
+  isHardModeRequired: boolean | null;
+
   userData: UserDataColumnType | null;
   gameData: GameDataColumnType | null;
   srcGameId: string | null;
@@ -177,6 +179,7 @@ export type ArenaConfig = {
   suddenDeath: boolean | null | undefined;
   initWords: string[] | null | undefined;
   randomWords: boolean | null | undefined;
+  isHardModeRequired: boolean | null | undefined;
 };
 
 export interface ArenaTable extends AuthoredTable {

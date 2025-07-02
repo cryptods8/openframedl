@@ -19,6 +19,7 @@ export interface ArenaCreateRequest {
   suddenDeath: boolean;
   initWords: string[];
   randomWords: boolean;
+  isHardModeRequired: boolean;
 }
 
 const allowedApiKeys = process.env.ALLOWED_API_KEYS?.split(",") ?? [];
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
     suddenDeath,
     initWords,
     randomWords,
+    isHardModeRequired,
   } = (await req.json()) as Partial<ArenaCreateRequest>;
 
   const config = {
@@ -68,6 +70,7 @@ export async function POST(req: NextRequest) {
     suddenDeath: suddenDeath ?? null,
     initWords: initWords ?? null,
     randomWords: randomWords ?? null,
+    isHardModeRequired: isHardModeRequired ?? null,
   } satisfies ArenaConfig;
   const arena = {
     createdAt: new Date(),

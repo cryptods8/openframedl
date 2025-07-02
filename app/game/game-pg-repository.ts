@@ -67,6 +67,7 @@ function gameViewQuery() {
       "g.status",
       "g.guessCount",
       "g.isHardMode",
+      "g.isHardModeRequired",
       "g.userData",
       "g.gameData",
       "g.srcGameId",

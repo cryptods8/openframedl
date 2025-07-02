@@ -146,7 +146,7 @@ function formatTimeRangeBoundary(timestamp: Date | undefined, end?: boolean) {
 
 function renderParameters({ arena }: { arena: ArenaWithGames }) {
   const {
-    config: { words, duration, start, suddenDeath },
+    config: { words, duration, start, suddenDeath, isHardModeRequired },
     startedAt,
   } = arena;
   const startTime =
@@ -185,6 +185,13 @@ function renderParameters({ arena }: { arena: ArenaWithGames }) {
     items.push(
       <div key="4" tw="flex">
         🔥 Sudden Death
+      </div>
+    );
+  }
+  if (isHardModeRequired) {
+    items.push(
+      <div key="5" tw="flex">
+        💪 Hard Mode
       </div>
     );
   }

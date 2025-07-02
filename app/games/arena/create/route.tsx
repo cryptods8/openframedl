@@ -101,6 +101,7 @@ const handle = frames(async (ctx) => {
       suddenDeath: null,
       initWords: null,
       randomWords: null,
+      isHardModeRequired: null,
     } satisfies ArenaConfig;
     const userData = await loadUserData(userKey);
     const arena = {

@@ -69,6 +69,9 @@ export async function nextGameState(
       case "INVALID_ALREADY_GUESSED":
         message = "Already guessed!";
         break;
+      case "INVALID_HARD_MODE":
+        message = "You have to use hard mode!";
+        break;
     }
     return {
       message,
