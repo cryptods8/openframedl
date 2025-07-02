@@ -11,11 +11,7 @@ import { UserSelect } from "./user-select";
 import { useState } from "react";
 import clsx from "clsx";
 import { Button } from "@/app/ui/button/button";
-import {
-  BackspaceIcon,
-  CheckIcon,
-  XMarkIcon,
-} from "@heroicons/react/16/solid";
+import { BackspaceIcon, CheckIcon, XMarkIcon } from "@heroicons/react/16/solid";
 import { formatDurationSimple } from "@/app/game/game-utils";
 import { FarcasterUser } from "./search-users";
 import { ArenaCreateRequest } from "@/app/api/arenas/route";
@@ -25,6 +21,7 @@ import { createCast } from "@/app/lib/cast";
 import { createComposeUrl } from "@/app/utils";
 import { useJwt } from "@/app/hooks/use-jwt";
 import { IconButton } from "@/app/ui/button/icon-button";
+import { useSharing } from "@/app/hooks/use-sharing";
 
 function Label({
   children,
@@ -55,18 +52,19 @@ function InputField({
   id,
   ...props
 }: {
-  label: string;
+  label?: string;
   helperText?: string;
   id: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <Field>
-      <Label htmlFor={id}>{label}</Label>
+      {label && <Label htmlFor={id}>{label}</Label>}
       <Input
         id={id}
         className={clsx(
-          "w-full rounded-md border border-primary-200 bg-white py-3 px-4",
-          "focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-500"
+          "w-full h-10 rounded-md border border-primary-200 bg-white py-3 px-4",
+          "focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-500",
+          "disabled:bg-black/5"
         )}
         {...props}
       />
@@ -109,6 +107,10 @@ export function ArenaCreateForm() {
   const [timeLimit, setTimeLimit] = useState("");
   const [suddenDeath, setSuddenDeath] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<FarcasterUser[]>([]);
+  const [sameWordsForEveryone, setSameWordsForEveryone] = useState(true);
+  const [initWord, setInitWord] = useState("");
+  const [initWords, setInitWords] = useState<string[]>([]);
+  const [initWordsEnabled, setInitWordsEnabled] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -120,6 +122,7 @@ export function ArenaCreateForm() {
   } | null>(null);
 
   const { jwt } = useJwt();
+  const { composeCast } = useSharing();
 
   const actualAudienceSize = audienceSize ?? 2;
   const actualWordCount = wordCount ?? 5;
@@ -145,6 +148,9 @@ export function ArenaCreateForm() {
         identityProvider: "fc",
         username: u.username,
       })),
+      randomWords: !sameWordsForEveryone,
+      initWords:
+        initWordsEnabled && initWords.length > 0 ? initWords : undefined,
     };
 
     try {
@@ -180,11 +186,7 @@ export function ArenaCreateForm() {
       audience: config.audience || [],
       audienceSize: config.audienceSize || 2,
     });
-    if (jwt) {
-      createCast(window, { text, embeds: [arenaUrl] });
-    } else {
-      window.open(createComposeUrl(text, arenaUrl), "_blank");
-    }
+    await composeCast({ text, embeds: [arenaUrl] });
   };
 
   return (
@@ -237,8 +239,8 @@ export function ArenaCreateForm() {
             helperText="The number of words in the arena. Default is 5, minimum is 1, maximum is 24."
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="flex flex-row items-center gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 items-start gap-6">
+          <div className="flex flex-row items-center gap-2 w-full">
             <div className="flex-1">
               <InputField
                 label="When to start?"
@@ -290,6 +292,23 @@ export function ArenaCreateForm() {
         <div>
           <Field>
             <div className="flex flex-row items-center">
+              <Label position="left">Same words for everyone</Label>
+              <Switch
+                checked={sameWordsForEveryone}
+                onChange={setSameWordsForEveryone}
+                className="group inline-flex h-6 w-11 items-center rounded-full bg-primary-200 transition data-[checked]:bg-primary-500 disabled:opacity-50"
+              >
+                <span className="size-4 translate-x-1 rounded-full bg-white transition group-data-[checked]:translate-x-6" />
+              </Switch>
+            </div>
+            <HeadlessDescription className="text-xs text-primary-900/50 px-1 mt-1.5">
+              Each player will get the same words for the arena
+            </HeadlessDescription>
+          </Field>
+        </div>
+        <div>
+          <Field>
+            <div className="flex flex-row items-center">
               <Label position="left">Sudden death</Label>
               <Switch
                 checked={suddenDeath}
@@ -305,6 +324,71 @@ export function ArenaCreateForm() {
               arenas with 2 players.
             </HeadlessDescription>
           </Field>
+        </div>
+        <div>
+          <Field>
+            <div className="flex flex-row items-center">
+              <Label position="left">Enable custom initial words</Label>
+              <Switch
+                checked={initWordsEnabled}
+                onChange={setInitWordsEnabled}
+                className="group inline-flex h-6 w-11 items-center rounded-full bg-primary-200 transition data-[checked]:bg-primary-500 disabled:opacity-50"
+              >
+                <span className="size-4 translate-x-1 rounded-full bg-white transition group-data-[checked]:translate-x-6" />
+              </Switch>
+            </div>
+            <HeadlessDescription className="text-xs text-primary-900/50 px-1 mt-1.5">
+              You can set up to 3 custom words that will be used as forced first
+              guesses for each player and each round
+            </HeadlessDescription>
+          </Field>
+          {initWordsEnabled && (
+            <div className="mt-2 p-4 border border-primary-200 rounded-md bg-primary-200/50">
+              <InputField
+                placeholder="Enter a word..."
+                id="init-word"
+                value={initWord}
+                onChange={(e) => setInitWord(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (
+                      initWords.length < 3 &&
+                      initWord.match(/^[a-zA-Z]{5}$/)
+                    ) {
+                      setInitWords([...initWords, initWord.toLowerCase()]);
+                      setInitWord("");
+                    }
+                  }
+                }}
+                helperText="Press Enter to add a word"
+                disabled={initWords.length >= 3}
+              />
+              <div className="flex flex-row items-center gap-2 pt-2">
+                {initWords.map((word, idx) => (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      setInitWords(initWords.filter((_, i) => i !== idx))
+                    }
+                    key={`${word}-${idx}`}
+                    className="text-sm font-bold text-white flex flex-row items-center gap-2 bg-primary-500 rounded-full pl-4 pr-1 py-1"
+                  >
+                    {word.toUpperCase()}
+                    <IconButton
+                      variant="ghost"
+                      size="xs"
+                      onClick={() =>
+                        setInitWords(initWords.filter((_, i) => i !== idx))
+                      }
+                    >
+                      <XMarkIcon className="size-6 text-white/70" />
+                    </IconButton>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-row justify-end pt-4 pb-8">

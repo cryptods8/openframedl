@@ -6,8 +6,6 @@ import { gameService } from "../game/game-service";
 import { UserData, UserKey } from "../game/game-repository";
 import { ProfileApp } from "../profiles/profile-app";
 import { getUserInfoFromJwtOrSession } from "../lib/auth";
-import { externalBaseUrl, isPro } from "../constants";
-import { AppConfigProvider } from "../contexts/app-config-context";
 
 export async function generateMetadata({
   searchParams,
@@ -85,11 +83,9 @@ export default async function App({ searchParams }: NextServerPageProps) {
 
   return (
     <div className="w-full h-dvh min-h-full">
-      <AppConfigProvider config={{ externalBaseUrl, isPro }}>
-        <ProfileApp headerless>
-          <Game game={game ?? undefined} userData={userData ?? undefined} />
-        </ProfileApp>
-      </AppConfigProvider>
+      <ProfileApp headerless>
+        <Game game={game ?? undefined} userData={userData ?? undefined} />
+      </ProfileApp>
     </div>
   );
 }

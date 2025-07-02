@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Page({ searchParams }: NextServerPageProps) {
   return (
     <ProfileApp headerless>
-      <div className="w-full p-4 h-full flex-1 flex flex-col">
+      <div className="w-full max-w-2xl p-4 h-full flex-1 flex flex-col">
         <div className="sm:pt-4 sm:px-4 flex items-center gap-2 justify-between">
           <div>
             <h1 className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">

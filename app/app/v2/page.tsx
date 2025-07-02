@@ -3,7 +3,6 @@ import { Metadata } from "next";
 import { AppFrame } from "./app-frame";
 import { ProfileApp } from "@/app/profiles/profile-app";
 import { NextServerPageProps } from "frames.js/next/types";
-import { AppConfigProvider } from "@/app/contexts/app-config-context";
 // import { Test } from "./test";
 
 export async function generateMetadata({
@@ -57,15 +56,13 @@ export default function Page({ searchParams }: NextServerPageProps) {
   // }
   return (
     <div className="w-full h-dvh min-h-full">
-      <AppConfigProvider config={{ externalBaseUrl, isPro }}>
-        <ProfileApp headerless>
-          <AppFrame
-            gameType={gameType}
-            debug={debugParam === "1" ? { debugUrl: debugUrlParam } : undefined}
-            customWordId={cwParam}
-          />
-        </ProfileApp>
-      </AppConfigProvider>
+      <ProfileApp headerless>
+        <AppFrame
+          gameType={gameType}
+          debug={debugParam === "1" ? { debugUrl: debugUrlParam } : undefined}
+          customWordId={cwParam}
+        />
+      </ProfileApp>
     </div>
   );
 }

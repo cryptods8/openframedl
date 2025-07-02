@@ -83,8 +83,8 @@ export function GameOptionsMenu({
               <span>Practice</span>
             </button>
           </MenuItem>
-          {!isAppFrame && <MenuSeparator className="my-1 h-px bg-primary-200" />}
-          {!isAppFrame && (
+          {<MenuSeparator className="my-1 h-px bg-primary-200" />}
+          {(
             <MenuItem>
               <Link
                 href="/app/arena/create"
