@@ -9,7 +9,7 @@ import { getWordForUserGameKey } from "@/app/game/game-service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-export const maxDuration = 200;
+export const maxDuration = 300;
 
 async function getYesterdaysWord(ip: GameIdentityProvider) {
   const yesterday = addDaysToDate(new Date(), -1);
