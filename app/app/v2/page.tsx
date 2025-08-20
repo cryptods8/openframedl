@@ -2,18 +2,20 @@ import { externalBaseUrl, isPro } from "@/app/constants";
 import { Metadata } from "next";
 import { AppFrame } from "./app-frame";
 import { ProfileApp } from "@/app/profiles/profile-app";
-import { NextServerPageProps } from "frames.js/next/types";
 // import { Test } from "./test";
 
 export async function generateMetadata({
-  searchParams,
-}: NextServerPageProps): Promise<Metadata> {
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const searchParams = await searchParamsPromise;
   const id = searchParams?.id;
   const cw = searchParams?.cw;
 
   const imageUrl = id
     ? `${externalBaseUrl}/app/v2/frames/image?id=${id}`
-    : cw 
+    : cw
     ? `${externalBaseUrl}/app/v2/frames/image?cw=${cw}`
     : isPro
     ? `${externalBaseUrl}/init-pro.png`
@@ -43,12 +45,17 @@ export async function generateMetadata({
   };
 }
 
-export default function Page({ searchParams }: NextServerPageProps) {
+export default async function Page({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const cwParam = searchParams?.cw as string | undefined;
   const gtParam = searchParams?.gt as string | undefined;
   const debugParam = searchParams?.dbg as string | undefined;
   const debugUrlParam = searchParams?.dbgUrl as string | undefined;
-  const gameType = gtParam ? gtParam : cwParam ? 'custom' : 'daily';
+  const gameType = gtParam ? gtParam : cwParam ? "custom" : "daily";
   // if (!debugParam) {
   //   return (
   //     <Test />

@@ -161,7 +161,7 @@ export function SignIn() {
     } finally {
       setIsSigningOut(false);
     }
-  }, [signOut, clearJwt]);
+  }, [clearJwt]);
 
   const isLoading = status === "loading" || isSigningIn || isSigningOut;
   const userInfo = userInfoFromJwtOrSession(jwt, session);

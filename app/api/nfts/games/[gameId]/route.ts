@@ -5,10 +5,10 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   try {
-    const { gameId } = params
+    const { gameId } = await params;
 
     const game = await gameService.load(gameId);
     if (!game) {

@@ -11,12 +11,12 @@ import { Game as GameComponent, GameProps } from "@/app/ui/game";
 import { GameGuessGrid } from "@/app/ui/game-guess-grid";
 import { ProgressBarIcon } from "@/app/ui/icons/progress-bar-icon";
 import { composeCast, createComposeUrl } from "@/app/utils";
-import sdk, { SignIn as FrameSignIn, Context } from "@farcaster/frame-sdk";
+import sdk, { SignIn as FrameSignIn, Context } from "@farcaster/miniapp-sdk";
 import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HapticsTest } from "./haptics-test";
 
-function toUserData(user: Context.FrameContext["user"]) {
+function toUserData(user: Context.MiniAppContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
 }
 
@@ -294,7 +294,7 @@ interface ClientContext {
   userData?: UserData;
   userFid?: number;
   isReady: boolean;
-  client?: Context.FrameContext["client"];
+  client?: Context.MiniAppContext["client"];
   share: ({ title, url }: { title: string; url: string }) => Promise<void>;
   openUrl: (url: string) => Promise<void>;
   requestAddFrame: () => Promise<boolean>;
@@ -303,10 +303,10 @@ interface ClientContext {
 function useClientContext({
   onLoad,
 }: {
-  onLoad?: (ctx: Context.FrameContext) => void;
+  onLoad?: (ctx: Context.MiniAppContext) => void;
 }): ClientContext {
   const { isPro } = useAppConfig();
-  const [context, setContext] = useState<Context.FrameContext | undefined>();
+  const [context, setContext] = useState<Context.MiniAppContext | undefined>();
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const load = async () => {

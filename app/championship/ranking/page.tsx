@@ -3,7 +3,6 @@ import { basePath } from "@/app/games/frames";
 import { Container } from "@/app/ui/layout/container";
 import { currentURL } from "@/app/utils";
 import { fetchMetadata } from "frames.js/next";
-import { NextServerPageProps } from "frames.js/next/types";
 import { Metadata } from "next";
 import Link from "next/link";
 
@@ -15,8 +14,11 @@ function formatNumber(num: number): string {
 }
 
 export async function generateMetadata({
-  searchParams,
-}: NextServerPageProps): Promise<Metadata> {
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const searchParams = await searchParamsPromise;
   const { sid } = searchParams || {};
   const params = new URLSearchParams();
   if (sid) {
@@ -119,7 +121,12 @@ function Button({
   );
 }
 
-export default async function Page({ searchParams }: NextServerPageProps) {
+export default async function Page({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const { mr, suo, ruc, cod, s, uid } = searchParams || {};
   const maxResults = (mr && parseInt(mr as string, 10)) || 64;
   const runnerUpCoeficient = (ruc && parseFloat(ruc as string)) || 1;

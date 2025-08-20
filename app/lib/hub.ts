@@ -7,7 +7,7 @@ import {
 } from "frames.js";
 
 import { hubHttpUrl, hubRequestOptions } from "../constants";
-import { createVerifyAppKeyWithHub } from "@farcaster/frame-node";
+import { createVerifyAppKeyWithHub } from "@farcaster/miniapp-node";
 
 function getHubOptions(): {
   hubHttpUrl: string;

@@ -7,10 +7,11 @@ interface MintedRequest extends BaseUserRequest, Omit<MintMetadata, "timestamp">
 
 export async function POST(
   request: NextRequest,
-  { params: { gameId } }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   try {
     const body: MintedRequest = await request.json();
+    const { gameId } = await params;
 
     const game = await gameRepo.findById(gameId);
     if (!game) {

@@ -13,10 +13,10 @@ export const db = {
     let cursor: number | null = 0;
     const values: V[] = [];
     while (cursor != null) {
-      const [newCursor, keys] = await redis.scan(cursor, {
+      const [newCursor, keys] = (await redis.scan(cursor, {
         count: BATCH_SIZE,
         match: keyPattern,
-      });
+      })) as unknown as [number, string[]];
       if (newCursor === 0) {
         cursor = null;
       } else {

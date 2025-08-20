@@ -4,11 +4,13 @@ import { fetchMetadata } from "frames.js/next";
 
 import { basePath } from "../games/frames";
 import { currentURL } from "../utils";
-import { NextServerPageProps } from "frames.js/next/types";
 
 export async function generateMetadata({
-  searchParams,
-}: NextServerPageProps): Promise<Metadata> {
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const searchParams = await searchParamsPromise;
   const { ip } = searchParams || {};
   const params = new URLSearchParams();
   if (ip) {

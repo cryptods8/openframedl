@@ -607,9 +607,9 @@ function Image({
 
 export async function GET(
   req: NextRequest,
-  ctx: { params: Record<string, string | undefined> }
+  { params }: { params: Promise<{ arenaId: string }> }
 ) {
-  const { arenaId } = ctx.params;
+  const { arenaId } = await params;
   const { searchParams } = req.nextUrl;
   const userId = searchParams.get("uid") as string | undefined;
   const identityProvider = searchParams.get("ip") as

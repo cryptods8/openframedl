@@ -1,7 +1,7 @@
 "use client";
 
 import { Avatar } from "@/app/ui/avatar";
-import sdk from "@farcaster/frame-sdk";
+import sdk from "@farcaster/miniapp-sdk";
 import { useCallback } from "react";
 
 export interface LeaderboardEntry {

@@ -462,7 +462,6 @@ export function Game({
     impact,
     setIsDialogOpen,
     setValidationResult,
-    setCurrentWord,
     handleGameChange,
   ]);
 
@@ -490,7 +489,7 @@ export function Game({
         });
       }
     },
-    [setCurrentWord, isSubmitting, isGameOver, impact]
+    [setCurrentWord, isSubmitting, isGameOver]
   );
 
   useEffect(() => {

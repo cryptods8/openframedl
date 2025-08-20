@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendFrameNotifications } from "@/app/utils/send-frame-notifications";
 import { addDaysToDate, getDailyGameKey } from "@/app/game/game-utils";
 import { pgDb } from "@/app/db/pg/pg-db";
-import { FrameNotificationDetails } from "@farcaster/frame-sdk";
+import { MiniAppNotificationDetails } from "@farcaster/miniapp-sdk";
 import { isPro } from "@/app/constants";
 import { GameIdentityProvider } from "@/app/game/game-repository";
 import { getWordForUserGameKey } from "@/app/game/game-service";
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
             });
           }
           return acc;
-        }, [] as { fid: number; notificationDetails: FrameNotificationDetails }[]);
+        }, [] as { fid: number; notificationDetails: MiniAppNotificationDetails }[]);
       const notificationResult = await sendFrameNotifications({
         recipients,
         title,

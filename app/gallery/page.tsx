@@ -1,4 +1,3 @@
-import { NextServerPageProps } from "frames.js/next/types";
 import {
   CustomGameMaker,
   PublicGuessedGame,
@@ -13,7 +12,11 @@ import { IconButton, IconButtonProps } from "../ui/button/icon-button";
 import { toUrlSearchParams } from "../utils";
 import { ProfileApp } from "../profiles/profile-app";
 
-function buildFilter({ searchParams }: NextServerPageProps): GameFilter | null {
+function buildFilter({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}): GameFilter | null {
   const gameKey = searchParams?.gk as string | undefined;
   const userId = searchParams?.uid as string | undefined;
   const identityProvider = searchParams?.ip as GameIdentityProvider | undefined;
@@ -78,8 +81,13 @@ function ArrowButton({ dir = "right", ...props }: ArrowButtonProps) {
   );
 }
 
-export default async function GalleryPage(props: NextServerPageProps) {
-  const filter = buildFilter(props);
+export default async function GalleryPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await searchParamsPromise;
+  const filter = buildFilter({ searchParams });
 
   let games: PublicGuessedGame[] = [];
   let subtitle: React.ReactNode | undefined;
@@ -104,16 +112,16 @@ export default async function GalleryPage(props: NextServerPageProps) {
     } else if (gameKey) {
       if (filter.type === "DAILY") {
         const params = new URLSearchParams();
-        for (const key in props.searchParams) {
-          params.set(key, props.searchParams[key] as string);
+        for (const key in searchParams) {
+          params.set(key, searchParams[key] as string);
         }
         const date = new Date(gameKey);
         const prevParams = toUrlSearchParams({
-          ...props.searchParams,
+          ...searchParams,
           gk: getDailyGameKey(addDaysToDate(date, -1)),
         });
         const nextParams = toUrlSearchParams({
-          ...props.searchParams,
+          ...searchParams,
           gk: getDailyGameKey(addDaysToDate(date, 1)),
         });
         subtitle = (

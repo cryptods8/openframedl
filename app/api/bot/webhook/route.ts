@@ -33,7 +33,7 @@ type CastEvent = {
   data: CastEventData;
 };
 
-export async function POST(req: NextRequest, res: NextResponse) {
+export async function POST(req: NextRequest) {
   const body = await req.text();
 
   const webhookSecret = process.env.NEYNAR_BOT_WEBHOOK_SECRET;
@@ -109,13 +109,11 @@ export async function POST(req: NextRequest, res: NextResponse) {
   }
 
   const greeting = username ? `Hey, @${username} 👋! ` : "Hey 👋!";
-  const reply = await neynarClient.publishCast(
-    process.env.NEYNAR_SIGNER_UUID,
-    `${greeting} Your Framedl PRO reminders have been set up :)`,
-    {
-      replyTo: castHash,
-    }
-  );
+  const reply = await neynarClient.publishCast({
+    signerUuid: process.env.NEYNAR_SIGNER_UUID,
+    text: `${greeting} Your Framedl PRO reminders have been set up :)`,
+    parent: castHash,
+  });
   console.log("reply:", reply);
 
   return NextResponse.json({

@@ -399,9 +399,9 @@ function ArenaImage({
 
 export async function GET(
   req: NextRequest,
-  ctx: { params: Record<string, string | undefined> }
+  { params }: { params: Promise<{ arenaId: string }> }
 ) {
-  const { arenaId } = ctx.params;
+  const { arenaId } = await params;
   const message = req.nextUrl.searchParams.get("msg") as string | undefined;
   const userId = req.nextUrl.searchParams.get("uid") as string | undefined;
   const identityProvider = req.nextUrl.searchParams.get("ip") as

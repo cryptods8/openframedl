@@ -24,18 +24,16 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = `${externalBaseUrl}/app/v2`;
-    const cast = await neynarClient.publishCast(
-      process.env.NEYNAR_SIGNER_UUID,
-      `New day, new Framedl is out there\n\nLFG! 🟩🟨⬜\n\n${url}`,
-      {
-        channelId: "framedl",
-        embeds: [
-          {
-            url,
-          },
-        ],
-      }
-    );
+    const cast = await neynarClient.publishCast({
+      signerUuid: process.env.NEYNAR_SIGNER_UUID!,
+      text: `New day, new Framedl is out there\n\nLFG! 🟩🟨⬜\n\n${url}`,
+      channelId: "framedl",
+      embeds: [
+        {
+          url,
+        },
+      ],
+    });
     console.log("daily cast:", cast);
 
     return NextResponse.json({ ok: true, message: cast }, { status: 200 });

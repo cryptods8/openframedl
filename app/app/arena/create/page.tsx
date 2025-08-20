@@ -1,4 +1,3 @@
-import { NextServerPageProps } from "frames.js/next/types";
 import { Metadata } from "next";
 import { ArenaCreateForm } from "./arena-create-form";
 import { SignIn } from "@/app/ui/auth/sign-in";
@@ -12,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function Page({ searchParams }: NextServerPageProps) {
+export default async function Page() {
   return (
     <ProfileApp headerless>
       <div className="w-full max-w-2xl p-4 h-full flex-1 flex flex-col">

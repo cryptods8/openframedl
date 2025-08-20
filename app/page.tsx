@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { NextServerPageProps } from "frames.js/next/types";
 import { fetchMetadata } from "frames.js/next";
 
 import GameResult from "./ui/game-result";
@@ -14,16 +13,19 @@ import { Footer } from "./ui/layout/footer";
 
 export async function generateMetadata({
   searchParams,
-}: NextServerPageProps): Promise<Metadata> {
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const { id, cw, app } = await searchParams;
   const queryParams = new URLSearchParams();
-  if (searchParams?.id) {
-    queryParams.set("id", searchParams.id as string);
+  if (id) {
+    queryParams.set("id", id as string);
   }
-  if (searchParams?.cw) {
-    queryParams.set("cw", searchParams.cw as string);
+  if (cw) {
+    queryParams.set("cw", cw as string);
   }
-  if (searchParams?.app) {
-    queryParams.set("app", searchParams.app as string);
+  if (app) {
+    queryParams.set("app", app as string);
   }
 
   const framesUrl = currentURL(`${basePath}?${queryParams.toString()}`);
@@ -35,7 +37,12 @@ export async function generateMetadata({
   };
 }
 
-export default async function Home({ searchParams }: NextServerPageProps) {
+export default async function Home({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const gameIdParam = searchParams?.id as string;
   const gameById = gameIdParam
     ? await gameService.loadPublic(

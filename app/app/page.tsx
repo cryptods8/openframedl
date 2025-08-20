@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { NextServerPageProps } from "frames.js/next/types";
 
 import { Game } from "../ui/game";
 import { gameService } from "../game/game-service";
@@ -7,9 +6,7 @@ import { UserData, UserKey } from "../game/game-repository";
 import { ProfileApp } from "../profiles/profile-app";
 import { getUserInfoFromJwtOrSession } from "../lib/auth";
 
-export async function generateMetadata({
-  searchParams,
-}: NextServerPageProps): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   // fetch just slows things down
   // const queryParams = new URLSearchParams();
   // if (searchParams?.id) {
@@ -64,7 +61,12 @@ async function loadGame({
   return null;
 }
 
-export default async function App({ searchParams }: NextServerPageProps) {
+export default async function App({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const gameIdParam = searchParams?.id as string | undefined;
   const gtParam = searchParams?.gt as string | undefined;
   const jwt = searchParams?.jwt as string | undefined;

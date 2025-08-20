@@ -1,4 +1,4 @@
-import { ParseWebhookEvent, parseWebhookEvent } from "@farcaster/frame-node";
+import { ParseWebhookEvent, parseWebhookEvent } from "@farcaster/miniapp-node";
 import { NextRequest } from "next/server";
 import { sendFrameNotifications } from "@/app/utils/send-frame-notifications";
 import { UserKey } from "@/app/game/game-repository";

@@ -1,5 +1,5 @@
-import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
-import { getDataSuffix, submitReferral } from "@divvi/referral-sdk";
+import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
+import { getReferralTag, submitReferral } from "@divvi/referral-sdk";
 import React from "react";
 import {
   useAccount,
@@ -236,7 +236,7 @@ export function MintButton({
     if (!erc20Token?.decimals)
       return parseEther(erc20Token?.price || MINT_PRICE);
     return parseUnits(erc20Token.price, erc20Token.decimals);
-  }, [erc20Token?.decimals]);
+  }, [erc20Token?.decimals, erc20Token?.price]);
 
   // Check if approval is needed
   const needsApproval = React.useMemo(() => {
@@ -288,7 +288,7 @@ export function MintButton({
       successHandled.current = false;
 
       if (!isConnected || !address) {
-        connect({ connector: farcasterFrame() });
+        connect({ connector: farcasterMiniApp() });
         return;
       }
 
@@ -297,9 +297,9 @@ export function MintButton({
         return;
       }
 
-      const dataSuffix = getDataSuffix({
+      const dataSuffix = getReferralTag({
+        user: address as `0x${string}`,
         consumer: "0x000Cbf0BEC88214AAB15bC1Fa40d3c30b3CA97a9",
-        providers: ["0xc95876688026be9d6fa7a7c33328bd013effa2bb"],
       });
 
       if (erc20Token?.address && needsApproval) {

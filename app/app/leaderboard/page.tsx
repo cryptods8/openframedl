@@ -1,6 +1,5 @@
 import { getDailyGameKey } from "@/app/game/game-utils";
 import { gameService } from "@/app/game/game-service";
-import { NextServerPageProps } from "frames.js/next/types";
 import { LeaderboardDataItem } from "@/app/game/game-pg-repository";
 import { Button } from "@/app/ui/button/button";
 import { GameIdentityProvider } from "@/app/game/game-repository";
@@ -230,8 +229,9 @@ async function getScoreLeaderboardEntries({
 }
 
 export default async function LeaderboardPage({
-  searchParams,
-}: NextServerPageProps) {
+  searchParams: searchParamsPromise,
+}: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = await searchParamsPromise;
   const typeParam = searchParams?.type as LeaderboardType | undefined;
   const userIdParam = searchParams?.uid as string | undefined;
   const dateParam = searchParams?.date as string | undefined;

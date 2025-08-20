@@ -785,7 +785,7 @@ export function PassOwnershipCheckFailedImage({
         }}
       >
         <div tw="flex">
-          <img src={`${baseUrl}/pro-full.png`} width="480" height="480" />
+          <img src={`${baseUrl}/pro-full.png`} width="480" height="480" alt="Framedl PRO Pass" />
         </div>
       </div>
       <div

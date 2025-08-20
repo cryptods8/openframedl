@@ -1,5 +1,3 @@
-import { NextServerPageProps } from "frames.js/next/types";
-
 import { gameService } from "@/app/game/game-service";
 import { GameIdentityProvider } from "@/app/game/game-repository";
 import { ProfileHeader } from "./profile-header";
@@ -15,21 +13,28 @@ import { EmptyMessage } from "../../empty-message";
 import ProfileGameStats from "../../profile-game-stats";
 import { getFarcasterSession } from "@/app/lib/auth";
 
-export default async function ProfilePage(props: NextServerPageProps) {
-  const { params, searchParams } = props;
+export default async function ProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ ip: string; uid: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { ip, uid } = await params;
+  const { tab, gt } = await searchParams;
 
   const session = await getFarcasterSession();
 
   const userKey = {
-    identityProvider: params.ip as GameIdentityProvider,
-    userId: params.uid as string,
+    identityProvider: ip as GameIdentityProvider,
+    userId: uid as string,
   };
   const isCurrentUser =
     userKey.identityProvider === "fc" && userKey.userId === session?.user?.fid;
   const gameFilter = {
     ...userKey,
     completedOnly: true,
-    type: searchParams?.gt as GameType | undefined,
+    type: gt as GameType | undefined,
   };
   const userData = await gameService.loadUserData(userKey);
 
@@ -48,17 +53,15 @@ export default async function ProfilePage(props: NextServerPageProps) {
             <ProfileNav isCurrentUser={isCurrentUser} />
           </div>
           <Container>
-            {searchParams?.tab === "stats" && (
-              <ProfileGameStats userKey={userKey} />
-            )}
-            {!searchParams?.tab && (
+            {tab === "stats" && <ProfileGameStats userKey={userKey} />}
+            {!tab && (
               <ProfileGallery
                 isCurrentUser={isCurrentUser}
                 filter={gameFilter}
                 userData={userData}
               />
             )}
-            {searchParams?.tab === "words" ? (
+            {tab === "words" ? (
               isCurrentUser ? (
                 <CustomGames userKey={userKey} />
               ) : (

@@ -48,15 +48,14 @@ function RepeatText({ text, count, filler }: { text: string; count: number; fill
 
 export async function GET(
   request: Request,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
+  const { gameId } = await params;
   const isPreview = new URL(request.url).searchParams.get("preview") === "true";
   const startTime = Date.now();
-  console.log(`[NFT Image] Starting generation for gameId: ${params.gameId}`);
+  console.log(`[NFT Image] Starting generation for gameId: ${gameId}`);
   
   try {
-    const { gameId } = params;
-
     // console.log(`[NFT Image] Loading game data - ${Date.now() - startTime}ms`);
     const gameLoadStart = Date.now();
     const game = await gameService.load(gameId);

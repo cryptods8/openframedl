@@ -1,7 +1,7 @@
 import {
   SendNotificationRequest,
   sendNotificationResponseSchema,
-} from "@farcaster/frame-sdk";
+} from "@farcaster/miniapp-sdk";
 import { externalBaseUrl } from "../constants";
 
 type SendFrameNotificationResult =

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendFrameNotifications } from "@/app/utils/send-frame-notifications";
 import { pgDb } from "@/app/db/pg/pg-db";
-import { FrameNotificationDetails } from "@farcaster/frame-sdk";
+import { MiniAppNotificationDetails } from "@farcaster/miniapp-sdk";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
             });
           }
           return acc;
-        }, [] as { fid: number; notificationDetails: FrameNotificationDetails }[]);
+        }, [] as { fid: number; notificationDetails: MiniAppNotificationDetails }[]);
       const notificationResult = await sendFrameNotifications({
         recipients,
         title,
