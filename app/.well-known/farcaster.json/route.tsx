@@ -72,6 +72,9 @@ export async function GET() {
       homeUrl: `${externalBaseUrl}/app/v2`,
       webhookUrl: `${externalBaseUrl}/api/frames/v2/webhook`,
     },
+    baseBuilder: {
+      allowedAddresses: ["0xD322Cb0aD9e29Bb121Aa3DB089A2C7def441F168"],
+    },
   };
   return NextResponse.json(manifest);
 }
