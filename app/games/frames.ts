@@ -1,6 +1,6 @@
-import { CoreMiddleware, openframes } from "frames.js/middleware";
+import { CoreMiddleware } from "frames.js/middleware";
 import { createFrames as coreCreateFrames } from "frames.js/core";
-import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
+// import { getXmtpFrameMessage, isXmtpFrameActionPayload } from "frames.js/xmtp";
 import { baseUrl, externalBaseUrl } from "../constants";
 import {
   CreateFramesFunctionDefinition,
@@ -117,10 +117,10 @@ const validationMiddleware: FramesMiddleware<
   let payload;
   try {
     payload = await request.clone().json();
-    if (isXmtpFrameActionPayload(payload)) {
-      // console.log("TODO");
-      return next();
-    }
+    // if (isXmtpFrameActionPayload(payload)) {
+    //   // console.log("TODO");
+    //   return next();
+    // }
   } catch (e) {
     return next();
   }
@@ -204,23 +204,23 @@ export const createCustomFrames = <T extends JsonValue>(
       maintenanceMiddleware,
       urlBuilderMiddleware,
       validationMiddleware,
-      openframes({
-        clientProtocol: {
-          id: "xmtp",
-          version: "2024-02-09",
-        },
-        handler: {
-          isValidPayload: (body: JsonValue) => isXmtpFrameActionPayload(body),
-          getFrameMessage: async (body: JsonValue) => {
-            if (!isXmtpFrameActionPayload(body)) {
-              return undefined;
-            }
-            const result = await getXmtpFrameMessage(body);
+      // openframes({
+      //   clientProtocol: {
+      //     id: "xmtp",
+      //     version: "2024-02-09",
+      //   },
+      //   handler: {
+      //     isValidPayload: (body: JsonValue) => isXmtpFrameActionPayload(body),
+      //     getFrameMessage: async (body: JsonValue) => {
+      //       if (!isXmtpFrameActionPayload(body)) {
+      //         return undefined;
+      //       }
+      //       const result = await getXmtpFrameMessage(body);
 
-            return { ...result };
-          },
-        },
-      }),
+      //       return { ...result };
+      //     },
+      //   },
+      // }),
       userKeyMiddleware,
     ],
   });
