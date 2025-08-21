@@ -49,9 +49,7 @@ async function loadOrCreateGame(
       ) {
         return userData;
       }
-      const d = await loadUserData(userGameKey);
-      console.log("userData", userGameKey, d);
-      return d;
+      return await loadUserData(userGameKey);
     },
   });
   if (userGameKey.isDaily) {

@@ -1,10 +1,15 @@
 import { NextRequest } from "next/server";
-import { baseUrl } from "../constants";
 import { verifySignedUrl } from "../signer";
 import { getUserInfoFromJwtOrSession } from "../lib/auth";
 import { UserData } from "../game/game-repository";
+import { isProduction } from "../constants";
 
 export function getRequestUrl(req: NextRequest, allowedQueryParams: string[]) {
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const protocol =
+    req.headers.get("x-forwarded-proto") || (isProduction ? "https" : "http");
+  const baseUrl = `${protocol}://${host}`;
+
   const url = new URL(req.url);
   // remove extra query params
   const urlParams = url.searchParams;
@@ -30,7 +35,10 @@ export interface BaseUserRequest {
   userData?: UserData;
 }
 
-export async function getUserInfoFromRequest(req: Request, body: BaseUserRequest) {
+export async function getUserInfoFromRequest(
+  req: Request,
+  body: BaseUserRequest
+) {
   if (
     (body.identityProvider === "fc_unauth" ||
       body.identityProvider === "anon") &&

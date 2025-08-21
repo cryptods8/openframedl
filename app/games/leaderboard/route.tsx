@@ -6,6 +6,9 @@ import { frames } from "../frames";
 import { getUserKeyFromContext } from "../message-utils";
 import { toLeaderboardSearchParams } from "../../leaderboard/leaderboard-utils";
 import { getDailyGameKey } from "../../game/game-utils";
+import { isPro } from "@/app/constants";
+import { gameService } from "@/app/game/game-service";
+import { GameIdentityProvider } from "@/app/game/game-repository";
 
 const urlWithParams = (url: string, params: URLSearchParams) => {
   const queryString = params.toString();
@@ -16,6 +19,22 @@ const constructImageUrl = (url: string, searchParams: URLSearchParams) => {
   const imageUrl = urlWithParams(url, searchParams);
   return signUrl(imageUrl);
 };
+
+function getTotalRungValue(i: number, peopleCount: number): number {
+  if (peopleCount <= 0 || i >= 3) {
+    return 0;
+  }
+  if (i === 0) {
+    return 4 + getTotalRungValue(i + 1, peopleCount - 1);
+  }
+  if (i === 1) {
+    return 2 + getTotalRungValue(i + 1, peopleCount - 1);
+  }
+  if (i === 2) {
+    return 1 + getTotalRungValue(i + 1, peopleCount - 1);
+  }
+  return 0;
+}
 
 const handleRequest = frames(async (ctx) => {
   const { searchParams, validationResult, message } = ctx;
@@ -65,7 +84,58 @@ const handleRequest = frames(async (ctx) => {
     ctx.createExternalUrl("/leaderboard"),
     leaderboardSearchParams
   );
-  const shareUrl = createComposeUrl("Framedl Leaderboard", leaderboardUrl);
+
+  let shareText = "Framedl Leaderboard";
+  if (searchParams.type !== "TOP_N" && searchParams.prize) {
+    const date = leaderboardSearchParams.get("date") ?? getDailyGameKey(new Date());
+    const days = searchParams.days ? parseInt(searchParams.days, 10) : undefined;
+    const prize = parseInt(searchParams.prize, 10);
+    const ipParam = (searchParams.ip ?? "fc") as GameIdentityProvider;
+    const leaderboard = await gameService.loadLeaderboard(ipParam, {
+      date,
+      days,
+      type: "DATE_RANGE",
+    });
+
+    const res: { score: number; people: string[] }[] = [];
+    let count = 0;
+    for (let i = 0; i < leaderboard.entries.length; i++) {
+      const entry = leaderboard.entries[i]!;
+      const prev = res[res.length - 1];
+      const person = entry.userData?.username ? `@${entry.userData.username}` : `@!${entry.userId}`;
+      if (!prev || prev.score !== entry.totalGuessCount) {
+        if (count >= 3) {
+          break;
+        }
+        res.push({ score: entry.totalGuessCount, people: [person] });
+      } else {
+        prev.people.push(person);
+      }
+      count++;
+    }
+
+    let pos = 1;
+    let peopleText = "";
+    let basePrize = prize / 7;
+    let remainingPrize = prize;
+    for (let i = 0; i < res.length; i++) {
+      const entry = res[i]!;
+      const peopleCount = entry.people.length;
+      const totalRungValue = getTotalRungValue(pos - 1, peopleCount)
+      const allocatedPrize = totalRungValue * basePrize;
+      const personPrize = Math.ceil(allocatedPrize / peopleCount);
+      for (let j = 0; j < peopleCount; j++) {
+        const person = entry.people[j]!;
+        peopleText += `${pos}) ${person} (${personPrize})\n`;
+      }
+      remainingPrize -= allocatedPrize;
+      pos += peopleCount;
+    }
+
+    shareText = `framedl${isPro ? " pro" : ""} results ${date}\n\n${peopleText}`;
+    console.log('SHARE TEXT', shareText);
+  }
+  const shareUrl = createComposeUrl(shareText, imageUrl);
 
   return {
     image: imageUrl,

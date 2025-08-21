@@ -18,6 +18,9 @@ export async function generateMetadata({
     queryParams.set("uid", searchParams.fid as string);
     queryParams.set("ip", "fc");
   }
+  if (searchParams?.prize) {
+    queryParams.set("prize", searchParams.prize as string);
+  }
 
   const leaderboardUrl = currentURL(
     `${basePath}/leaderboard?${queryParams.toString()}`
