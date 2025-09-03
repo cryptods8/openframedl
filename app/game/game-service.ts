@@ -28,6 +28,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { addDaysToDate, getDailyGameKey } from "./game-utils";
 import { DEFAULT_LEADERBOARD_DAYS } from "./game-constants";
+import { PublicArena } from "../games/arena/arena-utils";
 
 const startingDate = new Date("2024-02-03");
 
@@ -144,6 +145,11 @@ export interface GuessedGame extends Omit<DBGame, "guesses"> {
   arena?: DBArena;
 }
 
+export interface ClientGame extends Omit<GuessedGame, "arena"> {
+  arena?: PublicArena;
+  metadata?: GameMetadata;
+}
+
 export interface PublicGuessedGame {
   id: string;
   userId: string;
@@ -242,6 +248,8 @@ export interface PersonalLeaderboard extends Leaderboard {
 
 export interface GameMetadata {
   replacedScore?: number | null;
+  hasNext?: boolean;
+  finished?: boolean;
 }
 
 const GUESS_PATTERN = /^[A-Za-z]{5}$/;
@@ -453,7 +461,22 @@ export class GameServiceImpl implements GameService {
         : undefined;
     }
     return {
-      ...game,
+      id: game.id,
+      userId: game.userId,
+      identityProvider: game.identityProvider,
+      gameKey: game.gameKey,
+      isDaily: game.isDaily,
+      createdAt: game.createdAt,
+      updatedAt: game.updatedAt,
+      completedAt: game.completedAt,
+      guessCount: game.guessCount,
+      isHardModeRequired: game.isHardModeRequired,
+      userData: game.userData,
+      gameData: game.gameData,
+      srcGameId: game.srcGameId,
+      arenaId: game.arenaId,
+      arenaWordIndex: game.arenaWordIndex,
+      //
       originalGuesses: game.guesses,
       guesses,
       allGuessedCharacters,
@@ -768,7 +791,7 @@ export class GameServiceImpl implements GameService {
       gameData: game.gameData ? game.gameData : null,
       srcGameId: game.srcGameId || null,
       arenaId: game.arenaId || null,
-      arenaWordIndex: game.arenaWordIndex || null,
+      arenaWordIndex: game.arenaWordIndex ?? null,
       arenaConfig: arena?.config || null,
       arenaMembers: arena?.members || null,
       arenaCreatedAt: arena?.createdAt || null,

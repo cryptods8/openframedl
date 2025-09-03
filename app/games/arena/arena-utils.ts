@@ -3,11 +3,33 @@ import {
   sendDirectCastWithRetries,
 } from "@/app/api/bot/reminders/send-direct-cast";
 import { externalBaseUrl, isPro } from "@/app/constants";
-import { ArenaAudienceMember, DBArena } from "@/app/db/pg/types";
+import {
+  ArenaAudienceMember,
+  ArenaConfig,
+  ArenaMember,
+  DBArena,
+  GameStatus,
+} from "@/app/db/pg/types";
 import { ArenaWithGames } from "@/app/game/arena-pg-repository";
-import { UserKey } from "@/app/game/game-repository";
+import {
+  GameIdentityProvider,
+  UserData,
+  UserGameKey,
+  UserKey,
+} from "@/app/game/game-repository";
 
-export function getArenaGamesForUser(arena: ArenaWithGames, userKey: UserKey) {
+export function getArenaGamesForUser<
+  T extends {
+    userId: string;
+    identityProvider: GameIdentityProvider;
+    arenaWordIndex: number | null;
+  }
+>(
+  arena: {
+    games: T[];
+  },
+  userKey: UserKey
+): T[] {
   const allUserGames = arena.games.filter(
     (g) =>
       g.userId === userKey.userId &&
@@ -37,7 +59,13 @@ interface ArenaMembership {
 }
 
 export function checkMembership(
-  arena: DBArena,
+  arena: {
+    members: ArenaMember[];
+    config: {
+      audience: ArenaAudienceMember[];
+      audienceSize: number;
+    };
+  },
   user: UserKey
 ): ArenaMembership {
   const member = arena.members.find(
@@ -72,7 +100,13 @@ export function checkMembership(
   return { success: false };
 }
 
-export function determineAwaitingAudience(arena: DBArena) {
+export function determineAwaitingAudience(arena: {
+  members: ArenaMember[];
+  config: {
+    audience: ArenaAudienceMember[];
+    audienceSize: number;
+  };
+}) {
   return arena.members.reduce(
     (acc, m) => {
       const membership = checkMembership(arena, m);
@@ -101,7 +135,7 @@ interface SuddenDeathCheckResult {
   wordIndex?: number;
 }
 
-type ArenaAvailabilityProperties = {
+export type ArenaAvailabilityProperties = {
   start?: Date;
   end?: Date;
   status: ArenaAvailabilityStatus;
@@ -111,15 +145,26 @@ type ArenaAvailabilityProperties = {
   suddenDeathStatus?: SuddenDeathCheckResult;
 };
 
-export function checkSuddenDeath(arena: ArenaWithGames) {
+export function checkSuddenDeath(arena: {
+  config: DualArenaConfig;
+  games: {
+    completedAt: Date | string | null;
+    guessCount: number;
+    arenaWordIndex: number | null;
+  }[];
+}) {
   const {
-    config: { suddenDeath, audienceSize, words },
+    config: { suddenDeath, audienceSize },
     games,
   } = arena;
   if (!suddenDeath || audienceSize !== 2) {
     return null;
   }
-  for (let i = 0; i < words.length; i++) {
+  const wordCount =
+    "wordCount" in arena.config
+      ? arena.config.wordCount
+      : arena.config.words.length;
+  for (let i = 0; i < wordCount; i++) {
     const gamesByWordIndex = games.filter((g) => g.arenaWordIndex === i);
     if (gamesByWordIndex.length !== 2) {
       return { isOver: false };
@@ -136,20 +181,42 @@ export function checkSuddenDeath(arena: ArenaWithGames) {
   return { isOver: false };
 }
 
+type DualArenaConfig =
+  | ArenaConfig
+  | (Omit<ArenaConfig, "words"> & { wordCount: number });
+
 export function getArenaAvailabilityProperties(
-  arena: ArenaWithGames,
+  arena: {
+    startedAt: Date | string | null;
+    config: DualArenaConfig;
+    members: ArenaMember[];
+    games: {
+      userId: string;
+      identityProvider: GameIdentityProvider;
+      completedAt: Date | string | null;
+      guessCount: number;
+      arenaWordIndex: number | null;
+    }[];
+  },
   member?: UserKey
 ): ArenaAvailabilityProperties {
   const now = new Date();
   const {
     startedAt,
-    config: { start, duration, words, audienceSize },
+    config: { start, duration, audienceSize },
     games,
   } = arena;
 
-  const arenaStart =
-    startedAt ||
-    (start.type === "immediate" ? undefined : new Date(start.date));
+  const wordCount =
+    "wordCount" in arena.config
+      ? arena.config.wordCount
+      : arena.config.words.length;
+
+  const arenaStart = startedAt
+    ? new Date(startedAt)
+    : start.type === "immediate"
+    ? undefined
+    : new Date(start.date);
   const arenaEnd =
     arenaStart && duration.type === "interval"
       ? new Date(arenaStart.getTime() + duration.minutes * 60 * 1000)
@@ -171,7 +238,7 @@ export function getArenaAvailabilityProperties(
     if (memberGames.length === 0) {
       memberCompletionStatus = "NOT_STARTED";
     } else if (
-      (memberGames.length === words.length &&
+      (memberGames.length === wordCount &&
         memberGames[memberGames.length - 1]?.completedAt != null) ||
       suddenDeathStatus?.isOver
     ) {
@@ -186,7 +253,7 @@ export function getArenaAvailabilityProperties(
       ? "NOT_STARTED"
       : suddenDeathStatus?.isOver ||
         games.filter((g) => g.completedAt != null).length ===
-          words.length * audienceSize
+          wordCount * audienceSize
       ? "COMPLETED"
       : "IN_PROGRESS";
 
@@ -198,6 +265,70 @@ export function getArenaAvailabilityProperties(
     memberCompletionStatus,
     membership,
     suddenDeathStatus: suddenDeathStatus ?? undefined,
+  };
+}
+
+export interface PublicArena {
+  id: number;
+  config: Omit<ArenaConfig, "words"> & { wordCount: number };
+  startedAt: Date | string | null;
+  userData: UserData | null;
+  members: ArenaMember[];
+}
+
+export interface PublicArenaWithGames extends PublicArena {
+  games: (UserGameKey & {
+    id: string;
+    userData: UserData | null;
+    guessCount: number;
+    status: GameStatus;
+    isDaily: boolean;
+    arenaWordIndex: number | null;
+    isHardMode: boolean;
+    completedAt: Date | string | null;
+  })[];
+}
+
+export function toPublicArena(arena: DBArena): PublicArena | undefined {
+  if (!arena) {
+    return undefined;
+  }
+  const { config: arenaConfig, startedAt, userData } = arena;
+  const { words, ...config } = arenaConfig;
+  return {
+    id: arena.id,
+    config: {
+      ...config,
+      wordCount: words.length,
+    },
+    startedAt: startedAt,
+    userData: userData ?? null,
+    members: arena.members,
+  };
+}
+
+export function toPublicArenaWithGames(
+  arena: ArenaWithGames | undefined
+): PublicArenaWithGames | undefined {
+  if (!arena) {
+    return undefined;
+  }
+  const { games } = arena;
+  return {
+    ...toPublicArena(arena)!,
+    games: games.map((game) => ({
+      id: game.id,
+      userId: game.userId,
+      identityProvider: game.identityProvider,
+      gameKey: game.gameKey,
+      isDaily: game.isDaily,
+      userData: game.userData,
+      guessCount: game.guesses.length,
+      status: game.status,
+      arenaWordIndex: game.arenaWordIndex,
+      isHardMode: game.isHardMode,
+      completedAt: game.completedAt,
+    })),
   };
 }
 
@@ -223,7 +354,7 @@ export async function notifyArenaMembers(arena: ArenaWithGames) {
     return acc;
   }, [] as number[]);
   fids.forEach((fid) => {
-    const arenaUrl = `${externalBaseUrl}/games/arena/${arena.id}/join`;
+    const arenaUrl = `${externalBaseUrl}/app/arena/${arena.id}/join`;
     let introMsg;
     if (status === "PENDING") {
       introMsg = `Framedl Arena was created. Join now!`;

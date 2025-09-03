@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   };
   const id = await insertArena(arena);
 
-  const arenaUrl = `${externalBaseUrl}/games/arena/${id}/join`;
+  const arenaUrl = `${externalBaseUrl}/app/arena/${id}/join`;
 
   return NextResponse.json(
     { id, arenaUrl },

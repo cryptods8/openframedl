@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppConfig } from "../contexts/app-config-context";
-import { GuessedGame } from "../game/game-service";
+import { ClientGame } from "../game/game-service";
 import { addDaysToDate, formatDurationSimple } from "../game/game-utils";
 import { useJwt } from "../hooks/use-jwt";
 import { Button } from "./button/button";
@@ -13,6 +13,7 @@ import { toast } from "./toasts/toast";
 import { BaseUserRequest } from "../api/api-utils";
 import { GameMintDialogContent } from "./game/game-mint-dialogue-content";
 import { CorrectWordDisplay } from "./correct-word-display";
+import { useRouter } from "next/navigation";
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAME_NFT_CA;
 
@@ -30,12 +31,12 @@ function NextGameMessage() {
   );
 }
 
-function isPracticeGame(game: GuessedGame) {
+function isPracticeGame(game: ClientGame) {
   return !game.isDaily && !game.isCustom && !game.arena;
 }
 
 function getGameHref(
-  game: GuessedGame,
+  game: ClientGame,
   options: {
     config: { externalBaseUrl: string };
     jwt?: string;
@@ -55,11 +56,11 @@ function getGameHref(
 interface GameCompletedDialogProps {
   isOpen: boolean;
   isAppFrame?: boolean;
-  game?: GuessedGame;
+  game?: ClientGame;
   anonUserInfo: BaseUserRequest;
   onClose: () => void;
-  onShare: (e: React.MouseEvent) => void;
-  onNewGame: (gameType: "practice") => void;
+  onShare: (e: React.MouseEvent | KeyboardEvent) => void;
+  onNewGame: (gameType: "practice" | "arena") => Promise<void>;
 }
 
 export function GameCompletedDialog({
@@ -73,20 +74,68 @@ export function GameCompletedDialog({
 }: GameCompletedDialogProps) {
   const { jwt } = useJwt();
   const config = useAppConfig();
+  const router = useRouter();
   const [showMintOverlay, setShowMintOverlay] = useState(false);
   const [skippedGames, setSkippedGames] = useLocalStorage<
     Record<string, boolean>
   >("skippedGames", {});
-
+  const [isNewGameLoading, setIsNewGameLoading] = useState(false);
   const isMinted = (game?.gameData?.mints?.length ?? 0) > 0;
   const isSkipped = skippedGames[game?.id ?? ""] ?? false;
   const canMint = !!CONTRACT_ADDRESS;
+  const isArena = !!game?.arena;
+  const hasNextArenaGame =
+    game?.metadata?.hasNext ??
+    (isArena &&
+      (game?.arena?.config.wordCount ?? 0) > (game?.arenaWordIndex ?? 0) + 1);
 
   useEffect(() => {
-    if (isOpen && canMint && !isMinted && !isSkipped) {
+    if (isOpen && canMint && !isMinted && !isSkipped && !isArena) {
       setShowMintOverlay(true);
     }
-  }, [isOpen, canMint, isMinted, isSkipped]);
+  }, [isOpen, canMint, isMinted, isSkipped, isArena]);
+
+  const handleNewGame = useCallback(
+    async (gameType: "practice" | "arena") => {
+      setIsNewGameLoading(true);
+      try {
+        await onNewGame(gameType);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsNewGameLoading(false);
+      }
+    },
+    [onNewGame]
+  );
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (!isOpen || showMintOverlay) return;
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (isArena) {
+          if (hasNextArenaGame) {
+            handleNewGame("arena");
+          } else {
+            router.push(`/app/arena/${game.arena!.id}/results`);
+          }
+        } else {
+          onShare(event);
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyPress);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [isOpen, showMintOverlay, isArena, hasNextArenaGame, handleNewGame, onShare]);
 
   const handleMint = () => {
     if (game) {
@@ -126,10 +175,8 @@ export function GameCompletedDialog({
             {game?.status === "WON" ? (
               <span>
                 You found the word{" "}
-                {game?.word && (
-                  <CorrectWordDisplay word={game.word} />
-                )}
-                {" "}in {game.guesses.length}
+                {game?.word && <CorrectWordDisplay word={game.word} />} in{" "}
+                {game.guesses.length}
                 {game.isHardMode ? "* " : " "}
                 {game.guesses.length === 1 ? "attempt" : "attempts"}
               </span>
@@ -152,9 +199,34 @@ export function GameCompletedDialog({
           )}
           {game && (
             <div className="flex flex-col gap-2 items-center w-full pt-4">
-              <Button variant="primary" onClick={onShare}>
-                Share
-              </Button>
+              {isArena ? (
+                <>
+                  {hasNextArenaGame ? (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleNewGame("arena")}
+                      loading={isNewGameLoading}
+                    >
+                      Next word ({game.arenaWordIndex! + 2}/
+                      {game.arena!.config.wordCount})
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      href={`/app/arena/${game.arena!.id}/results`}
+                    >
+                      Results
+                    </Button>
+                  )}
+                  {/* <Button variant="outline" size="sm" onClick={onShare}>
+                    Share
+                  </Button> */}
+                </>
+              ) : (
+                <Button variant="primary" onClick={onShare}>
+                  Share
+                </Button>
+              )}
               {game && !isMinted && isSkipped && canMint && (
                 <Button
                   variant="outline"
@@ -167,11 +239,22 @@ export function GameCompletedDialog({
               {isPracticeGame(game) ? (
                 <Button
                   variant="outline"
-                  onClick={() => onNewGame("practice")}
+                  onClick={() => handleNewGame("practice")}
                   size="sm"
+                  loading={isNewGameLoading}
                 >
                   New Practice
                 </Button>
+              ) : isArena ? (
+                hasNextArenaGame && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    href={`/app/arena/${game.arena!.id}/results`}
+                  >
+                    Results
+                  </Button>
+                )
               ) : (
                 <Button
                   variant="outline"

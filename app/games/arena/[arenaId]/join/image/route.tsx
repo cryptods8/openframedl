@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createImageResponse } from "@/app/utils/image-response";
-import { primaryColor } from "@/app/image-ui/image-utils";
+import { AspectRatio, primaryColor } from "@/app/image-ui/image-utils";
 import { ArenaTitle } from "@/app/image-ui/arena/arena-title";
 import { BasicLayout } from "@/app/image-ui/basic-layout";
 import {
@@ -269,9 +269,11 @@ const MAX_DISPLAYED_ITEMS = 14;
 function renderAudience({
   arena,
   currentUser,
+  maxDisplayedItems,
 }: {
   arena: ArenaWithGames;
   currentUser?: UserKey;
+  maxDisplayedItems: number;
 }) {
   const awaitingAudienceRes = arena ? determineAwaitingAudience(arena) : null;
   const awaitingAudience = awaitingAudienceRes?.audience || [];
@@ -309,7 +311,7 @@ function renderAudience({
       current: currentUser && isAudienceMember(m, currentUser),
     })),
   ].sort((a, b) => (a.current ? -1 : b.current ? 1 : 0));
-  const displayedItems = items.slice(0, MAX_DISPLAYED_ITEMS);
+  const displayedItems = items.slice(0, maxDisplayedItems);
 
   function renderItem({ key, label, status, current }: (typeof items)[0]) {
     return (
@@ -358,11 +360,14 @@ function ArenaImage({
   arena,
   currentUser,
   message,
+  aspectRatio,
 }: {
   arena?: ArenaWithGames;
   currentUser?: UserKey;
   message?: React.ReactNode;
+  aspectRatio: AspectRatio;
 }) {
+  const maxDisplayedItems = aspectRatio === "1:1" ? MAX_DISPLAYED_ITEMS : 6;
   return (
     <div
       tw="flex flex-col items-center w-full h-full relative"
@@ -373,7 +378,7 @@ function ArenaImage({
         {arena ? (
           <div tw="flex flex-col items-center w-full h-full px-12 pb-12">
             <div tw="flex flex-1 items-center justify-center">
-              {renderAudience({ arena, currentUser })}
+              {renderAudience({ arena, currentUser, maxDisplayedItems })}
             </div>
             <div tw="flex w-full items-center justify-center">
               {renderParameters({ arena })}
@@ -404,6 +409,7 @@ export async function GET(
   const { arenaId } = await params;
   const message = req.nextUrl.searchParams.get("msg") as string | undefined;
   const userId = req.nextUrl.searchParams.get("uid") as string | undefined;
+  const arParam = req.nextUrl.searchParams.get("aspectRatio") as AspectRatio | undefined;
   const identityProvider = req.nextUrl.searchParams.get("ip") as
     | GameIdentityProvider
     | undefined;
@@ -419,18 +425,24 @@ export async function GET(
   }
 
   const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
+  const aspectRatio: AspectRatio = arParam ?? (arena.config.audienceSize > 6 ? "1:1" : "1.91:1");
 
   let imageOptions = {};
-  if (arena.config.audienceSize > 6) {
+  if (aspectRatio === "1:1") {
     imageOptions = {
       width: 1200,
       height: 1200,
+    };
+  } else if (aspectRatio === "3:2") {
+    imageOptions = {
+      width: 1200,
+      height: 800,
     };
   }
 
   const resp = createImageResponse(
     <BasicLayout>
-      <ArenaImage arena={arena} currentUser={userKey} message={message} />
+      <ArenaImage arena={arena} currentUser={userKey} message={message} aspectRatio={aspectRatio} />
     </BasicLayout>,
     imageOptions
   );

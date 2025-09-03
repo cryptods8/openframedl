@@ -37,12 +37,16 @@ export function formatUsername(user: UserProfile, mention?: boolean) {
 
 export function formatGameKey(game: PublicGuessedGame) {
   const { gameKey } = game;
+  if (!gameKey) {
+    console.log("gameKey is undefined", game);
+    return "?";
+  }
   if (game.isCustom && game.customMaker) {
     const username = formatUsername(game.customMaker, true);
     return `#${game.customMaker.number} by ${username}`;
   }
   if (game.arenaId != null) {
-    return `Arena ${game.arenaId} (#${game.arenaWordIndex})`;
+    return `ARENA ${game.arenaId} (#${(game.arenaWordIndex ?? 0) + 1})`;
   }
   if (!game.isDaily) {
     const subKey = gameKey.substring(gameKey.length - 8);

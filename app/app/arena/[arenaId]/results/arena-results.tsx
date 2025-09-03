@@ -1,24 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  determineAwaitingAudience,
-  getArenaAvailabilityProperties,
-} from "../../../arena-utils";
+"use client";
+
 import { GameIdentityProvider, UserKey } from "@/app/game/game-repository";
-import {
-  ArenaWithGames,
-  findArenaWithGamesById,
-} from "@/app/game/arena-pg-repository";
 import { LOST_PENALTY, UNPLAYED_PENALTY } from "@/app/game/game-constants";
-import { AspectRatio, primaryColor } from "@/app/image-ui/image-utils";
-import { BasicLayout } from "@/app/image-ui/basic-layout";
-import { ArenaTitle } from "@/app/image-ui/arena/arena-title";
-import { createImageResponse } from "@/app/utils/image-response";
+import { primaryColor } from "@/app/image-ui/image-utils";
 import { GameStatus } from "@/app/db/pg/types";
 import { ClockIcon } from "@/app/image-ui/icons/ClockIcon";
 import { CheckIcon } from "@/app/image-ui/icons/CheckIcon";
 import { UserGroupIcon } from "@/app/image-ui/icons/UserGroupIcon";
-
-export const dynamic = "force-dynamic";
+import {
+  determineAwaitingAudience,
+  getArenaAvailabilityProperties,
+  PublicArenaWithGames,
+} from "@/app/games/arena/arena-utils";
+import clsx from "clsx";
+import { FireIcon } from "@heroicons/react/16/solid";
 
 interface ArenaPlayerStats {
   user?: {
@@ -55,8 +50,8 @@ const EMPTY_PLAYER: ArenaPlayerStats = {
   score: 0,
 };
 
-function getArenaStats(arena: ArenaWithGames): ArenaStats {
-  const gamesTotal = arena.config.words.length;
+function getArenaStats(arena: PublicArenaWithGames): ArenaStats {
+  const gamesTotal = arena.config.wordCount;
   const { suddenDeathStatus } = getArenaAvailabilityProperties(arena);
   let games = arena.games;
   if (suddenDeathStatus?.isOver) {
@@ -98,12 +93,13 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
           playerStats.completedGuessCount += LOST_PENALTY;
         }
         if (game.completedAt) {
+          const completedAt = new Date(game.completedAt);
           playerStats.gamesCompleted++;
           if (
             !playerStats.lastGameCompletedAt ||
-            playerStats.lastGameCompletedAt < game.completedAt
+            playerStats.lastGameCompletedAt < completedAt
           ) {
-            playerStats.lastGameCompletedAt = game.completedAt;
+            playerStats.lastGameCompletedAt = completedAt;
           }
         }
         playerStats.games.push({
@@ -176,48 +172,9 @@ function getArenaStats(arena: ArenaWithGames): ArenaStats {
   ];
 
   return {
-    players: allPlayers,
-    gamesTotal: arena.config.words.length,
+    players: allPlayers, // .slice(0, 3),
+    gamesTotal: arena.config.wordCount,
   };
-}
-
-function getDisplayedPlayers(
-  players: ArenaPlayerStats[],
-  userKey: UserKey | undefined,
-  page: number | undefined,
-  pageSize: number
-): ArenaPlayerStats[] {
-  if (players.length <= pageSize) {
-    return players;
-  }
-  const userResultIdx = userKey
-    ? players.findIndex(
-        (p) =>
-          p.user?.userId === userKey?.userId &&
-          p.user?.identityProvider === userKey?.identityProvider
-      )
-    : -1;
-  const userResult = players[userResultIdx];
-  const pageOffset = (page ?? 0) * pageSize;
-  if (
-    !userResult ||
-    (pageOffset <= userResultIdx &&
-      userResultIdx < pageOffset + pageSize)
-  ) {
-    return players.slice(pageOffset, pageOffset + pageSize);
-  }
-  if (userResultIdx < pageOffset) {
-    return [
-      userResult,
-      { ...EMPTY_PLAYER },
-      ...players.slice(pageOffset, pageOffset + pageSize - 2),
-    ];
-  }
-  return [
-    ...players.slice(pageOffset, pageOffset + pageSize - 2),
-    { ...EMPTY_PLAYER },
-    userResult,
-  ];
 }
 
 function renderGameStats(
@@ -225,15 +182,18 @@ function renderGameStats(
   gamesTotal: number,
   withFiller?: boolean
 ) {
-  const compact = gamesTotal > 9;
-  const style = { gap: "0.5rem" } as React.CSSProperties;
-  if (compact) {
-    style.maxWidth = "24rem";
-  }
+  const compact = false; //gamesTotal > 9;
+  // const style = { gap: "0.5rem" } as React.CSSProperties;
+  // if (compact) {
+  //   style.maxWidth = "12rem";
+  // }
   return (
     <div
-      tw={`flex flex-wrap items-center ${withFiller ? "w-full" : ""}`}
-      style={style}
+      className={clsx(
+        "flex flex-wrap items-center gap-1",
+        withFiller ? "w-full" : ""
+      )}
+      // style={style}
     >
       {[
         Array.from({ length: gamesTotal }).map((_, idx) => {
@@ -258,8 +218,8 @@ function renderGameStats(
           return (
             <div
               key={idx}
-              tw={`flex rounded items-center justify-center text-3xl relative ${
-                compact ? "w-6 h-6" : "w-12 h-12"
+              className={`flex rounded items-center justify-center text-md relative ${
+                compact ? "w-3 h-3" : "w-6 h-6"
               }`}
               style={
                 compact && itemStyle.fontWeight
@@ -279,7 +239,7 @@ function renderGameStats(
                 : "-"}
               {g && g.isHardMode && (
                 <div
-                  tw="absolute -top-1 -right-1 w-3 h-3 text-xl flex items-center justify-center rounded-full"
+                  className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 text-base flex items-center justify-center rounded-full"
                   style={{ backgroundColor: "orange" }}
                 />
               )}
@@ -319,7 +279,7 @@ function getStatusProps(status: "COMPLETED" | "PENDING" | "IN_PROGRESS") {
 
 function Score({ value }: { value: number }) {
   return (
-    <div tw="flex items-end">
+    <div className="flex items-baseline">
       {value
         .toFixed(2)
         .split(".")
@@ -327,7 +287,7 @@ function Score({ value }: { value: number }) {
           idx === 0 ? (
             <span key={idx}>{part}</span>
           ) : (
-            <span key={idx} tw="text-2xl" style={{ color: primaryColor(0.54) }}>
+            <span key={idx} className="text-sm text-primary-900/50">
               .{part}
             </span>
           )
@@ -341,7 +301,7 @@ function PlayerPosition({ player }: { player: ArenaPlayerStats }) {
   const isActive = user && gamesCompleted > 0 && pos != null;
   return (
     <div
-      tw="flex w-14 h-14 rounded-full items-center justify-center text-3xl"
+      className="flex w-8 h-8 rounded-full items-center justify-center text-base"
       style={{
         flexShrink: 0,
         backgroundColor: isActive
@@ -369,11 +329,8 @@ function PlayerPosition({ player }: { player: ArenaPlayerStats }) {
 
 function Filler() {
   return (
-    <div tw="flex flex-1 overflow-hidden" style={{ flexShrink: 1 }}>
-      <div
-        tw="flex w-full pt-2 ml-6"
-        style={{ backgroundColor: primaryColor(0.08) }}
-      />
+    <div className="flex flex-1 overflow-hidden shrink">
+      <div className="flex w-full pt-1 ml-3 bg-primary-900/10" />
     </div>
   );
 }
@@ -385,35 +342,30 @@ function StatusBadge({
 }) {
   const { label, color, backgroundColor, Icon } = getStatusProps(status);
   return (
-    <div tw="flex items-center rounded-full text-3xl p-2" style={{ color }}>
-      <div tw="flex h-12 w-12">
+    <div className="flex items-center rounded-full text-lg" style={{ color }}>
+      <div className="flex h-6 w-6">
         <Icon />
       </div>
-      <div tw="flex px-4 font-bold">{label}</div>
+      <div className="flex px-2 font-bold">{label}</div>
     </div>
   );
 }
 
-function Image({
+export function ArenaResults({
   arena,
   userKey,
-  page,
-  aspectRatio,
 }: {
-  arena: ArenaWithGames;
+  arena: PublicArenaWithGames;
   userKey?: UserKey;
-  page?: number;
-  aspectRatio: AspectRatio;
 }) {
   const { players: allPlayers, gamesTotal } = getArenaStats(arena);
   const { completionStatus, status } = getArenaAvailabilityProperties(
     arena,
     userKey
   );
-  const pageSize = aspectRatio === "1:1" ? MAX_DISPLAYED_PLAYERS : 6;
-  const players = getDisplayedPlayers(allPlayers, userKey, page, pageSize);
+  const players = allPlayers; // getDisplayedPlayers(allPlayers, userKey, page, pageSize);
   const imageSizeClass =
-    players.length > 2 ? "w-24 h-24 text-7xl" : "w-32 h-32 text-8xl";
+    players.length > 2 ? "w-12 h-12 text-3xl" : "w-16 h-16 text-4xl";
   function isCurrentUser(p: ArenaPlayerStats) {
     return (
       userKey &&
@@ -423,17 +375,11 @@ function Image({
   }
 
   return (
-    <BasicLayout>
-      <div
-        tw="flex flex-col items-center w-full h-full relative"
-        style={{ backgroundColor: primaryColor(0.04), color: primaryColor() }}
-      >
-        <div
-          tw="flex w-full items-center px-20 relative"
-          style={{ gap: "2rem" }}
-        >
-          <ArenaTitle size="md" />
-          <div tw="flex">
+    <div className="flex items-stretch w-full h-full">
+      <div className="flex flex-col items-center w-full h-full relative gap-6">
+        <div className="flex w-full items-center relative gap-x-4 gap-y-2 flex-wrap">
+          {/* <ArenaTitle size="md" /> */}
+          <div>
             {status === "ENDED" || completionStatus === "COMPLETED" ? (
               <StatusBadge status="COMPLETED" />
             ) : status === "PENDING" ? (
@@ -442,72 +388,69 @@ function Image({
               <StatusBadge status="IN_PROGRESS" />
             )}
           </div>
-          <div
-            tw="flex items-center text-3xl"
-            style={{ color: primaryColor(0.54) }}
-          >
-            <div tw="flex h-12 w-12">
+          <div className="flex items-center text-primary-900/50">
+            <div className="flex h-6 w-6">
               <UserGroupIcon />
             </div>
-            <div tw="flex items-baseline px-4">
-              <div tw="flex font-bold">{arena.members.length}</div>
-              <div tw="flex text-2xl">/{arena.config.audienceSize}</div>
+            <div className="flex items-baseline px-2">
+              <div className="flex font-bold">{arena.members.length}</div>
+              <div className="flex text-sm">/{arena.config.audienceSize}</div>
             </div>
           </div>
+          {arena.config.suddenDeath && (
+            <div className="flex items-center flex-1">
+              <div className="flex flex-1 w-full" />
+              <div className="whitespace-nowrap flex gap-1 items-center">
+                <FireIcon className="w-5 h-5" /> 
+                <div>Sudden Death</div>
+              </div>
+            </div>
+          )}
         </div>
         {allPlayers.length <= 3 ? (
           <div
-            tw="flex w-full justify-center px-16 pt-12 pb-20 flex-1 items-center"
-            style={{ gap: players.length === 3 ? "1rem" : "3rem" }}
+            className={clsx(
+              "flex w-full justify-center flex-1 items-center flex-wrap",
+              players.length === 3 ? "gap-2" : "gap-4"
+            )}
           >
             {players.map((p, idx) => (
               <div
                 key={idx}
-                tw={`flex flex-col rounded-xl bg-white px-6 py-10 flex-1 relative border ${
-                  isCurrentUser(p) ? "shadow-xl" : ""
-                }`}
-                style={{
-                  borderColor: isCurrentUser(p)
-                    ? primaryColor(0.24)
-                    : "transparent",
-                }}
+                className={clsx(
+                  "flex flex-col rounded-md bg-white px-3 py-5 flex-1 relative border min-w-[240px]",
+                  isCurrentUser(p)
+                    ? "shadow-md border-primary-900/20"
+                    : "border-transparent"
+                )}
               >
-                <div tw="flex items-center w-full" style={{ gap: "1.5rem" }}>
+                <div className="flex items-center w-full gap-3">
                   {p.user?.profileImage ? (
                     <img
                       src={p.user.profileImage}
-                      tw={`${imageSizeClass} rounded-lg bg-white`}
-                      style={{
-                        objectFit: "cover",
-                      }}
+                      className={clsx(
+                        "object-cover rounded-md bg-white",
+                        imageSizeClass
+                      )}
                     />
                   ) : (
                     <div
-                      tw={`${imageSizeClass} items-center justify-center rounded-lg`}
-                      style={{
-                        fontFamily: "SpaceGrotesk",
-                        fontWeight: 700,
-                        color: primaryColor(0.24),
-                        backgroundColor: primaryColor(0.12),
-                      }}
+                      className={clsx(
+                        "flex items-center justify-center rounded-md bg-primary-900/10 text-primary-900/20 font-bold font-space",
+                        imageSizeClass
+                      )}
                     >
                       F
                     </div>
                   )}
                   <div
-                    tw="flex flex-1 flex-col"
-                    style={{ gap: "0.5rem", opacity: p.user ? 1 : 0.5 }}
+                    className={clsx(
+                      "flex flex-1 flex-col gap-1",
+                      p.user ? "opacity-100" : "opacity-50"
+                    )}
                   >
-                    <div tw="flex w-full items-center">
-                      <div
-                        tw="flex overflow-hidden"
-                        style={{
-                          flexShrink: 1,
-                          whiteSpace: "nowrap",
-                          textOverflow: "ellipsis",
-                          fontWeight: 600,
-                        }}
-                      >
+                    <div className="flex w-full items-center">
+                      <div className="flex overflow-hidden font-bold whitespace-nowrap text-ellipsis shrink-0">
                         {p.user?.username ??
                           (p.user && `!${p.user.userId}`) ??
                           "-"}
@@ -515,7 +458,7 @@ function Image({
                       <Filler />
                     </div>
 
-                    <div tw="flex w-full items-center">
+                    <div className="flex w-full items-center">
                       <Score
                         value={
                           p.gamesCompleted > 0
@@ -527,135 +470,82 @@ function Image({
                     </div>
                   </div>
                 </div>
-                <div tw="flex pt-6 w-full">
+                <div className="flex pt-3 w-full">
                   {renderGameStats(p, gamesTotal, true)}
                 </div>
-                <div tw="flex absolute top-2 left-2 bg-white rounded-full shadow-xl">
+                <div className="flex absolute top-1 left-1 bg-white rounded-full shadow-md">
                   <PlayerPosition player={p} />
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div
-            tw="flex flex-col w-full p-16 flex-1 justify-center"
-            style={{ gap: "0.75rem" }}
-          >
+          <div className="flex flex-col w-full flex-1 justify-center gap-4">
             {players.map((p, idx) => (
               <div
-                tw="flex w-full items-center"
+                className={clsx(
+                  "flex w-full items-start gap-5",
+                  isCurrentUser(p) ? "font-bold" : ""
+                )}
                 key={
                   p.user ? `${p.user.identityProvider}/${p.user.userId}` : idx
                 }
-                style={{
-                  gap: "3rem",
-                  fontWeight: isCurrentUser(p) ? 700 : 400,
-                }}
               >
                 <PlayerPosition player={p} />
-                {p.user && (
-                  <div
-                    tw="flex overflow-hidden"
-                    style={{
-                      flexShrink: 1,
-                      maxWidth: "330px",
-                      whiteSpace: "nowrap",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {p.user.username ?? `!${p.user.userId}`}
+                <div className="flex flex-col gap-1 flex-1">
+                  <div className="flex items-center gap-5">
+                    {p.user && (
+                      <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis shrink flex-1 gap-5">
+                        <div className="max-w-[330px]">
+                          {p.user.username ?? `!${p.user.userId}`}
+                        </div>
+                        <div className="flex flex-1 h-1 bg-primary-900/10" />
+                      </div>
+                    )}
+                    {!p.user && (
+                      <div className="flex flex-1 h-1 bg-primary-900/10" />
+                    )}
+                    {/* {p.user && (
+                      <div className="flex justify-end w-10">
+                        <Score
+                          value={
+                            p.gamesCompleted > 0
+                              ? p.completedGuessCount / p.gamesCompleted
+                              : 0
+                          }
+                        />
+                      </div>
+                    )} */}
                   </div>
-                )}
-                <div
-                  tw="flex flex-1 pt-2"
-                  style={{ backgroundColor: primaryColor(0.12) }}
-                />
-                {p.user && (
-                  <div tw="flex">{renderGameStats(p, gamesTotal)}</div>
-                )}
-                {p.user && (
-                  <div tw="flex justify-end" style={{ width: "80px" }}>
-                    <Score
-                      value={
-                        p.gamesCompleted > 0
-                          ? p.completedGuessCount / p.gamesCompleted
-                          : 0
-                      }
-                    />
-                  </div>
-                )}
+                  {p.user && (
+                    <div className="flex flex-1 shrink gap-0 items-start">
+                      <div className="flex flex-1 shrink">
+                        <div className="flex flex-1 h-1 bg-primary-900/10 mt-2.5" />
+                        <div className="flex flex-1 max-w-5 shrink" />
+                      </div>
+                      {renderGameStats(p, gamesTotal)}
+                      {/* <div className="flex shrink">
+                        <div className="w-5" />
+                        <div className="flex w-10 shrink h-1 bg-primary-900/10 mt-2.5" />
+                      </div> */}
+                                            <div className="flex justify-end ml-5 w-10">
+                        <Score
+                          value={
+                            p.gamesCompleted > 0
+                              ? p.completedGuessCount / p.gamesCompleted
+                              : 0
+                          }
+                        />
+                      </div>
+
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
-        {arena.config.suddenDeath && (
-          <div
-            tw="flex items-center absolute bottom-12 left-20 right-20"
-            style={{ gap: "2rem" }}
-          >
-            <div
-              tw="flex flex-1 w-full h-2"
-              style={{ backgroundColor: primaryColor(0.12) }}
-            />
-            <div>🔥 Sudden Death</div>
-            <div
-              tw="flex flex-1 w-full h-2"
-              style={{ backgroundColor: primaryColor(0.12) }}
-            />
-          </div>
-        )}
       </div>
-    </BasicLayout>
+    </div>
   );
-}
-
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ arenaId: string }> }
-) {
-  const { arenaId } = await params;
-  const { searchParams } = req.nextUrl;
-  const userId = searchParams.get("uid") as string | undefined;
-  const arParam = searchParams.get("aspectRatio") as "1:1" | "3:2" | "1.91:1" | undefined;
-  const identityProvider = searchParams.get("ip") as
-    | GameIdentityProvider
-    | undefined;
-  const p = searchParams.get("p") as string | undefined;
-  const page = p ? parseInt(p, 10) : undefined;
-
-  const userKey =
-    userId && identityProvider ? { userId, identityProvider } : undefined;
-
-  const arena = await findArenaWithGamesById(parseInt(arenaId!, 10));
-  if (!arena) {
-    return NextResponse.json({ error: "Arena not found" }, { status: 404 });
-  }
-
-  const { completionStatus } = getArenaAvailabilityProperties(arena, userKey);
-  const aspectRatio: AspectRatio = arParam ?? (arena.config.audienceSize > 6 ? "1:1" : "1.91:1");
-
-  let imageOptions = {};
-  if (aspectRatio === "1:1") {
-    imageOptions = {
-      width: 1200,
-      height: 1200,
-    };
-  } else if (aspectRatio === "3:2") {
-    imageOptions = {
-      width: 1200,
-      height: 800,
-    };
-  }
-
-  const resp = createImageResponse(
-    <Image arena={arena} userKey={userKey} page={page} aspectRatio={aspectRatio} />,
-    imageOptions
-  );
-
-  if (completionStatus === "IN_PROGRESS") {
-    resp.headers.set("cache-control", "public, max-age=60");
-  } else if (completionStatus === "NOT_STARTED") {
-    resp.headers.set("cache-control", "public, max-age=600");
-  }
-  return resp;
 }

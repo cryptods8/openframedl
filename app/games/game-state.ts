@@ -4,6 +4,7 @@ import { UserData, UserGameKey } from "@/app/game/game-repository";
 import {
   gameService,
   GuessedGame,
+  GuessValidationStatus,
   LoadOrCreateOptions,
 } from "@/app/game/game-service";
 import { timeCall } from "@/app/utils";
@@ -12,6 +13,7 @@ export interface GameState {
   finished?: boolean;
   game: GuessedGame;
   message?: string;
+  validationResult?: GuessValidationStatus;
 }
 
 interface NextGameStateOptions extends LoadOrCreateOptions {
@@ -75,6 +77,7 @@ export async function nextGameState(
     }
     return {
       message,
+      validationResult,
       game,
     };
   }

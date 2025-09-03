@@ -8,6 +8,8 @@ export function lightColor(opacity: number = 1) {
   return `rgba(255, 255, 255, ${opacity})`;
 }
 
+export type AspectRatio = "1:1" | "3:2" | "1.91:1";
+
 export function getGuessCharacterColorStyle(
   c: GuessCharacter | null | undefined,
   withLetter: boolean,

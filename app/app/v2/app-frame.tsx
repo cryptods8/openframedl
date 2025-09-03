@@ -2,7 +2,7 @@
 
 import { useAppConfig } from "@/app/contexts/app-config-context";
 import { UserData } from "@/app/game/game-repository";
-import { GuessedGame } from "@/app/game/game-service";
+import { ClientGame } from "@/app/game/game-service";
 import { useSessionId } from "@/app/hooks/use-session-id";
 import { FarcasterSession } from "@/app/lib/auth";
 import { SignIn } from "@/app/ui/auth/sign-in";
@@ -15,6 +15,7 @@ import sdk, { SignIn as FrameSignIn, Context } from "@farcaster/miniapp-sdk";
 import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HapticsTest } from "./haptics-test";
+import { ClientContext, useClientContext } from "./use-client-context";
 
 function toUserData(user: Context.MiniAppContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
@@ -39,10 +40,11 @@ function Game({
   asGuest,
   fid,
   gameType,
+  ts,
   customWordId,
   ...props
-}: Omit<GameProps, "game"> & { fid?: number; asGuest: boolean, customWordId?: string }) {
-  const [loadedGame, setLoadedGame] = useState<GuessedGame | undefined>();
+}: Omit<GameProps, "game"> & { fid?: number; asGuest: boolean, customWordId?: string, ts?: string }) {
+  const [loadedGame, setLoadedGame] = useState<ClientGame | undefined>();
   const [error, setError] = useState<ErrorResponse | undefined>();
   const [loading, setLoading] = useState(false);
   const { sessionId } = useSessionId();
@@ -73,6 +75,7 @@ function Game({
         } else {
           const data = await resp.json();
           setLoadedGame(data.data);
+          setError(undefined);
         }
       } catch (e) {
         console.error(e);
@@ -81,7 +84,7 @@ function Game({
       }
     };
     load();
-  }, [fid, gameType, asGuest, sessionId, userData, customWordId]);
+  }, [fid, gameType, asGuest, sessionId, userData, customWordId, ts]);
 
   if (loading) {
     return <Loading />;
@@ -108,11 +111,13 @@ function GameContainer({
   gameType,
   debugPanel,
   customWordId,
+  ts,
 }: {
   context: ClientContext;
-  gameType?: string;
+  gameType: string;
   debugPanel?: React.ReactNode;
   customWordId?: string;
+  ts?: string;
 }) {
   const { data: session, status } = useSession() as {
     data: FarcasterSession | null;
@@ -197,7 +202,7 @@ function GameContainer({
 
   return (
     <div
-      className="w-full h-full flex flex-col items-center justify-center"
+      className="w-full h-full flex flex-col flex-1 items-center justify-center"
       style={{
         paddingTop: safeAreaInsets?.top,
         paddingBottom: safeAreaInsets?.bottom,
@@ -208,7 +213,7 @@ function GameContainer({
       {debugPanel}
       <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center">
         {status === "authenticated" || asGuest ? (
-          <div className="flex-1 w-full">
+          <div className="flex flex-col flex-1 w-full">
             <Game
               userData={context.userData}
               fid={context.userFid}
@@ -217,6 +222,7 @@ function GameContainer({
               customWordId={customWordId}
               onShare={context.share}
               asGuest={asGuest}
+              ts={ts}
               userChip={
                 asGuest ? (
                   <div>
@@ -243,7 +249,7 @@ function GameContainer({
             <div className="text-center flex-1 flex flex-col items-center justify-center gap-1">
               <div className="text-3xl font-bold font-space">Framedl</div>
               <div className="text-md text-primary-900/60">
-                Wordle in a frame
+                Wordle in a mini app
               </div>
               <div className="w-full pt-5">
                 <GameGuessGrid guesses={placeholderGuesses} placeholder full />
@@ -290,90 +296,20 @@ function GameContainer({
   );
 }
 
-interface ClientContext {
-  userData?: UserData;
-  userFid?: number;
-  isReady: boolean;
-  client?: Context.MiniAppContext["client"];
-  share: ({ title, url }: { title: string; url: string }) => Promise<void>;
-  openUrl: (url: string) => Promise<void>;
-  requestAddFrame: () => Promise<boolean>;
-}
-
-function useClientContext({
-  onLoad,
-}: {
-  onLoad?: (ctx: Context.MiniAppContext) => void;
-}): ClientContext {
-  const { isPro } = useAppConfig();
-  const [context, setContext] = useState<Context.MiniAppContext | undefined>();
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const load = async () => {
-      const ctx = await sdk.context;
-      setContext(ctx);
-      onLoad?.(ctx);
-    };
-    if (!ready && sdk) {
-      setReady(true);
-      load();
-    }
-  }, [ready, onLoad]);
-
-  const userData = useMemo(() => {
-    return context?.user ? toUserData(context.user) : undefined;
-  }, [context?.user]);
-
-  const share = useCallback(
-    async ({ title, url }: { title: string; url: string }) => {
-      // return sdk.actions.openUrl(createComposeUrl(title, url, { isPro }));
-      await sdk.actions.composeCast(composeCast(title, url, { isPro }));
-      return;
-    },
-    [isPro]
-  );
-
-  const openUrl = useCallback((url: string) => {
-    return sdk.actions.openUrl(url);
-  }, []);
-
-  const requestAddFrame = useCallback(async () => {
-    try {
-      await sdk.actions.addFrame();
-      return true;
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
-  }, []);
-
-  return {
-    userData,
-    userFid: context?.user?.fid,
-    isReady: ready,
-    client: context?.client,
-    share,
-    openUrl,
-    requestAddFrame,
-  };
-}
-
 export function AppFrame({
   gameType,
   debug,
   customWordId,
+  ts,
 }: {
-  gameType?: string;
+  gameType: string;
   customWordId?: string;
   debug?: {
     debugUrl?: string;
   };
+  ts?: string;
 }) {
-  const onLoad = useCallback(() => {
-    sdk.actions.ready();
-    window.focus();
-  }, []);
-  const clientContext = useClientContext({ onLoad });
+  const clientContext = useClientContext({});
 
   if (!clientContext.isReady) {
     return null;
@@ -400,6 +336,7 @@ export function AppFrame({
       gameType={gameType}
       customWordId={customWordId}
       debugPanel={debugPanel}
+      ts={ts}
     />
   );
 }

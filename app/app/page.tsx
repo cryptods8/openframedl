@@ -5,6 +5,7 @@ import { gameService } from "../game/game-service";
 import { UserData, UserKey } from "../game/game-repository";
 import { ProfileApp } from "../profiles/profile-app";
 import { getUserInfoFromJwtOrSession } from "../lib/auth";
+import { toPublicArena } from "../games/arena/arena-utils";
 
 export async function generateMetadata(): Promise<Metadata> {
   // fetch just slows things down
@@ -82,11 +83,18 @@ export default async function App({
           anonymous,
         })
       : null;
+  const clientGame = game
+    ? {
+        ...game,
+        word: game.completedAt ? game.word : "",
+        arena: toPublicArena(game.arena!),
+      }
+    : undefined;
 
   return (
     <div className="w-full h-dvh min-h-full">
       <ProfileApp headerless>
-        <Game game={game ?? undefined} userData={userData ?? undefined} />
+        <Game game={clientGame} userData={userData ?? undefined} gameType={gtParam ?? "daily"} />
       </ProfileApp>
     </div>
   );

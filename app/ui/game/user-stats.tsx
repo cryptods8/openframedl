@@ -1,4 +1,4 @@
-import { GuessedGame } from "@/app/game/game-service";
+import { ClientGame } from "@/app/game/game-service";
 import { useQuery } from "@tanstack/react-query";
 import { Loader } from "../loader";
 
@@ -28,7 +28,7 @@ const mockData = {
   },
 };
 
-function UserStats({ game }: { game: GuessedGame }) {
+function UserStats({ game }: { game: ClientGame }) {
   const { data, isLoading } = useQuery<UserStatsResponse>({
     queryKey: ["user-stats", game.identityProvider, game.userId],
     queryFn: () =>

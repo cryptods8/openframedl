@@ -22,8 +22,8 @@ function gameToResponse(game: GuessedGame, metadata: GameMetadata | null) {
   return {
     data:
       game.completedAt != null
-        ? { ...game, metadata }
-        : { ...game, word: "", metadata },
+        ? { ...game, arena: undefined, metadata }
+        : { ...game, arena: undefined, word: "", metadata },
   };
 }
 

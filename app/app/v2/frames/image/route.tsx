@@ -4,7 +4,6 @@ import { primaryColor } from "@/app/image-ui/image-utils";
 import { GameBoard } from "@/app/image-ui/game-board";
 import { BasicLayout } from "@/app/image-ui/basic-layout";
 import { gameService, GuessedGame } from "@/app/game/game-service";
-import { verifyUrl } from "@/app/api/api-utils";
 import { GameTitle } from "@/app/image-ui/game-title";
 import { externalBaseUrl } from "@/app/constants";
 import { UserData, UserStats } from "@/app/game/game-repository";

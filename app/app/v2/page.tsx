@@ -2,6 +2,7 @@ import { externalBaseUrl, isPro } from "@/app/constants";
 import { Metadata } from "next";
 import { AppFrame } from "./app-frame";
 import { ProfileApp } from "@/app/profiles/profile-app";
+import { MiniAppEmbedNext } from "@farcaster/miniapp-node";
 // import { Test } from "./test";
 
 export async function generateMetadata({
@@ -23,7 +24,7 @@ export async function generateMetadata({
   const name = isPro ? "Framedl PRO" : "Framedl";
   return {
     title: `${name} by ds8`,
-    description: "Wordle in a frame",
+    description: "Wordle in a mini app",
     other: {
       "fc:frame": JSON.stringify({
         version: "next",
@@ -31,7 +32,7 @@ export async function generateMetadata({
         button: {
           title: "Play",
           action: {
-            type: "launch_frame",
+            type: "launch_miniapp",
             name,
             url: `${externalBaseUrl}/app/v2`,
             splashImageUrl: isPro
@@ -40,7 +41,7 @@ export async function generateMetadata({
             splashBackgroundColor: "#f3f0f9",
           },
         },
-      } satisfies FrameEmbed),
+      } satisfies MiniAppEmbedNext),
     },
   };
 }
@@ -55,6 +56,7 @@ export default async function Page({
   const gtParam = searchParams?.gt as string | undefined;
   const debugParam = searchParams?.dbg as string | undefined;
   const debugUrlParam = searchParams?.dbgUrl as string | undefined;
+  const tsParam = searchParams?.ts as string | undefined;
   const gameType = gtParam ? gtParam : cwParam ? "custom" : "daily";
   // if (!debugParam) {
   //   return (
@@ -68,47 +70,9 @@ export default async function Page({
           gameType={gameType}
           debug={debugParam === "1" ? { debugUrl: debugUrlParam } : undefined}
           customWordId={cwParam}
+          ts={tsParam}
         />
       </ProfileApp>
     </div>
   );
 }
-
-type FrameEmbed = {
-  // Frame spec version. Required.
-  // Example: "next"
-  version: "next";
-
-  // Frame image. Must be 3:2 aspect ratio. Must be less than 10 MB.
-  // Example: "https://yoink.party/img/start.png"
-  imageUrl: string;
-
-  // Button attributes
-  button: {
-    // Button text. Required.
-    // Example: "Yoink Flag"
-    title: string;
-
-    // Action attributes
-    action: {
-      // Action type. Must be "launch_frame".
-      type: "launch_frame";
-
-      // App name.
-      // Example: "Yoink!"
-      name: string;
-
-      // Frame launch URL.
-      // Example: "https://yoink.party/"
-      url: string;
-
-      // 200x200px splash image URL. Must be less than 1MB.
-      // Example: "https://yoink.party/img/splash.png"
-      splashImageUrl: string;
-
-      // Hex color code.
-      // Example: "#eeeee4"
-      splashBackgroundColor: string;
-    };
-  };
-};

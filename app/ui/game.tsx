@@ -4,9 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import {
   GuessCharacter,
-  GuessedGame,
+  ClientGame,
   GuessValidationStatus,
-  GameMetadata,
 } from "../game/game-service";
 import { GameGuessGrid } from "./game-guess-grid";
 import { Button } from "./button/button";
@@ -26,6 +25,8 @@ import { BaseUserRequest } from "../api/api-utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
 import { useHaptics } from "../hooks/use-haptics";
 import { ProPassRequiredScreen } from "./game/pro-pass-required-screen";
+import { PublicArena } from "../games/arena/arena-utils";
+import { useRouter } from "next/navigation";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -184,7 +185,7 @@ function GameKeyboard({
   onSubmit,
   mode = "normal",
 }: {
-  game?: GuessedGame;
+  game?: ClientGame;
   onKeyPress: (key: string) => void;
   onSubmit: () => void;
   mode?: GamePlayMode;
@@ -259,7 +260,7 @@ function GameGrid({
   submitting,
   compact,
 }: {
-  game?: GuessedGame;
+  game?: ClientGame;
   currentWord: string;
   submitting: boolean;
   compact?: boolean;
@@ -284,8 +285,33 @@ function GameGrid({
   );
 }
 
+function ArenaProgressIndicator({ game }: { game: ClientGame }) {
+  const words = game.arena?.config.wordCount;
+  const wordIndex = game.arenaWordIndex;
+  if (!words || wordIndex == null) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-row gap-1 mt-1">
+      {Array.from({ length: words }).map((_, idx) => (
+        <div
+          key={idx}
+          className={clsx({
+            "h-2 rounded flex-1": true,
+            "bg-green-600":
+              idx < wordIndex || (idx === wordIndex && game.completedAt),
+            "bg-orange-600": idx === wordIndex && !game.completedAt,
+            "bg-primary-950/20": idx > wordIndex,
+          })}
+        />
+      ))}
+    </div>
+  );
+}
+
 export interface GameProps {
-  game?: GuessedGame & { metadata?: GameMetadata | null };
+  game?: ClientGame;
   userData?: UserData & { fid?: number };
   appFrame?: boolean;
   error?: {
@@ -302,7 +328,7 @@ export interface GameProps {
     url: string;
   }) => Promise<void>;
   onGameOver?: () => void;
-  gameType?: string;
+  gameType: string;
   userChip?: React.ReactNode;
 }
 
@@ -313,6 +339,7 @@ export function Game({
   appFrame,
   userChip,
   onShare,
+  gameType,
   onGameOver,
 }: GameProps) {
   const [currentWord, setCurrentWord] = useState("");
@@ -331,8 +358,10 @@ export function Game({
   );
   const isGameOver =
     currentGame?.status === "WON" || currentGame?.status === "LOST";
+  const isArena = !!currentGame?.arena;
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
   const [mode, setMode] = useLocalStorage<GamePlayMode>("inputMode", "normal");
+  const router = useRouter();
 
   const [isWindowFocused, setIsWindowFocused] = useState(
     document.hasFocus() || !window.matchMedia("(hover: hover)").matches
@@ -357,7 +386,7 @@ export function Game({
   }, []);
 
   const handleGameChange = useCallback(
-    (game: GuessedGame | undefined) => {
+    (game: ClientGame | undefined) => {
       setCurrentGame(game);
       setCurrentWord("");
       setTextInputWord("");
@@ -377,6 +406,8 @@ export function Game({
     handleGameChange(game);
   }, [game, handleGameChange]);
 
+  const arenaId = currentGame?.arena?.id;
+  const apiPath = arenaId ? `/api/arenas/${arenaId}/play` : "/api/games/play";
   const userId = userData?.fid?.toString() || sessionId;
   const identityProvider =
     appFrame && sessionStatus !== "authenticated"
@@ -426,11 +457,13 @@ export function Game({
     }
     setIsSubmitting(true);
     try {
-      const resp = await fetch("/api/games/play", {
+      const resp = await fetch(apiPath, {
         method: "POST",
         body: JSON.stringify({
           guess: currentWord,
           gameId: currentGame?.id,
+          gameKey: currentGame?.gameKey,
+          gameType,
           ...anonUserInfo,
         }),
         headers: jwt
@@ -445,6 +478,8 @@ export function Game({
       }
       if (data.validationResult) {
         setValidationResult(data.validationResult);
+      } else if (data.error) {
+        toast(data.error);
       }
     } catch (e) {
       console.error(e);
@@ -499,12 +534,16 @@ export function Game({
   }, [isGameOver, onGameOver]);
 
   const handleNewGame = useCallback(
-    async (gameType: "practice" | "daily") => {
-      const resp = await fetch("/api/games/play", {
+    async (gt: "practice" | "daily" | "arena") => {
+      if (gt !== "arena") {
+        router.push(`/app/v2?gt=${gt}&ts=${Date.now()}`);
+        return;
+      }
+      const resp = await fetch(apiPath, {
         method: "POST",
         body: JSON.stringify({
           ...anonUserInfo,
-          gameType,
+          gameType: gt,
         }),
         headers: jwt
           ? {
@@ -539,7 +578,7 @@ export function Game({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyPress, handleSubmit]);
 
-  const handleShare = async (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent | KeyboardEvent) => {
     e.preventDefault();
 
     const { title, text } = buildShareableResult(currentGame, config);
@@ -599,11 +638,34 @@ export function Game({
   ) {
     return <ProPassRequiredScreen />;
   }
+  if (error && error.type !== "pass_required") {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full w-full gap-4 p-4 relative">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="text-center">
+            <span className="text-xl font-semibold text-primary-900/50">
+              An error ocurred: {error.error}
+            </span>
+            <br />
+            <span className="text-primary-900/30">
+              Sorry for the inconvenience
+            </span>
+          </div>
+        </div>
+        <Button
+          variant="primary"
+          href={`/app/v2?gt=${gameType}&ts=${Date.now()}`}
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center h-full w-full pt-2 gap-2 min-[360px]:gap-4 min-[360px]:pt-4 min-[360px]:pb-1 max-h-[960px] relative">
       {!isWindowFocused && !isGameOver && !isSubmitting && !isDialogOpen && (
-        <div className="absolute top-0 left-0 right-0 bottom-0 bg-white/50 backdrop-blur-sm z-[10000]">
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-white/50 backdrop-blur-sm z-[10000]">
           <div className="flex items-center justify-center h-full w-full p-8">
             <div className="text-xl font-semibold text-primary-900/30">
               Click anywhere to start…
@@ -616,11 +678,18 @@ export function Game({
           <div className="text-lg min-[360px]:text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
             <span>Framedl </span>
             {config.isPro && <span style={{ color: "green" }}>PRO </span>}
-            <span>{currentGame && formatGameKey(currentGame)}</span>
+            {isArena && <span>⚔️ ARENA</span>}
+            {!isArena && currentGame && (
+              <span>{formatGameKey(currentGame)}</span>
+            )}
           </div>
-          <div className="text-xs min-[360px]:text-sm text-primary-900/50">
-            Guess the word
-          </div>
+          {isArena ? (
+            <ArenaProgressIndicator game={currentGame} />
+          ) : (
+            <div className="text-xs min-[360px]:text-sm text-primary-900/50">
+              Guess the word
+            </div>
+          )}
         </div>
         {userChip
           ? userChip
