@@ -14,7 +14,7 @@ function formatGameKey(
   const gameKey = game?.gameKey || "";
   if (customMaker) {
     const username = formatUsername(customMaker);
-    return `#${customMaker?.number} by @${username}`;
+    return `#${customMaker?.number} by ${username}`;
   }
   if (game && !game.isDaily && gameKey) {
     return `Practice (${gameKey.substring(gameKey.length - 8)})`;

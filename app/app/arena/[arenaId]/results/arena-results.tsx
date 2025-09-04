@@ -172,7 +172,7 @@ function getArenaStats(arena: PublicArenaWithGames): ArenaStats {
   ];
 
   return {
-    players: allPlayers, // .slice(0, 3),
+    players: allPlayers, //.slice(0, 2),
     gamesTotal: arena.config.wordCount,
   };
 }
@@ -204,12 +204,12 @@ function renderGameStats(
                 ? {
                     color: "white",
                     backgroundColor: "green",
-                    fontWeight: 500,
+                    // fontWeight: 500,
                   }
                 : {
                     color: "white",
                     backgroundColor: "red",
-                    fontWeight: 500,
+                    // fontWeight: 500,
                   }
               : {
                   color: primaryColor(0.54),
@@ -218,14 +218,12 @@ function renderGameStats(
           return (
             <div
               key={idx}
-              className={`flex rounded items-center justify-center text-md relative ${
-                compact ? "w-3 h-3" : "w-6 h-6"
-              }`}
+              className={`flex rounded items-center justify-center text-sm relative w-5 h-5`}
               style={
-                compact && itemStyle.fontWeight
+                compact //&& itemStyle.fontWeight
                   ? {
                       color: itemStyle.backgroundColor,
-                      fontWeight: itemStyle.fontWeight,
+                      // fontWeight: itemStyle.fontWeight,
                     }
                   : itemStyle
               }
@@ -264,7 +262,7 @@ function getStatusProps(status: "COMPLETED" | "PENDING" | "IN_PROGRESS") {
   if (status === "IN_PROGRESS") {
     return {
       label: "In Progress",
-      color: "orange",
+      color: primaryColor(0.54),
       backgroundColor: "transparent",
       Icon: ClockIcon,
     };
@@ -296,14 +294,13 @@ function Score({ value }: { value: number }) {
   );
 }
 
-function PlayerPosition({ player }: { player: ArenaPlayerStats }) {
+function PlayerPosition({ player, isCurrentUser }: { player: ArenaPlayerStats, isCurrentUser?: boolean }) {
   const { user, gamesCompleted, pos } = player;
   const isActive = user && gamesCompleted > 0 && pos != null;
   return (
     <div
-      className="flex w-8 h-8 rounded-full items-center justify-center text-base"
+      className={clsx("flex w-7 h-7 rounded-full items-center justify-center text-base shrink-0", isCurrentUser ? "outline outline-primary-500 shadow-md shadow-primary-500" : "border-transparent")}
       style={{
-        flexShrink: 0,
         backgroundColor: isActive
           ? pos === 1
             ? primaryColor(0.84)
@@ -318,7 +315,7 @@ function PlayerPosition({ player }: { player: ArenaPlayerStats }) {
             ? "white"
             : primaryColor()
           : primaryColor(0.54),
-        fontWeight: 600,
+        // fontWeight: 600,
         lineHeight: "1",
       }}
     >
@@ -330,7 +327,7 @@ function PlayerPosition({ player }: { player: ArenaPlayerStats }) {
 function Filler() {
   return (
     <div className="flex flex-1 overflow-hidden shrink">
-      <div className="flex w-full pt-1 ml-3 bg-primary-900/10" />
+      <div className="flex w-full pt-1 ml-3 bg-primary-900/5" />
     </div>
   );
 }
@@ -342,8 +339,8 @@ function StatusBadge({
 }) {
   const { label, color, backgroundColor, Icon } = getStatusProps(status);
   return (
-    <div className="flex items-center rounded-full text-lg" style={{ color }}>
-      <div className="flex h-6 w-6">
+    <div className="flex items-center rounded-full" style={{ color }}>
+      <div className="flex h-5 w-5">
         <Icon />
       </div>
       <div className="flex px-2 font-bold">{label}</div>
@@ -375,37 +372,39 @@ export function ArenaResults({
   }
 
   return (
-    <div className="flex items-stretch w-full h-full">
-      <div className="flex flex-col items-center w-full h-full relative gap-6">
-        <div className="flex w-full items-center relative gap-x-4 gap-y-2 flex-wrap">
-          {/* <ArenaTitle size="md" /> */}
-          <div>
-            {status === "ENDED" || completionStatus === "COMPLETED" ? (
-              <StatusBadge status="COMPLETED" />
-            ) : status === "PENDING" ? (
-              <StatusBadge status="PENDING" />
-            ) : (
-              <StatusBadge status="IN_PROGRESS" />
-            )}
-          </div>
-          <div className="flex items-center text-primary-900/50">
-            <div className="flex h-6 w-6">
-              <UserGroupIcon />
+    <div className="flex items-stretch w-full h-full flex-1">
+      <div className="flex flex-col items-stretch w-full h-full relative gap-6 flex-1">
+        <div className="-mx-4 sm:-mx-8 sm:rounded-full px-4 py-4 sm:px-8 bg-primary-900/5 block">
+          <div className="flex w-full items-center relative gap-x-4 gap-y-2 flex-wrap text-sm">
+            {/* <ArenaTitle size="md" /> */}
+            <div>
+              {status === "ENDED" || completionStatus === "COMPLETED" ? (
+                <StatusBadge status="COMPLETED" />
+              ) : status === "PENDING" ? (
+                <StatusBadge status="PENDING" />
+              ) : (
+                <StatusBadge status="IN_PROGRESS" />
+              )}
             </div>
-            <div className="flex items-baseline px-2">
-              <div className="flex font-bold">{arena.members.length}</div>
-              <div className="flex text-sm">/{arena.config.audienceSize}</div>
-            </div>
-          </div>
-          {arena.config.suddenDeath && (
-            <div className="flex items-center flex-1">
-              <div className="flex flex-1 w-full" />
-              <div className="whitespace-nowrap flex gap-1 items-center">
-                <FireIcon className="w-5 h-5" /> 
-                <div>Sudden Death</div>
+            <div className="flex items-center text-primary-900/50">
+              <div className="flex h-5 w-5">
+                <UserGroupIcon />
+              </div>
+              <div className="flex items-baseline px-2">
+                <div className="flex font-bold">{arena.members.length}</div>
+                <div className="flex text-xs">/{arena.config.audienceSize}</div>
               </div>
             </div>
-          )}
+            {arena.config.suddenDeath && (
+              <div className="flex items-center text-primary-900/50 flex-1">
+                <div className="flex flex-1 w-full" />
+                <div className="whitespace-nowrap flex gap-1 items-center">
+                  <FireIcon className="w-5 h-5" /> 
+                  <div>Sudden Death</div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         {allPlayers.length <= 3 ? (
           <div
@@ -491,21 +490,21 @@ export function ArenaResults({
                   p.user ? `${p.user.identityProvider}/${p.user.userId}` : idx
                 }
               >
-                <PlayerPosition player={p} />
+                <PlayerPosition player={p} isCurrentUser={isCurrentUser(p)} />
                 <div className="flex flex-col gap-1 flex-1">
-                  <div className="flex items-center gap-5">
+                  <div className="flex items-center gap-2">
                     {p.user && (
-                      <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis shrink flex-1 gap-5">
+                      <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis shrink flex-1 gap-2">
                         <div className="max-w-[330px]">
                           {p.user.username ?? `!${p.user.userId}`}
                         </div>
-                        <div className="flex flex-1 h-1 bg-primary-900/10" />
+                        <div className="flex flex-1 h-1 bg-primary-900/5" />
                       </div>
                     )}
                     {!p.user && (
-                      <div className="flex flex-1 h-1 bg-primary-900/10" />
+                      <div className="flex flex-1 h-1 mt-3 bg-primary-900/5" />
                     )}
-                    {/* {p.user && (
+                    {p.user && (
                       <div className="flex justify-end w-10">
                         <Score
                           value={
@@ -515,20 +514,20 @@ export function ArenaResults({
                           }
                         />
                       </div>
-                    )} */}
+                    )}
                   </div>
                   {p.user && (
                     <div className="flex flex-1 shrink gap-0 items-start">
                       <div className="flex flex-1 shrink">
-                        <div className="flex flex-1 h-1 bg-primary-900/10 mt-2.5" />
-                        <div className="flex flex-1 max-w-5 shrink" />
+                        <div className="flex flex-1 h-1 bg-primary-900/5 mt-2" />
+                        <div className="flex flex-1 max-w-2 shrink" />
                       </div>
                       {renderGameStats(p, gamesTotal)}
                       {/* <div className="flex shrink">
-                        <div className="w-5" />
-                        <div className="flex w-10 shrink h-1 bg-primary-900/10 mt-2.5" />
+                        <div className="w-2" />
+                        <div className="flex w-10 shrink h-1 bg-primary-900/5 mt-2" />
                       </div> */}
-                                            <div className="flex justify-end ml-5 w-10">
+                                            {/* <div className="flex justify-end ml-5 w-10">
                         <Score
                           value={
                             p.gamesCompleted > 0
@@ -536,7 +535,7 @@ export function ArenaResults({
                               : 0
                           }
                         />
-                      </div>
+                      </div> */}
 
                     </div>
                   )}

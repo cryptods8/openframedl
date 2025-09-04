@@ -256,7 +256,7 @@ function formatUsername({
   username,
 }: ArenaAudienceMember) {
   if (username) {
-    return `@${username}`;
+    return username;
   }
   if (identityProvider === "xmtp") {
     return `${shortenMid(userId!, 6, 4)}`;

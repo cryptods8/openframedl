@@ -47,7 +47,7 @@ export default async function Page({
   const arena = await findArenaWithGamesById(numArenaId);
 
   return (
-    <div className="w-full h-dvh min-h-full flex flex-col items-center flex-1">
+    <div className="w-full h-full flex flex-col items-center flex-1">
       <ProfileApp headerless>
         <ArenaMiniApp arena={toPublicArenaWithGames(arena)} />
       </ProfileApp>

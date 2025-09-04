@@ -210,7 +210,7 @@ function ArenaResultsPanel({
           <SignIn />
         </div>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center py-4">
         {/* <div className="text-2xl font-semibold text-center">
           <ArenaHeader arena={arena} showAvatar />
         </div>

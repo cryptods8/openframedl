@@ -186,10 +186,7 @@ export function ArenaCreateForm() {
       audience: config.audience || [],
       audienceSize: config.audienceSize || 2,
     });
-    const playUrl = new URL("https://xframes-server.vercel.app/");
-    playUrl.searchParams.set("url", arenaUrl);
-    playUrl.searchParams.set("r", Date.now().toString());
-    await composeCast({ text, embeds: [playUrl.toString()] });
+    await composeCast({ text, embeds: [arenaUrl.toString()] });
   };
 
   return (

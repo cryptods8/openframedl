@@ -410,7 +410,7 @@ function Image({
     arena,
     userKey
   );
-  const pageSize = aspectRatio === "1:1" ? MAX_DISPLAYED_PLAYERS : 6;
+  const pageSize = aspectRatio === "1:1" ? MAX_DISPLAYED_PLAYERS : aspectRatio === "3:2" ? 8 : 6;
   const players = getDisplayedPlayers(allPlayers, userKey, page, pageSize);
   const imageSizeClass =
     players.length > 2 ? "w-24 h-24 text-7xl" : "w-32 h-32 text-8xl";

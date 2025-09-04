@@ -34,7 +34,7 @@ function renderMessageWithHighlights(
   message: { text: string; highlighted?: boolean }[]
 ) {
   return (
-    <div className="flex flex-row flex-wrap items-center whitespace-pre-wrap">
+    <div className="text-center whitespace-pre-wrap">
       {message.map(({ text, highlighted }, idx) => (
         <span
           key={idx}
@@ -172,7 +172,7 @@ function formatUsername({
   username,
 }: ArenaAudienceMember) {
   if (username) {
-    return `@${username}`;
+    return username;
   }
   if (identityProvider === "xmtp") {
     return `${shortenMid(userId!, 6, 4)}`;
@@ -195,7 +195,7 @@ function AudienceMemberLabel({
   return (
     <div
       className={cn(
-        "flex pl-1.5 pr-3 py-1.5 rounded-md items-center gap-2 border border-2",
+        "flex pl-1 pr-2 py-1 rounded-md items-center gap-2 border border-2",
         isJoined ? "bg-green-600/10" : "bg-primary-900/10",
         current ? "border-green-600" : "border-transparent"
       )}
@@ -258,7 +258,7 @@ function ArenaAudience({
           ),
       })),
     ...awaitingAudience.map((m) => ({
-      key: `${m.identityProvider}/${m.userId ?? `@${m.username}`}`,
+      key: `${m.identityProvider}/${m.userId ?? m.username}`,
       label: formatUsername(m),
       status: "AWAITING" as const,
       current: currentUser && isAudienceMember(m, currentUser),
@@ -275,7 +275,7 @@ function ArenaAudience({
   }
 
   return (
-    <div className="flex flex-col px-6 items-center">
+    <div className="flex flex-col items-center">
       <div className="flex flex-row flex-wrap items-center justify-center gap-2">
         {items.length === 2 && freeSlots === 0 && (
           <div className="flex flex-row flex-wrap items-center gap-2">
@@ -349,7 +349,7 @@ function ArenaParameters({ arena }: { arena: PublicArenaWithGames }) {
   return (
     <div className="flex flex-col items-center w-full gap-2">
       {items.map((item, idx) => (
-        <div key={idx} className="flex items-center w-full gap-4">
+        <div key={idx} className="flex items-center w-full gap-4 text-center">
           <div className="flex flex-1 h-1 bg-primary-900/10" />
           {item}
           <div className="flex flex-1 h-1 bg-primary-900/10" />
@@ -440,11 +440,13 @@ function JoinArena({
           <SignIn />
         </div>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center gap-8 pt-8 pb-2">
         <div className="text-2xl font-semibold text-center">
           <ArenaHeader arena={arena} showAvatar />
         </div>
-        <ArenaAudience arena={arena} currentUser={currentUser} />
+        <div className="flex-1">
+          <ArenaAudience arena={arena} currentUser={currentUser} />
+        </div>
         <ArenaParameters arena={arena} />
       </div>
       <div style={{ height: buttonContainerHeight }} />
@@ -584,25 +586,20 @@ function AuthContainer({
     setSignInFailure(undefined);
   }, []);
 
-  useEffect(() => {
-    if (context.client && !context.client.added && !isFirstLoad) {
-      context.requestAddFrame().catch((e) => {
-        console.error(e);
-      });
-    }
-  }, [context, isFirstLoad]);
+  // useEffect(() => {
+  //   if (context.client && !context.client.added && !isFirstLoad) {
+  //     context.requestAddFrame().catch((e) => {
+  //       console.error(e);
+  //     });
+  //   }
+  // }, [context, isFirstLoad]);
 
   const safeAreaInsets = context?.client?.safeAreaInsets;
 
   return (
-    <div
+    <PaddedContainer
       className="w-full h-full flex-1 flex flex-col items-center justify-center"
-      style={{
-        paddingTop: safeAreaInsets?.top,
-        paddingBottom: safeAreaInsets?.bottom,
-        paddingLeft: safeAreaInsets?.left,
-        paddingRight: safeAreaInsets?.right,
-      }}
+      context={context}
     >
       <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center">
         {status === "authenticated" ? (
@@ -657,7 +654,7 @@ function AuthContainer({
           </div>
         )}
       </div>
-    </div>
+    </PaddedContainer>
   );
 }
 

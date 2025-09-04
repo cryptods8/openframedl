@@ -52,7 +52,7 @@ export default async function Page({
   const numArenaId = parseInt(arenaId, 10);
   const arena = await findArenaWithGamesById(numArenaId);
   return (
-    <div className="w-full h-dvh min-h-full flex flex-col flex-1 items-center">
+    <div className="w-full h-full flex flex-col flex-1 items-center">
       <ProfileApp headerless>
         <ArenaResultsMiniApp arena={toPublicArenaWithGames(arena)} />
       </ProfileApp>
