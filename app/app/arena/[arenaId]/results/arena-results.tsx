@@ -504,7 +504,7 @@ export function ArenaResults({
                   p.user ? `${p.user.identityProvider}/${p.user.userId}` : idx
                 }
               >
-                <div className="rounded-md size-10 flex items-center justify-center outline outline-1 outline-white relative shrink-0">
+                <div className="rounded-md size-10 flex items-center justify-center outline outline-1 outline-white relative shrink-0 mt-0.5">
                   {p.user?.profileImage ? (
                     <img
                       src={p.user.profileImage}

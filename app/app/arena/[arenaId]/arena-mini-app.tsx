@@ -88,11 +88,8 @@ function formatTimeRangeBoundary(timestamp: Date | undefined, end?: boolean) {
     ]);
   }
   const now = new Date();
-  // format to YYYY-MM-DD HH:mm
-  const isoString = timestamp.toISOString();
-  const isoStringParts = isoString.split("T");
-  const formattedTimestamp =
-    isoStringParts[0]! + " " + isoStringParts[1]!.slice(0, 5);
+  // Format timestamp using browser locale
+  const formattedTimestamp = timestamp.toLocaleString(undefined);
   const inPast = now.getTime() > timestamp.getTime();
   const startDiff = now.getTime() - timestamp.getTime();
   const startDiffInMinutes = Math.floor(startDiff / 1000 / 60);
@@ -106,7 +103,7 @@ function formatTimeRangeBoundary(timestamp: Date | undefined, end?: boolean) {
         ? "Started at "
         : "Starts at ",
     },
-    { text: `${formattedTimestamp} UTC`, highlighted: true },
+    { text: `${formattedTimestamp}`, highlighted: true },
     {
       text: ` (${inPast ? "" : "in "}${formatDurationSimple(
         Math.abs(startDiffInMinutes)
@@ -180,7 +177,7 @@ function formatUsername({
   return `!${userId}`;
 }
 
-const MAX_DISPLAYED_ITEMS = 14;
+const MAX_DISPLAYED_ITEMS = 10;
 
 function AudienceMemberLabel({
   status,
@@ -264,7 +261,11 @@ function ArenaAudience({
       current: currentUser && isAudienceMember(m, currentUser),
     })),
   ].sort((a, b) => (a.current ? -1 : b.current ? 1 : 0));
-  const displayedItems = items; // .slice(0, MAX_DISPLAYED_ITEMS);
+
+  const [isShownAllItems, setIsShownAllItems] = useState(false);
+  const displayedItems = isShownAllItems
+    ? items
+    : items.slice(0, MAX_DISPLAYED_ITEMS);
 
   function renderItem({ key, label, status, current }: (typeof items)[0]) {
     return (
@@ -286,8 +287,12 @@ function ArenaAudience({
         )}
         {(items.length !== 2 || freeSlots !== 0) &&
           displayedItems.map((m) => renderItem(m))}
-        {displayedItems.length < items.length && (
-          <div className="text-primary-900/50">
+        {displayedItems.length < items.length && !isShownAllItems && (
+          <div
+            className="text-primary-500 cursor-pointer hover:text-primary-900 hover:underline"
+            role="button"
+            onClick={() => setIsShownAllItems(true)}
+          >
             {`+${items.length - displayedItems.length} more`}
           </div>
         )}
@@ -451,50 +456,52 @@ function JoinArena({
       </div>
       <div style={{ height: buttonContainerHeight }} />
       <div
-        className="fixed border-t border-primary-500/10 w-full bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10 p-4"
+        className="fixed border-t border-primary-500/10 w-full bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10"
         ref={buttonContainerRef}
       >
-        <PaddedContainer context={context} sides="rbl">
-          <div className="flex flex-col gap-2">
-            {isFinished || isFinishedForMember ? (
-              <div className="text-center text-primary-900/50">
-                {isFinished
-                  ? "Arena already finished!"
-                  : "You already finished the arena!"}
-              </div>
-            ) : membership?.type === "audience" ||
-              membership?.type === "free_slot" ? (
-              <Button
-                variant="primary"
-                onClick={handleJoin}
-                loading={isJoining}
-                disabled={isJoining}
-              >
-                Join
-              </Button>
-            ) : membership?.type === "member" ||
-              membership?.type === "member_free_slot" ? (
-              <Button variant="primary" href={`/app/arena/${arena.id}/play`}>
-                Play
-              </Button>
-            ) : (
-              <div className="text-center text-primary-900/50">
-                {"You can't join this arena anymore"}
-              </div>
-            )}
-            {completionStatus !== "NOT_STARTED" && (
-              <Button
-                variant={
-                  isFinished || isFinishedForMember ? "primary" : "outline"
-                }
-                size={isFinished || isFinishedForMember ? "md" : "sm"}
-                href={`/app/arena/${arena.id}/results`}
-              >
-                Results
-              </Button>
-            )}
-          </div>
-        </PaddedContainer>
+        <div className="p-4">
+          <PaddedContainer context={context} sides="rbl">
+            <div className="flex flex-col gap-2">
+              {isFinished || isFinishedForMember ? (
+                <div className="text-center text-primary-900/50">
+                  {isFinished
+                    ? "Arena already finished!"
+                    : "You already finished the arena!"}
+                </div>
+              ) : membership?.type === "audience" ||
+                membership?.type === "free_slot" ? (
+                <Button
+                  variant="primary"
+                  onClick={handleJoin}
+                  loading={isJoining}
+                  disabled={isJoining}
+                >
+                  Join
+                </Button>
+              ) : membership?.type === "member" ||
+                membership?.type === "member_free_slot" ? (
+                <Button variant="primary" href={`/app/arena/${arena.id}/play`}>
+                  Play
+                </Button>
+              ) : (
+                <div className="text-center text-primary-900/50">
+                  {"You can't join this arena anymore"}
+                </div>
+              )}
+              {completionStatus !== "NOT_STARTED" && (
+                <Button
+                  variant={
+                    isFinished || isFinishedForMember ? "primary" : "outline"
+                  }
+                  size={isFinished || isFinishedForMember ? "md" : "sm"}
+                  href={`/app/arena/${arena.id}/results`}
+                >
+                  Results
+                </Button>
+              )}
+            </div>
+          </PaddedContainer>
+        </div>
       </div>
     </div>
   );
@@ -581,11 +588,6 @@ function AuthContainer({
   //   }
   // }, []);
 
-  const handleContinueAsGuest = useCallback(() => {
-    // setAsGuest(true);
-    setSignInFailure(undefined);
-  }, []);
-
   // useEffect(() => {
   //   if (context.client && !context.client.added && !isFirstLoad) {
   //     context.requestAddFrame().catch((e) => {
@@ -593,8 +595,6 @@ function AuthContainer({
   //     });
   //   }
   // }, [context, isFirstLoad]);
-
-  const safeAreaInsets = context?.client?.safeAreaInsets;
 
   return (
     <PaddedContainer

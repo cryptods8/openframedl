@@ -195,6 +195,18 @@ function ArenaResultsPanel({
       );
     }, [arena, currentUser, joiningResult]);
 
+  // const hasStarted = status === "OPEN";
+  // const isFinished = status === "ENDED" || completionStatus === "COMPLETED";
+
+  // useEffect(() => {
+  //   if (hasStarted && !isFinished) {
+  //     const interval = setInterval(() => {
+  //       reloadArena();
+  //     }, 2000);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [hasStarted, isFinished, reloadArena]);
+
   return (
     <div className="flex flex-col sm:p-8 p-4 relative h-full flex-1 w-full">
       <div className="flex items-center gap-2 justify-between">
@@ -204,7 +216,7 @@ function ArenaResultsPanel({
             {isPro && <span style={{ color: "green" }}> PRO</span>}
             <span> ⚔️ ARENA</span>
           </h1>
-          <div className="text-primary-900/50 text-sm">
+          <div className="text-primary-900/50 text-sm" onClick={reloadArena}>
             #{arena.id}
             {arena.userData?.username ? ` by ${arena.userData?.username}` : ""}
           </div>
@@ -223,38 +235,41 @@ function ArenaResultsPanel({
       </div>
       <div style={{ height: buttonContainerHeight }} />
       <div
-        className="fixed border-t border-primary-500/10 w-full bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10 p-4"
+        className="fixed border-t border-primary-500/10 w-full bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10"
         ref={buttonContainerRef}
       >
-        <PaddedContainer context={context} sides="rbl">
-          <div className="flex flex-col gap-2">
-            {status === "ENDED" ||
-            completionStatus === "COMPLETED" ||
-            memberCompletionStatus === "COMPLETED" ? null : membership?.type ===
-                "audience" || membership?.type === "free_slot" ? (
-              <Button
-                variant="primary"
-                onClick={handleJoin}
-                loading={isJoining}
-                disabled={isJoining}
-              >
-                Join
+        <div className="p-4">
+          <PaddedContainer context={context} sides="rbl">
+            <div className="flex flex-col gap-2">
+              {status === "ENDED" ||
+              completionStatus === "COMPLETED" ||
+              memberCompletionStatus ===
+                "COMPLETED" ? null : membership?.type === "audience" ||
+                membership?.type === "free_slot" ? (
+                <Button
+                  variant="primary"
+                  onClick={handleJoin}
+                  loading={isJoining}
+                  disabled={isJoining}
+                >
+                  Join
+                </Button>
+              ) : membership?.type === "member" ||
+                membership?.type === "member_free_slot" ? (
+                <Button variant="primary" href={`/app/arena/${arena.id}/play`}>
+                  Play
+                </Button>
+              ) : (
+                <div className="text-center text-primary-900/50">
+                  {"You can't join this arena anymore"}
+                </div>
+              )}
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                Share
               </Button>
-            ) : membership?.type === "member" ||
-              membership?.type === "member_free_slot" ? (
-              <Button variant="primary" href={`/app/arena/${arena.id}/play`}>
-                Play
-              </Button>
-            ) : (
-              <div className="text-center text-primary-900/50">
-                {"You can't join this arena anymore"}
-              </div>
-            )}
-            <Button variant="outline" size="sm" onClick={handleShare}>
-              Share
-            </Button>
-          </div>
-        </PaddedContainer>
+            </div>
+          </PaddedContainer>
+        </div>
       </div>
     </div>
   );
