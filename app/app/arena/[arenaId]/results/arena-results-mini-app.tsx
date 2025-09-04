@@ -182,10 +182,10 @@ function ArenaResultsPanel({
       url += `?uid=${currentUser.userId}&ip=${currentUser.identityProvider}`;
     }
     context.share({
-      title: '',
+      title: "",
       url,
-    })
-  }, [context, currentUser])
+    });
+  }, [context, currentUser]);
 
   const { status, completionStatus, memberCompletionStatus, membership } =
     useMemo(() => {
@@ -204,7 +204,10 @@ function ArenaResultsPanel({
             {isPro && <span style={{ color: "green" }}> PRO</span>}
             <span> ⚔️ ARENA</span>
           </h1>
-          <div className="text-primary-900/50 text-sm">Results</div>
+          <div className="text-primary-900/50 text-sm">
+            #{arena.id}
+            {arena.userData?.username ? ` by ${arena.userData?.username}` : ""}
+          </div>
         </div>
         <div>
           <SignIn />
@@ -227,10 +230,8 @@ function ArenaResultsPanel({
           <div className="flex flex-col gap-2">
             {status === "ENDED" ||
             completionStatus === "COMPLETED" ||
-            memberCompletionStatus === "COMPLETED" ? (
-              null
-            ) : membership?.type === "audience" ||
-              membership?.type === "free_slot" ? (
+            memberCompletionStatus === "COMPLETED" ? null : membership?.type ===
+                "audience" || membership?.type === "free_slot" ? (
               <Button
                 variant="primary"
                 onClick={handleJoin}
@@ -250,7 +251,8 @@ function ArenaResultsPanel({
               </div>
             )}
             <Button variant="outline" size="sm" onClick={handleShare}>
-            Share</Button>
+              Share
+            </Button>
           </div>
         </PaddedContainer>
       </div>
@@ -337,13 +339,21 @@ function AuthContainer({
       context={context}
     >
       <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center">
-        <ArenaResultsPanel arena={arena} currentUser={currentUser} context={context} />
+        <ArenaResultsPanel
+          arena={arena}
+          currentUser={currentUser}
+          context={context}
+        />
       </div>
     </PaddedContainer>
   );
 }
 
-export function ArenaResultsMiniApp({ arena }: { arena?: PublicArenaWithGames }) {
+export function ArenaResultsMiniApp({
+  arena,
+}: {
+  arena?: PublicArenaWithGames;
+}) {
   const clientContext = useClientContext({});
 
   return (

@@ -20,7 +20,7 @@ export function ArenaHeader({
             username={arena?.userData?.username}
           />
         )}
-        <span>@{arena?.userData?.username}</span>
+        <span>{arena?.userData?.username}</span>
       </div>
     </div>
   );

@@ -294,12 +294,26 @@ function Score({ value }: { value: number }) {
   );
 }
 
-function PlayerPosition({ player, isCurrentUser }: { player: ArenaPlayerStats, isCurrentUser?: boolean }) {
+function PlayerPosition({
+  player,
+  isCurrentUser,
+  compact,
+}: {
+  player: ArenaPlayerStats;
+  isCurrentUser?: boolean;
+  compact?: boolean;
+}) {
   const { user, gamesCompleted, pos } = player;
   const isActive = user && gamesCompleted > 0 && pos != null;
   return (
     <div
-      className={clsx("flex w-7 h-7 rounded-full items-center justify-center text-base shrink-0", isCurrentUser ? "outline outline-primary-500 shadow-md shadow-primary-500" : "border-transparent")}
+      className={clsx(
+        "flex rounded-full items-center justify-center shrink-0",
+        compact ? "w-5 h-5 text-xs" : "w-7 h-7 text-base",
+        isCurrentUser
+          ? "outline outline-primary-500 shadow-md shadow-primary-500"
+          : "border-transparent"
+      )}
       style={{
         backgroundColor: isActive
           ? pos === 1
@@ -399,7 +413,7 @@ export function ArenaResults({
               <div className="flex items-center text-primary-900/50 flex-1">
                 <div className="flex flex-1 w-full" />
                 <div className="whitespace-nowrap flex gap-1 items-center">
-                  <FireIcon className="w-5 h-5" /> 
+                  <FireIcon className="w-5 h-5" />
                   <div>Sudden Death</div>
                 </div>
               </div>
@@ -483,14 +497,38 @@ export function ArenaResults({
             {players.map((p, idx) => (
               <div
                 className={clsx(
-                  "flex w-full items-start gap-5",
+                  "flex w-full items-start gap-4",
                   isCurrentUser(p) ? "font-bold" : ""
                 )}
                 key={
                   p.user ? `${p.user.identityProvider}/${p.user.userId}` : idx
                 }
               >
-                <PlayerPosition player={p} isCurrentUser={isCurrentUser(p)} />
+                <div className="rounded-md size-10 flex items-center justify-center outline outline-1 outline-white relative shrink-0">
+                  {p.user?.profileImage ? (
+                    <img
+                      src={p.user.profileImage}
+                      className={clsx(
+                        "object-cover rounded-md bg-white w-10 h-10"
+                      )}
+                    />
+                  ) : (
+                    <div
+                      className={clsx(
+                        "flex items-center justify-center rounded-md bg-primary-900/10 text-primary-900/20 font-bold font-space w-10 h-10"
+                      )}
+                    >
+                      F
+                    </div>
+                  )}
+                  <div className="absolute -bottom-2 -right-2 rounded-full bg-primary-100 outline outline-1 outline-white">
+                    <PlayerPosition
+                      compact
+                      player={p}
+                      isCurrentUser={isCurrentUser(p)}
+                    />
+                  </div>
+                </div>
                 <div className="flex flex-col gap-1 flex-1">
                   <div className="flex items-center gap-2">
                     {p.user && (
@@ -527,7 +565,7 @@ export function ArenaResults({
                         <div className="w-2" />
                         <div className="flex w-10 shrink h-1 bg-primary-900/5 mt-2" />
                       </div> */}
-                                            {/* <div className="flex justify-end ml-5 w-10">
+                      {/* <div className="flex justify-end ml-5 w-10">
                         <Score
                           value={
                             p.gamesCompleted > 0
@@ -536,7 +574,6 @@ export function ArenaResults({
                           }
                         />
                       </div> */}
-
                     </div>
                   )}
                 </div>
