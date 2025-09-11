@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
 
   const manifest: Manifest.Manifest & { baseBuilder: { allowedAddresses: string[] } } = {
     accountAssociation,
-    frame: miniapp,
+    // frame: miniapp,
     miniapp,
     baseBuilder: {
       allowedAddresses: ["0xD322Cb0aD9e29Bb121Aa3DB089A2C7def441F168"],
