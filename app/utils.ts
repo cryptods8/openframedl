@@ -1,5 +1,10 @@
 // import { headers } from "next/headers";
 import { baseUrl, isPro } from "./constants";
+import { clsx, type ClassValue } from "clsx";
+
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs);
+}
 
 export function currentURL(pathname: string): URL {
   return new URL(pathname, baseUrl);

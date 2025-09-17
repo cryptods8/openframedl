@@ -87,6 +87,16 @@ export function GameOptionsMenu({
           {(
             <MenuItem>
               <Link
+                href="/app/arena"
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
+              >
+                <span>Browse Arenas</span>
+              </Link>
+            </MenuItem>
+          )}
+          {(
+            <MenuItem>
+              <Link
                 href="/app/arena/create"
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
               >

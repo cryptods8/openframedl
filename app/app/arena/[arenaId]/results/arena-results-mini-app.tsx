@@ -23,6 +23,7 @@ import { toast } from "@/app/ui/toasts/toast";
 import { useFarcasterSession } from "@/app/hooks/use-farcaster-session";
 import { PaddedContainer } from "@/app/ui/padded-container";
 import { ArenaResults } from "./arena-results";
+import Link from "next/link";
 
 function renderMessageWithHighlights(
   message: { text: string; highlighted?: boolean }[]
@@ -211,11 +212,13 @@ function ArenaResultsPanel({
     <div className="flex flex-col sm:p-8 p-4 relative h-full flex-1 w-full">
       <div className="flex items-center gap-2 justify-between">
         <div>
-          <h1 className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
-            <span>Framedl</span>
-            {isPro && <span style={{ color: "green" }}> PRO</span>}
-            <span> ⚔️ ARENA</span>
-          </h1>
+          <Link href="/app/arena">
+            <h1 className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
+              <span>Framedl</span>
+              {isPro && <span style={{ color: "green" }}> PRO</span>}
+              <span> ⚔️ ARENA</span>
+            </h1>
+          </Link>
           <div className="text-primary-900/50 text-sm" onClick={reloadArena}>
             #{arena.id}
             {arena.userData?.username ? ` by ${arena.userData?.username}` : ""}

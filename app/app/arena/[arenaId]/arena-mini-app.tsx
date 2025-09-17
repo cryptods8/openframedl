@@ -29,6 +29,7 @@ import { toast } from "@/app/ui/toasts/toast";
 import { useFarcasterSession } from "@/app/hooks/use-farcaster-session";
 import { PaddedContainer } from "@/app/ui/padded-container";
 import { ArenaHeader } from "./arena-header";
+import Link from "next/link";
 
 function renderMessageWithHighlights(
   message: { text: string; highlighted?: boolean }[]
@@ -434,11 +435,13 @@ function JoinArena({
     <div className="flex flex-col sm:p-8 p-4 relative h-full flex-1 w-full">
       <div className="flex items-center gap-2 justify-between">
         <div>
-          <h1 className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
-            <span>Framedl</span>
-            {isPro && <span style={{ color: "green" }}> PRO</span>}
-            <span> ⚔️ ARENA</span>
-          </h1>
+          <Link href="/app/arena">
+            <h1 className="text-xl font-semibold font-space flex items-center flex-wrap whitespace-pre-wrap">
+              <span>Framedl</span>
+              {isPro && <span style={{ color: "green" }}> PRO</span>}
+              <span> ⚔️ ARENA</span>
+            </h1>
+          </Link>
           <div className="text-primary-900/50 text-sm">Join the arena</div>
         </div>
         <div>
@@ -613,11 +616,13 @@ function AuthContainer({
         ) : (
           status === "unauthenticated" && (
             <div className="text-center flex-1 flex flex-col items-center justify-center gap-1">
-              <div className="text-3xl font-bold font-space">
-                <span>Framedl</span>
-                {isPro && <span style={{ color: "green" }}> PRO</span>}
-                <span> ⚔️ ARENA</span>
-              </div>
+              <Link href="/app/arena">
+                <div className="text-3xl font-bold font-space">
+                  <span>Framedl</span>
+                  {isPro && <span style={{ color: "green" }}> PRO</span>}
+                  <span> ⚔️ ARENA</span>
+                </div>
+              </Link>
               <div className="text-md text-primary-900/60">
                 Cross words with your friends
               </div>
