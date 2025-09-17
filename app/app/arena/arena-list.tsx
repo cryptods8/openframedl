@@ -5,6 +5,7 @@ import { ArenaCard } from "./arena-card";
 import { ArenaFilters } from "./arena-filters";
 import { Button } from "@/app/ui/button/button";
 import { Loader } from "@/app/ui/loader";
+import { FloatingActionButton } from "@/app/ui/floating-action-button";
 import { PublicArenaListItem, ArenaFilter } from "@/app/api/arenas/list/route";
 
 interface ArenaListResponse {
@@ -98,51 +99,55 @@ export function ArenaList({ filterType }: { filterType: ArenaFilter }) {
   }, [fetchArenas, filterType]);
 
   return (
-    <div className="w-full flex flex-col gap-6">
-      <div className="-mx-4">
-        <ArenaFilters currentFilter={filterType} />
+    <>
+      <div className="w-full flex flex-col gap-6">
+        <div className="-mx-4">
+          <ArenaFilters currentFilter={filterType} />
+        </div>
+
+        {error && (
+          <div className="text-center text-primary-900/50 p-8">
+            <div className="text-primary-900/50 mb-4">{error}</div>
+            <Button variant="outline" onClick={() => fetchArenas(1, filterType)}>
+              Try again
+            </Button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {arenas.map((arena) => (
+            <ArenaCard key={arena.id} arena={arena} />
+          ))}
+        </div>
+
+        {loading && (
+          <div className="flex justify-center py-[21px]">
+            <Loader />
+          </div>
+        )}
+
+        {hasMore && !loading && !error && (
+          <div ref={loadingRef} className="flex justify-center py-4">
+            <Button variant="outline" onClick={loadMore}>
+              Load More
+            </Button>
+          </div>
+        )}
+
+        {!hasMore && arenas.length > 0 && (
+          <div className="text-center text-primary-900/50 p-4">
+            No more arenas to load
+          </div>
+        )}
+
+        {!loading && arenas.length === 0 && !error && (
+          <div className="text-center text-primary-900/50 p-8">
+            No arenas found for this filter
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="text-center text-primary-900/50 p-8">
-          <div className="text-primary-900/50 mb-4">{error}</div>
-          <Button variant="outline" onClick={() => fetchArenas(1, filterType)}>
-            Try again
-          </Button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {arenas.map((arena) => (
-          <ArenaCard key={arena.id} arena={arena} />
-        ))}
-      </div>
-
-      {loading && (
-        <div className="flex justify-center py-[21px]">
-          <Loader />
-        </div>
-      )}
-
-      {hasMore && !loading && !error && (
-        <div ref={loadingRef} className="flex justify-center py-4">
-          <Button variant="outline" onClick={loadMore}>
-            Load More
-          </Button>
-        </div>
-      )}
-
-      {!hasMore && arenas.length > 0 && (
-        <div className="text-center text-primary-900/50 p-4">
-          No more arenas to load
-        </div>
-      )}
-
-      {!loading && arenas.length === 0 && !error && (
-        <div className="text-center text-primary-900/50 p-8">
-          No arenas found for this filter
-        </div>
-      )}
-    </div>
+      
+      <FloatingActionButton href="/app/arena/create" />
+    </>
   );
 }
