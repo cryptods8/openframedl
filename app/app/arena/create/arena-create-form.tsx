@@ -48,24 +48,29 @@ function InputField({
   label,
   helperText,
   id,
+  rightAddon,
   ...props
 }: {
   label?: string;
   helperText?: string;
   id: string;
+  rightAddon?: React.ReactNode;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <Field>
       {label && <Label htmlFor={id}>{label}</Label>}
-      <Input
-        id={id}
-        className={clsx(
-          "w-full h-10 rounded-md border border-primary-200 bg-white py-3 px-4",
-          "focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-500",
-          "disabled:bg-black/5"
-        )}
-        {...props}
-      />
+      <div className="flex flex-row items-center gap-2">
+        <Input
+          id={id}
+          className={clsx(
+            "w-full h-10 rounded-md border border-primary-200 bg-white py-3 px-4 flex-1",
+            "focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-500",
+            "disabled:bg-black/5"
+          )}
+          {...props}
+        />
+        {!!rightAddon && rightAddon}
+      </div>
       {helperText && (
         <HeadlessDescription className="text-xs text-primary-900/50 mt-1 px-1">
           {helperText}
@@ -123,7 +128,7 @@ export function ArenaCreateForm() {
   const { jwt } = useJwt();
   const { composeCast } = useSharing();
 
-  const actualAudienceSize = audienceSize ?? 2;
+  const actualAudienceSize = audienceSize ?? 50;
   const actualWordCount = wordCount ?? 5;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -189,6 +194,17 @@ export function ArenaCreateForm() {
     await composeCast({ text, embeds: [arenaUrl.toString()] });
   };
 
+  const isInitWordValid = (word: string) => {
+    return word.match(/^[a-zA-Z]{5}$/);
+  };
+
+  const addInitWordIfValid = (word: string) => {
+    if (initWords.length < 3 && isInitWordValid(word)) {
+      setInitWords([...initWords, word.toLowerCase()]);
+      setInitWord("");
+    }
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -200,7 +216,7 @@ export function ArenaCreateForm() {
             label="How many players?"
             id="audience-size"
             type="number"
-            placeholder="2"
+            placeholder="50"
             min={1}
             max={100}
             step={1}
@@ -210,7 +226,7 @@ export function ArenaCreateForm() {
                 e.target.value ? parseInt(e.target.value, 10) : null
               )
             }
-            helperText="Enter the number of players. Default is 2, minimum is 1, maximum is 100."
+            helperText="Enter the number of players. Default is 50, minimum is 1, maximum is 100."
           />
         </div>
         <div>
@@ -368,17 +384,27 @@ export function ArenaCreateForm() {
                 onChange={(e) => setInitWord(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    if (
-                      initWords.length < 3 &&
-                      initWord.match(/^[a-zA-Z]{5}$/)
-                    ) {
-                      setInitWords([...initWords, initWord.toLowerCase()]);
-                      setInitWord("");
-                    }
+                    addInitWordIfValid(initWord);
                   }
                 }}
+                onBlur={() => addInitWordIfValid(initWord)}
                 helperText="Press Enter to add a word"
                 disabled={initWords.length >= 3}
+                rightAddon={
+                  <div>
+                    <Button
+                      size="sm"
+                      type="button"
+                      disabled={initWords.length >= 3 || !isInitWordValid(initWord)}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.preventDefault();
+                        addInitWordIfValid(initWord);
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                }
               />
               <div className="flex flex-row items-center gap-2 pt-2">
                 {initWords.map((word, idx) => (
