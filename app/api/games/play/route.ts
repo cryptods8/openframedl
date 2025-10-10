@@ -4,10 +4,12 @@ import {
   GuessedGame,
   PassRequiredError,
   GameMetadata,
+  BasicStats,
 } from "@/app/game/game-service";
 import { loadUserData } from "@/app/games/user-data";
 import { BaseUserRequest, getUserInfoFromRequest } from "../../api-utils";
 import { UserData, UserGameKey, UserKey } from "@/app/game/game-repository";
+import { pgDb } from "@/app/db/pg/pg-db";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +38,51 @@ async function loadReplacedScore(gameKey: UserGameKey) {
   }
 }
 
+async function loadBasicStats(userKey: UserKey): Promise<BasicStats> {
+  try {
+    return await pgDb
+      .selectFrom("game as g")
+      .where("g.isDaily", "=", true)
+      .where("g.userId", "=", userKey.userId)
+      .where("g.identityProvider", "=", userKey.identityProvider)
+      .select((db) => [
+        db.fn.count<number>("g.id").as("totalGames"),
+        db.fn
+          .coalesce(
+            db.fn.sum<number | null>(
+              db.case().when("g.status", "=", "WON").then(1).else(0).end()
+            ),
+            db.val(0)
+          )
+          .as("totalWins"),
+        db.fn
+          .coalesce(
+            db.fn.sum<number | null>(
+              db.case().when("g.status", "=", "LOST").then(1).else(0).end()
+            ),
+            db.val(0)
+          )
+          .as("totalLosses"),
+      ])
+      .executeTakeFirstOrThrow();
+  } catch (e) {
+    console.error("Error loading basic stats", userKey, e);
+    return {
+      totalGames: 0,
+      totalWins: 0,
+      totalLosses: 0,
+    };
+  }
+}
+
 async function loadOrCreateGame(
   userGameKey: UserGameKey,
   userData: UserData | null | undefined
-): Promise<{ game: GuessedGame; replacedScore?: number | null }> {
+): Promise<{
+  game: GuessedGame;
+  replacedScore?: number | null;
+  basicStats?: BasicStats;
+}> {
   const loadGamePromise = gameService.loadOrCreate(userGameKey, {
     userData: async () => {
       if (
@@ -53,13 +96,15 @@ async function loadOrCreateGame(
     },
   });
   if (userGameKey.isDaily) {
-    const [game, replacedScore] = await Promise.all([
+    const [game, replacedScore, basicStats] = await Promise.all([
       loadGamePromise,
       loadReplacedScore(userGameKey),
+      loadBasicStats(userGameKey),
     ]);
     return {
       game,
       replacedScore,
+      basicStats,
     };
   }
   return { game: await loadGamePromise };
@@ -87,12 +132,13 @@ export const POST = async (req: NextRequest) => {
         gameKey,
         isDaily,
       };
-      const { game: newGame, replacedScore } = await loadOrCreateGame(
-        userGameKey,
-        userData
-      );
+      const {
+        game: newGame,
+        replacedScore,
+        basicStats,
+      } = await loadOrCreateGame(userGameKey, userData);
       game = newGame;
-      metadata = { replacedScore };
+      metadata = { replacedScore, basicStats };
     }
   } catch (e) {
     if (e instanceof PassRequiredError) {

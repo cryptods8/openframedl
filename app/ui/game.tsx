@@ -27,6 +27,7 @@ import { useHaptics } from "../hooks/use-haptics";
 import { ProPassRequiredScreen } from "./game/pro-pass-required-screen";
 import { PublicArena } from "../games/arena/arena-utils";
 import { useRouter } from "next/navigation";
+import { GameIntroDialog } from "./game-intro-dialog";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -617,19 +618,43 @@ export function Game({
   }, [mode]);
 
   const replacedScore = currentGame?.metadata?.replacedScore;
+  const basicStats = currentGame?.metadata?.basicStats;
+  const statsLoaded = basicStats != null;
+  const completedCount = (basicStats?.totalLosses ?? 0) + (basicStats?.totalWins ?? 0);
+  const isFreshGame = currentGame?.guessCount === 0;
+  const isCompleted = currentGame?.completedAt != null;
+  const isDaily = currentGame?.isDaily;
+
+  const [isIntroOpen, setIsIntroOpen] = useState(false);
+
   useEffect(() => {
     if (
       replacedScore != null &&
-      !currentGame?.completedAt &&
-      currentGame?.isDaily
+      completedCount > 13 &&
+      isDaily &&
+      !isCompleted
     ) {
       toast(`Win in ${replacedScore} to keep your average`);
     }
-  }, [replacedScore, currentGame]);
+  }, [replacedScore, completedCount, isDaily, isCompleted]);
+
+  useEffect(() => {
+    if (completedCount === 0 && statsLoaded && isFreshGame && isDaily) {
+      setIsIntroOpen(true);
+    }
+  }, [completedCount, statsLoaded, isFreshGame, isDaily]);
 
   const handleDialogClose = useCallback(() => {
     setIsDialogOpen(false);
   }, [setIsDialogOpen]);
+
+  const handleIntroOpen = useCallback(() => {
+    setIsIntroOpen(true);
+  }, [setIsIntroOpen]);
+
+  const handleIntroClose = useCallback(() => {
+    setIsIntroOpen(false);
+  }, [setIsIntroOpen]);
 
   if (
     config.isPro &&
@@ -769,6 +794,7 @@ export function Game({
         isAppFrame={appFrame}
         anonUserInfo={anonUserInfo}
       />
+      <GameIntroDialog isOpen={isIntroOpen} onClose={handleIntroClose} />
       {mode === "normal" && (
         <div className="w-[640px] max-w-full p-0.5 relative">
           <div className="absolute -top-12 right-4">
@@ -778,6 +804,7 @@ export function Game({
               isAppFrame={appFrame}
               mode={mode}
               onModeChange={setMode}
+              onIntroOpen={handleIntroOpen}
             />
           </div>
           <GameKeyboard

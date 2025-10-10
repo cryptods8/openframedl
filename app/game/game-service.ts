@@ -246,10 +246,17 @@ export interface PersonalLeaderboard extends Leaderboard {
   personalEntryIndex?: number;
 }
 
+export interface BasicStats {
+  totalGames: number;
+  totalWins: number;
+  totalLosses: number;
+}
+
 export interface GameMetadata {
   replacedScore?: number | null;
   hasNext?: boolean;
   finished?: boolean;
+  basicStats?: BasicStats;
 }
 
 const GUESS_PATTERN = /^[A-Za-z]{5}$/;

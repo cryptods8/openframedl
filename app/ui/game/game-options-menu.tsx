@@ -28,12 +28,14 @@ export function GameOptionsMenu({
   isAppFrame,
   mode,
   onModeChange,
+  onIntroOpen,
 }: {
   onNewGame: (gameType: "practice" | "daily") => void;
   showDaily?: boolean;
   isAppFrame?: boolean;
   mode?: "normal" | "pro";
   onModeChange?: (mode: "normal" | "pro") => void;
+  onIntroOpen?: () => void;
 }) {
   return (
     <Menu>
@@ -121,6 +123,16 @@ export function GameOptionsMenu({
                 </div>
               </button>
             </MenuItem>
+          )}
+          {onIntroOpen && (
+            <>
+            <MenuSeparator className="my-1 h-px bg-primary-200" />
+            <MenuItem>
+              <button onClick={onIntroOpen} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded">
+                <span>How to Play</span>
+              </button>
+            </MenuItem>
+            </>
           )}
         </MenuItems>
       </Transition>
