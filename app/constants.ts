@@ -14,7 +14,20 @@ export const externalBaseUrl =
   process.env["EXTERNAL_BASE_URL"] ||
   baseUrl;
 
-const HUB_CONFIGS = [
+export interface HubConfig {
+  httpUrl: string;
+  requestOptions: RequestInit | undefined;
+}
+
+const DEFAULT_HUB_CONFIGS: HubConfig[] = [
+  {
+    httpUrl: "https://hub.merv.fun",
+    requestOptions: undefined,
+  },
+  {
+    httpUrl: "https://hub.pinata.cloud",
+    requestOptions: undefined,
+  },
   {
     httpUrl: "https://snapchain-api.neynar.com",
     requestOptions: {
@@ -24,19 +37,22 @@ const HUB_CONFIGS = [
       },
     },
   },
-  {
-    httpUrl: "https://hub.pinata.cloud",
-    requestOptions: undefined,
-  },
 ] as const;
 
 const envHubHttpUrl = process.env["FRAME_HUB_HTTP_URL"];
-const envHubRequestOptions = process.env["FRAME_HUB_REQUEST_OPTIONS"] && envHubHttpUrl
-  ? JSON.parse(process.env["FRAME_HUB_REQUEST_OPTIONS"])
-  : null;
+const envHubRequestOptions =
+  process.env["FRAME_HUB_REQUEST_OPTIONS"] && envHubHttpUrl
+    ? JSON.parse(process.env["FRAME_HUB_REQUEST_OPTIONS"])
+    : null;
 
-export const hubHttpUrl = envHubHttpUrl || HUB_CONFIGS[0].httpUrl;
-export const hubRequestOptions =
-  envHubRequestOptions || HUB_CONFIGS[0].requestOptions;
+export const hubConfigs: HubConfig[] = envHubHttpUrl
+  ? [
+      { httpUrl: envHubHttpUrl, requestOptions: envHubRequestOptions },
+      ...DEFAULT_HUB_CONFIGS,
+    ]
+  : DEFAULT_HUB_CONFIGS;
+
+export const hubHttpUrl = hubConfigs[0]!.httpUrl;
+export const hubRequestOptions = hubConfigs[0]!.requestOptions;
 
 export const isPro = process.env.FRAMEDL_PRO === "true";
