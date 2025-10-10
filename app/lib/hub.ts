@@ -43,7 +43,9 @@ function getBiasedRandomOffset(n: number): number {
   return n - 1;
 }
 
-async function tryCallHub <T>(fn: (options: HubOptions) => Promise<T>): Promise<T> {
+async function tryCallHub<T>(
+  fn: (options: HubOptions) => Promise<T>
+): Promise<T> {
   const N = hubConfigs.length;
   const offset = getBiasedRandomOffset(N);
   for (let i = 0; i < N; i++) {
@@ -71,9 +73,42 @@ export async function getAddressesForFid(
 }
 
 export async function validateFrameMessage(payload: FrameActionPayload) {
-  return tryCallHub(async (options) => frValidateFrameMessage(payload, options));
+  return tryCallHub(async (options) =>
+    frValidateFrameMessage(payload, options)
+  );
 }
 
-export function createVerifyAppKey() {
-  return tryCallHub(async (options) => createVerifyAppKeyWithHub(options.hubHttpUrl, options.hubRequestOptions));
+type VerifyAppKeyResult =
+  | {
+      valid: true;
+      appFid: number;
+    }
+  | {
+      valid: false;
+    };
+type VerifyAppKey = (
+  fid: number,
+  appKey: string
+) => Promise<VerifyAppKeyResult>;
+
+export function createVerifyAppKey(): VerifyAppKey {
+  return async (fid, appKey) => {
+    const N = hubConfigs.length;
+    const offset = getBiasedRandomOffset(N);
+    for (let i = 0; i < N; i++) {
+      try {
+        const hubIndex = (i + offset) % N;
+        console.debug(`Trying hub ${hubIndex}`);
+        const options = getHubOptions(hubIndex);
+        const verifyAppKey = createVerifyAppKeyWithHub(
+          options.hubHttpUrl,
+          options.hubRequestOptions
+        );
+        return await verifyAppKey(fid, appKey);
+      } catch (e) {
+        console.error("Error calling hub", e);
+      }
+    }
+    throw new Error("No hub call succeeded");
+  };
 }
