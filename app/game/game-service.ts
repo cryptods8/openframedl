@@ -570,7 +570,20 @@ export class GameServiceImpl implements GameService {
       };
       for (const word of initWords || []) {
         try {
-          guessedGame = await this.guess(guessedGame, word);
+          const validation = this.validateGuess(guessedGame, word);
+          switch (validation) {
+            case "VALID":
+            case "INVALID_ALREADY_GUESSED":
+            // case "INVALID_HARD_MODE": -- TODO - this would break the game
+            case "INVALID_WORD":
+              guessedGame = await this.guessUnvalidated(guessedGame, word);
+              break;
+            default:
+              console.warn(
+                "Invalid init word: " + word + ", validation: " + validation
+              );
+              break;
+          }
         } catch (e) {
           // ignore
         }
@@ -739,6 +752,13 @@ export class GameServiceImpl implements GameService {
     if (!this.isValidGuess(guessedGame, guess)) {
       throw new Error("Guess is invalid!");
     }
+    return this.guessUnvalidated(guessedGame, guess);
+  }
+
+  private async guessUnvalidated(
+    guessedGame: GuessedGame,
+    guess: string
+  ): Promise<GuessedGame> {
     // const game = await gameRepo.findByUserGameKey(guessedGame);
     const game = this.fromGuessedGame(guessedGame);
     if (!game) {
@@ -921,7 +941,10 @@ export class GameServiceImpl implements GameService {
       const prevGuess = game.guesses[game.guesses.length - 1];
       if (prevGuess) {
         const wordCharacters = this.toWordCharacters(game.word);
-        const isHardMode = this.isHardMode(prevGuess.characters, this.toGuessCharacters(wordCharacters, formattedGuess));
+        const isHardMode = this.isHardMode(
+          prevGuess.characters,
+          this.toGuessCharacters(wordCharacters, formattedGuess)
+        );
         if (!isHardMode) {
           return "INVALID_HARD_MODE";
         }
