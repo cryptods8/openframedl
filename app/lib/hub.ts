@@ -43,18 +43,33 @@ function getBiasedRandomOffset(n: number): number {
   return n - 1;
 }
 
+const HUB_TIMEOUT_BASE_MS = 1000;
+
 async function tryCallHub<T>(
   fn: (options: HubOptions) => Promise<T>
 ): Promise<T> {
   const N = hubConfigs.length;
   const offset = getBiasedRandomOffset(N);
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < 10; i++) {
+    const hubIndex = (i + offset) % N;
+    console.debug(`Trying hub ${hubIndex}`);
+    const controller = new AbortController();
+    const timeoutDuration = HUB_TIMEOUT_BASE_MS * Math.pow(2, i);
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, timeoutDuration);
+
     try {
-      const hubIndex = (i + offset) % N;
-      console.debug(`Trying hub ${hubIndex}`);
-      return await fn(getHubOptions(hubIndex));
+      const options = getHubOptions(hubIndex);
+      options.hubRequestOptions = {
+        ...options.hubRequestOptions,
+        signal: controller.signal,
+      };
+      return await fn(options);
     } catch (e) {
       console.error("Error calling hub", e);
+    } finally {
+      clearTimeout(timeout);
     }
   }
   throw new Error("No hub call succeeded");
@@ -95,11 +110,21 @@ export function createVerifyAppKey(): VerifyAppKey {
   return async (fid, appKey) => {
     const N = hubConfigs.length;
     const offset = getBiasedRandomOffset(N);
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < 10; i++) {
+      const hubIndex = (i + offset) % N;
+      console.debug(`Trying hub ${hubIndex}`);
+      const controller = new AbortController();
+      const timeoutDuration = HUB_TIMEOUT_BASE_MS * Math.pow(2, i);
+      const timeout = setTimeout(() => {
+        controller.abort();
+      }, timeoutDuration);
+
       try {
-        const hubIndex = (i + offset) % N;
-        console.debug(`Trying hub ${hubIndex}`);
         const options = getHubOptions(hubIndex);
+        options.hubRequestOptions = {
+          ...options.hubRequestOptions,
+          signal: controller.signal,
+        };
         const verifyAppKey = createVerifyAppKeyWithHub(
           options.hubHttpUrl,
           options.hubRequestOptions
@@ -107,6 +132,8 @@ export function createVerifyAppKey(): VerifyAppKey {
         return await verifyAppKey(fid, appKey);
       } catch (e) {
         console.error("Error calling hub", e);
+      } finally {
+        clearTimeout(timeout);
       }
     }
     throw new Error("No hub call succeeded");

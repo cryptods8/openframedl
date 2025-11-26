@@ -192,6 +192,9 @@ export function MintButton({
   const { connect } = useConnect();
   const { switchChain } = useSwitchChain();
 
+  const [optimisticApproval, setOptimisticApproval] = React.useState(false);
+  const shouldMintAfterApproval = React.useRef(false);
+
   const { data: hash, isPending, writeContract } = useWriteContract();
   const {
     data: approvalHash,
@@ -241,8 +244,9 @@ export function MintButton({
   // Check if approval is needed
   const needsApproval = React.useMemo(() => {
     if (!erc20Token?.address) return false;
+    if (optimisticApproval) return false;
     return !allowance || allowance < requiredAmount;
-  }, [erc20Token?.address, allowance, requiredAmount]);
+  }, [erc20Token?.address, allowance, requiredAmount, optimisticApproval]);
 
   const mintStartedHandled = React.useRef(false);
   React.useEffect(() => {
@@ -283,6 +287,39 @@ export function MintButton({
     }
   }, [isSuccess, onMint, hash, tokenId, address]);
 
+  const triggerMint = React.useCallback(() => {
+    if (!address) return;
+
+    const dataSuffix = getReferralTag({
+      user: address as `0x${string}`,
+      consumer: "0x000Cbf0BEC88214AAB15bC1Fa40d3c30b3CA97a9",
+    });
+
+    // Mint the game
+    if (erc20Token?.address) {
+      // Use mintGameWithToken for ERC20 tokens
+      writeContract({
+        account: address,
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: "mintGameWithToken",
+        args: [gameId],
+        dataSuffix: `0x${dataSuffix}`,
+      });
+    } else {
+      // Use regular mintGame for ETH
+      writeContract({
+        account: address,
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: "mintGame",
+        args: [gameId],
+        value: parseEther(MINT_PRICE),
+        dataSuffix: `0x${dataSuffix}`,
+      });
+    }
+  }, [address, erc20Token, gameId, writeContract]);
+
   const handleClick = async () => {
     try {
       successHandled.current = false;
@@ -297,12 +334,8 @@ export function MintButton({
         return;
       }
 
-      const dataSuffix = getReferralTag({
-        user: address as `0x${string}`,
-        consumer: "0x000Cbf0BEC88214AAB15bC1Fa40d3c30b3CA97a9",
-      });
-
       if (erc20Token?.address && needsApproval) {
+        shouldMintAfterApproval.current = true;
         // First approve the contract to spend tokens
         writeApprovalContract({
           account: address,
@@ -314,29 +347,7 @@ export function MintButton({
         return;
       }
 
-      // Mint the game
-      if (erc20Token?.address) {
-        // Use mintGameWithToken for ERC20 tokens
-        writeContract({
-          account: address,
-          address: CONTRACT_ADDRESS,
-          abi: CONTRACT_ABI,
-          functionName: "mintGameWithToken",
-          args: [gameId],
-          dataSuffix: `0x${dataSuffix}`,
-        });
-      } else {
-        // Use regular mintGame for ETH
-        writeContract({
-          account: address,
-          address: CONTRACT_ADDRESS,
-          abi: CONTRACT_ABI,
-          functionName: "mintGame",
-          args: [gameId],
-          value: parseEther(MINT_PRICE),
-          dataSuffix: `0x${dataSuffix}`,
-        });
-      }
+      triggerMint();
     } catch (error) {
       if (!isUserRejectionError(error)) {
         onError(
@@ -344,20 +355,25 @@ export function MintButton({
         );
       }
       successHandled.current = false;
+      shouldMintAfterApproval.current = false;
     }
   };
 
   React.useEffect(() => {
     if (isApprovalReceiptSuccess) {
+      setOptimisticApproval(true);
       refetchAllowance();
+      if (shouldMintAfterApproval.current) {
+        shouldMintAfterApproval.current = false;
+        triggerMint();
+      }
     }
-  }, [isApprovalReceiptSuccess, refetchAllowance]);
+  }, [isApprovalReceiptSuccess, refetchAllowance, triggerMint]);
 
   const getButtonText = () => {
     if (!isConnected) return "Connect Wallet";
     if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
-    if (erc20Token?.address && needsApproval)
-      return `Approve ${erc20Token.price} \$${erc20Token.symbol}`;
+    if (erc20Token?.address && needsApproval) return `Collect`;
     return "Collect";
   };
 
