@@ -22,26 +22,28 @@ export async function generateMetadata({
     ? `${externalBaseUrl}/init-pro.png`
     : `${externalBaseUrl}/init-v2.png`;
   const name = isPro ? "Framedl PRO" : "Framedl";
+  const miniAppMetadata = JSON.stringify({
+    version: "next",
+    imageUrl,
+    button: {
+      title: "Play",
+      action: {
+        type: "launch_miniapp",
+        name,
+        url: `${externalBaseUrl}/app/v2`,
+        splashImageUrl: isPro
+          ? `${externalBaseUrl}/splash-pro.png`
+          : `${externalBaseUrl}/splash-v2.png`,
+        splashBackgroundColor: "#f3f0f9",
+      },
+    },
+  } satisfies MiniAppEmbedNext);
   return {
     title: `${name} by ds8`,
     description: "Wordle in a mini app",
     other: {
-      "fc:frame": JSON.stringify({
-        version: "next",
-        imageUrl,
-        button: {
-          title: "Play",
-          action: {
-            type: "launch_miniapp",
-            name,
-            url: `${externalBaseUrl}/app/v2`,
-            splashImageUrl: isPro
-              ? `${externalBaseUrl}/splash-pro.png`
-              : `${externalBaseUrl}/splash-v2.png`,
-            splashBackgroundColor: "#f3f0f9",
-          },
-        },
-      } satisfies MiniAppEmbedNext),
+      "fc:frame": miniAppMetadata,
+      "fc:miniapp": miniAppMetadata,
     },
   };
 }

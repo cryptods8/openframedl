@@ -10,6 +10,7 @@ import { isUrlSigned } from "./signer";
 import { basePath } from "./games/frames";
 import { ProfileApp } from "./profiles/profile-app";
 import { Footer } from "./ui/layout/footer";
+import { MiniAppEmbedNext } from "@farcaster/miniapp-node";
 
 export async function generateMetadata({
   searchParams,
@@ -28,12 +29,39 @@ export async function generateMetadata({
     queryParams.set("app", app as string);
   }
 
-  const framesUrl = currentURL(`${basePath}?${queryParams.toString()}`);
-  const other = await fetchMetadata(framesUrl);
+  // const framesUrl = currentURL(`${basePath}?${queryParams.toString()}`);
+  // const other = await fetchMetadata(framesUrl);
+  const imageUrl = id
+    ? `${externalBaseUrl}/app/v2/frames/image?id=${id}`
+    : cw
+    ? `${externalBaseUrl}/app/v2/frames/image?cw=${cw}`
+    : isPro
+    ? `${externalBaseUrl}/init-pro.png`
+    : `${externalBaseUrl}/init-v2.png`;
+  const name = isPro ? "Framedl PRO" : "Framedl";
+  const miniAppMetadata = JSON.stringify({
+    version: "next",
+    imageUrl,
+    button: {
+      title: "Play",
+      action: {
+        type: "launch_miniapp",
+        name,
+        url: `${externalBaseUrl}/app/v2`,
+        splashImageUrl: isPro
+          ? `${externalBaseUrl}/splash-pro.png`
+          : `${externalBaseUrl}/splash-v2.png`,
+        splashBackgroundColor: "#f3f0f9",
+      },
+    },
+  } satisfies MiniAppEmbedNext);
   return {
-    title: `Framedl${isPro ? " PRO" : ""} by ds8`,
-    description: "Wordle in a frame",
-    other,
+    title: `${name} by ds8`,
+    description: "Wordle in a mini app",
+    other: {
+      "fc:frame": miniAppMetadata,
+      "fc:miniapp": miniAppMetadata,
+    },
   };
 }
 
