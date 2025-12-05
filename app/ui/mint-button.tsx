@@ -362,13 +362,42 @@ export function MintButton({
   React.useEffect(() => {
     if (isApprovalReceiptSuccess) {
       setOptimisticApproval(true);
-      refetchAllowance();
+
       if (shouldMintAfterApproval.current) {
         shouldMintAfterApproval.current = false;
-        triggerMint();
+
+        // Wait for allowance to be reflected on-chain before minting
+        // This prevents wallet tx scanners from predicting failures due to stale state
+        const waitForAllowanceAndMint = async () => {
+          const maxAttempts = 10;
+          const delayMs = 500;
+
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const result = await refetchAllowance();
+            const currentAllowance = result.data;
+
+            if (currentAllowance && currentAllowance >= requiredAmount) {
+              triggerMint();
+              return;
+            }
+
+            // Wait before next attempt
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+          }
+
+          // If we exhaust retries, mint anyway (optimistic approval is set)
+          console.warn(
+            "Allowance not reflected after retries, proceeding with mint anyway"
+          );
+          triggerMint();
+        };
+
+        waitForAllowanceAndMint();
+      } else {
+        refetchAllowance();
       }
     }
-  }, [isApprovalReceiptSuccess, refetchAllowance, triggerMint]);
+  }, [isApprovalReceiptSuccess, refetchAllowance, triggerMint, requiredAmount]);
 
   const getButtonText = () => {
     if (!isConnected) return "Connect Wallet";
