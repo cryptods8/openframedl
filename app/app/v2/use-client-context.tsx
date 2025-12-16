@@ -62,6 +62,9 @@ export function useClientContext({
   }, []);
 
   const requestAddFrame = useCallback(async () => {
+    if (context?.client?.added) {
+      return true;
+    }
     try {
       await sdk.actions.addFrame();
       return true;
@@ -69,7 +72,7 @@ export function useClientContext({
       console.error(e);
       return false;
     }
-  }, []);
+  }, [context]);
 
   return {
     userData,

@@ -4,7 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { externalBaseUrl, isProduction, isPro } from "@/app/constants";
 import { Manifest } from "@farcaster/miniapp-core";
 
-function getAccountAssociation(domain: string | null): Manifest.AccountAssociation {
+function getAccountAssociation(
+  domain: string | null
+): Manifest.AccountAssociation {
   if (!isProduction) {
     return {
       header:
@@ -62,7 +64,11 @@ export async function GET(req: NextRequest) {
     // store page
     description:
       "Guess a word in 6 tries. The word changes every day. Share your results on Farcaster.", // 170 characters, no emojis or special characters
-    // screenshotUrls: [], // Visual previews of the app, max 3 screens, Portrait, 1284 x 2778
+    screenshotUrls: [
+      `${externalBaseUrl}/screenshot-01.png`,
+      `${externalBaseUrl}/screenshot-02.png`,
+      `${externalBaseUrl}/screenshot-03.png`,
+    ], // Visual previews of the app, max 3 screens, Portrait, 1284 x 2778
     // search & discovery
     primaryCategory: "games", // One of the pre-defined categories: games, social, finance, utility, productivity, health-fitness, news-media, music, shopping, education, developer-tools, entertainment, art-creativity
     tags: isPro
@@ -91,7 +97,9 @@ export async function GET(req: NextRequest) {
     miniapp.canonicalDomain = "framedl.com";
   }
 
-  const manifest: Manifest.Manifest & { baseBuilder: { allowedAddresses: string[] } } = {
+  const manifest: Manifest.Manifest & {
+    baseBuilder: { allowedAddresses: string[] };
+  } = {
     accountAssociation,
     // frame: miniapp,
     miniapp,

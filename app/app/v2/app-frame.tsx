@@ -43,7 +43,12 @@ function Game({
   ts,
   customWordId,
   ...props
-}: Omit<GameProps, "game"> & { fid?: number; asGuest: boolean, customWordId?: string, ts?: string }) {
+}: Omit<GameProps, "game"> & {
+  fid?: number;
+  asGuest: boolean;
+  customWordId?: string;
+  ts?: string;
+}) {
   const [loadedGame, setLoadedGame] = useState<ClientGame | undefined>();
   const [error, setError] = useState<ErrorResponse | undefined>();
   const [loading, setLoading] = useState(false);
@@ -144,7 +149,7 @@ function GameContainer({
       const nonce = await getNonce();
       const result = await sdk.actions.signIn({
         nonce,
-        acceptAuthAddress: true
+        acceptAuthAddress: true,
       });
 
       await signIn("credentials", {
@@ -190,13 +195,19 @@ function GameContainer({
     setSignInFailure(undefined);
   }, []);
 
-  useEffect(() => {
-    if (context.client && !context.client.added && !isFirstLoad) {
-      context.requestAddFrame().catch((e) => {
-        console.error(e);
-      });
-    }
-  }, [context, isFirstLoad]);
+  const handleGameOver = useCallback(() => {
+    context.requestAddFrame().catch((e) => {
+      console.error(e);
+    });
+  }, [context]);
+
+  // useEffect(() => {
+  //   if (context.client && !context.client.added && !isFirstLoad) {
+  //     context.requestAddFrame().catch((e) => {
+  //       console.error(e);
+  //     });
+  //   }
+  // }, [context, isFirstLoad]);
 
   const safeAreaInsets = context?.client?.safeAreaInsets;
 
@@ -221,6 +232,7 @@ function GameContainer({
               gameType={gameType}
               customWordId={customWordId}
               onShare={context.share}
+              onGameOver={handleGameOver}
               asGuest={asGuest}
               ts={ts}
               userChip={

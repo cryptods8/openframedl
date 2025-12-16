@@ -328,7 +328,7 @@ export interface GameProps {
     text: string;
     url: string;
   }) => Promise<void>;
-  onGameOver?: () => void;
+  onGameOver?: (game: ClientGame) => void;
   gameType: string;
   userChip?: React.ReactNode;
 }
@@ -530,9 +530,9 @@ export function Game({
 
   useEffect(() => {
     if (isGameOver) {
-      onGameOver?.();
+      onGameOver?.(currentGame);
     }
-  }, [isGameOver, onGameOver]);
+  }, [isGameOver, currentGame, onGameOver]);
 
   const handleNewGame = useCallback(
     async (gt: "practice" | "daily" | "arena") => {
@@ -620,7 +620,8 @@ export function Game({
   const replacedScore = currentGame?.metadata?.replacedScore;
   const basicStats = currentGame?.metadata?.basicStats;
   const statsLoaded = basicStats != null;
-  const completedCount = (basicStats?.totalLosses ?? 0) + (basicStats?.totalWins ?? 0);
+  const completedCount =
+    (basicStats?.totalLosses ?? 0) + (basicStats?.totalWins ?? 0);
   const isFreshGame = currentGame?.guessCount === 0;
   const isCompleted = currentGame?.completedAt != null;
   const isDaily = currentGame?.isDaily;
