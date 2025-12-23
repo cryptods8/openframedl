@@ -5,6 +5,8 @@ import { fetchMetadata } from "frames.js/next";
 import { basePath } from "../games/frames";
 import { currentURL } from "../utils";
 import { toLeaderboardSearchParams } from "./leaderboard-utils";
+import { isPro } from "../constants";
+import { Button } from "../ui/button/button";
 
 export async function generateMetadata({
   searchParams: searchParamsPromise,
@@ -27,17 +29,27 @@ export async function generateMetadata({
   );
   const other = await fetchMetadata(leaderboardUrl);
   return {
-    title: "Framedl Leaderboard by ds8",
-    description: "Wordle in a frame",
+    title: `Framedl ${isPro ? "PRO " : ""}Leaderboard by ds8`,
+    description: "Wordle in a mini app",
     other,
   };
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  console.log("SP", searchParams);
+  const sp = await searchParams;
+  const queryParams = toLeaderboardSearchParams(sp || {});
+  if (sp?.prize) {
+    queryParams.set("prize", sp.prize as string);
+  }
   return (
-    <div className="flex flex-col p-6 w-full justify-center items-center text-slate-600">
+    <div className="flex flex-col p-6 w-full justify-center items-center text-slate-600 gap-4 max-w-sm">
       <div>
-        Framedl Leaderboard by{" "}
+        Framedl {isPro ? "PRO " : ""}Leaderboard by{" "}
         <Link
           href="https://farcaster.xyz/ds8"
           className="underline hover:text-slate-700"
@@ -45,6 +57,12 @@ export default async function Home() {
           ds8
         </Link>
       </div>
+      <Button
+        href={`/api/leaderboard/daily?${queryParams.toString()}`}
+        target="_blank"
+      >
+        Daily
+      </Button>
     </div>
   );
 }
