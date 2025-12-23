@@ -61,7 +61,7 @@ export default async function Home({
         href={`/api/leaderboard/daily?${queryParams.toString()}`}
         target="_blank"
       >
-        Daily
+        Share
       </Button>
     </div>
   );
