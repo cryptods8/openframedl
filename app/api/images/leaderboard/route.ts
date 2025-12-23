@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
     } else {
       loadLeaderboardOptions = {
         userId: userIdParam,
-        date: date ?? getDailyGameKey(new Date()),
+        date:
+          date ?? getDailyGameKey(new Date(Date.now() - 24 * 60 * 60 * 1000)),
         days: days != null ? parseInt(days, 10) : undefined,
         type: "DATE_RANGE",
       };
