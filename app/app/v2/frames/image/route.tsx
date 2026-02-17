@@ -206,7 +206,7 @@ function ResultImage({
               <UserAvatar userData={customMaker.userData} />
             )}
 
-            {stats && game && (
+            {stats && game && !customMaker && (
               <div tw="flex">
                 <UserStatsPanel
                   stats={stats}
