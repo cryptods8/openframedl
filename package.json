@@ -9,9 +9,7 @@
     "dev:monorepo": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "update-debugger": "npx degit github:framesjs/frames.js/examples/framesjs-starter/app/debug#main app/debug --force",
-    "update-framesjs": "yarn upgrade frames.js@latest && yarn run update-debugger"
+    "lint": "next lint"
   },
   "dependencies": {
     "@divvi/referral-sdk": "^2.2.0",
@@ -55,7 +53,6 @@
     "node": ">=19.0.0 <23.0.0"
   },
   "devDependencies": {
-    "@frames.js/debugger": "^0.5.0",
     "@types/canvas-confetti": "^1.9.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.0.13",
