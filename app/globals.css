@@ -24,6 +24,16 @@ body {
   width: 100%;
 }
 
+.full-signin-contauner .fc-authkit-signin-button {
+  width: 100%;
+}
+
+.full-signin-contauner .fc-authkit-signin-button > button {
+  width: 100%;
+  justify-content: center;
+  border-radius: 4px;
+}
+
 .fc-authkit-signin-button > button {
   font-size: 15px;
   font-family: "Inter";

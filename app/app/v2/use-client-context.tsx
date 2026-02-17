@@ -1,6 +1,6 @@
 import { useAppConfig } from "@/app/contexts/app-config-context";
 import { UserData } from "@/app/game/game-repository";
-import { composeCast } from "@/app/utils";
+import { composeCast, createComposeUrl } from "@/app/utils";
 import { Context } from "@farcaster/miniapp-node";
 import sdk from "@farcaster/miniapp-sdk";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -9,6 +9,7 @@ export interface ClientContext {
   userData?: UserData;
   userFid?: number;
   isReady: boolean;
+  isMiniApp: boolean;
   client?: Context.MiniAppContext["client"];
   share: ({ title, url }: { title: string; url: string }) => Promise<void>;
   openUrl: (url: string) => Promise<void>;
@@ -27,6 +28,7 @@ export function useClientContext({
   const { isPro } = useAppConfig();
   const [context, setContext] = useState<Context.MiniAppContext | undefined>();
   const [ready, setReady] = useState(false);
+  const [isMiniApp, setIsMiniApp] = useState(false);
   useEffect(() => {
     const load = async () => {
       const ctx = await sdk.context;
@@ -34,6 +36,7 @@ export function useClientContext({
       const inMiniApp = await sdk.isInMiniApp();
       if (inMiniApp) {
         sdk.actions.ready();
+        setIsMiniApp(true);
       }
       window.focus();
       onLoad?.(ctx);
@@ -51,10 +54,14 @@ export function useClientContext({
   const share = useCallback(
     async ({ title, url }: { title: string; url: string }) => {
       // return sdk.actions.openUrl(createComposeUrl(title, url, { isPro }));
-      await sdk.actions.composeCast(composeCast(title, url, { isPro }));
+      if (isMiniApp) {
+        await sdk.actions.composeCast(composeCast(title, url, { isPro }));
+      } else {
+        window.open(createComposeUrl(title, url, { isPro }), "_blank");
+      }
       return;
     },
-    [isPro]
+    [isPro, isMiniApp],
   );
 
   const openUrl = useCallback((url: string) => {
@@ -79,6 +86,7 @@ export function useClientContext({
     userFid: context?.user?.fid,
     isReady: ready,
     client: context?.client,
+    isMiniApp,
     share,
     openUrl,
     requestAddFrame,

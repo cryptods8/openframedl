@@ -41,10 +41,10 @@ function getGameHref(
     config: { externalBaseUrl: string };
     jwt?: string;
     isAppFrame?: boolean;
-  }
+  },
 ) {
   const url = new URL(
-    `${options.config.externalBaseUrl}/app${options.isAppFrame ? "/v2" : ""}`
+    `${options.config.externalBaseUrl}/app${options.isAppFrame ? "/v2" : ""}`,
   );
   url.searchParams.set("id", game.id);
   if (options.jwt) {
@@ -84,6 +84,7 @@ export function GameCompletedDialog({
   const isSkipped = skippedGames[game?.id ?? ""] ?? false;
   const canMint = !!CONTRACT_ADDRESS;
   const isArena = !!game?.arena;
+  const isArt = !!game?.customMaker?.isArt;
   const hasNextArenaGame =
     game?.metadata?.hasNext ??
     (isArena &&
@@ -106,7 +107,7 @@ export function GameCompletedDialog({
         setIsNewGameLoading(false);
       }
     },
-    [onNewGame]
+    [onNewGame],
   );
 
   // Handle keyboard events
@@ -135,7 +136,14 @@ export function GameCompletedDialog({
     return () => {
       document.removeEventListener("keydown", handleKeyPress);
     };
-  }, [isOpen, showMintOverlay, isArena, hasNextArenaGame, handleNewGame, onShare]);
+  }, [
+    isOpen,
+    showMintOverlay,
+    isArena,
+    hasNextArenaGame,
+    handleNewGame,
+    onShare,
+  ]);
 
   const handleMint = () => {
     if (game) {
@@ -169,10 +177,19 @@ export function GameCompletedDialog({
       ) : (
         <div className="w-full flex flex-col gap-2">
           <p className="w-full text-left text-xl font-space font-bold">
-            {game?.status === "WON" ? "You won! 🎉" : "Better luck next time!"}
+            {isArt
+              ? "You drew it! 🎨"
+              : game?.status === "WON"
+                ? "You won! 🎉"
+                : "Better luck next time!"}
           </p>
           <p className="w-full text-left text-primary-900/50 leading-snug">
-            {game?.status === "WON" ? (
+            {isArt ? (
+              <span>
+                {game?.word && <CorrectWordDisplay word={game.word} />} served
+                as your paintbrush
+              </span>
+            ) : game?.status === "WON" ? (
               <span>
                 You found the word{" "}
                 {game?.word && <CorrectWordDisplay word={game.word} />} in{" "}
@@ -256,17 +273,19 @@ export function GameCompletedDialog({
                   </Button>
                 )
               ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  href={`/app/leaderboard?uid=${
-                    game.userId
-                  }&gh=${encodeURIComponent(
-                    getGameHref(game, { config, jwt, isAppFrame })
-                  )}&ip=${game.identityProvider}`}
-                >
-                  Leaderboard
-                </Button>
+                !isArt && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    href={`/app/leaderboard?uid=${
+                      game.userId
+                    }&gh=${encodeURIComponent(
+                      getGameHref(game, { config, jwt, isAppFrame }),
+                    )}&ip=${game.identityProvider}`}
+                  >
+                    Leaderboard
+                  </Button>
+                )
               )}
               {game.isDaily && <NextGameMessage />}
             </div>

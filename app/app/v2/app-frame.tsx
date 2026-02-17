@@ -270,15 +270,19 @@ function GameContainer({
           )
         )}
         {status === "unauthenticated" && !asGuest && (
-          <div className="flex flex-col gap-2 w-full max-w-sm p-4">
-            <Button
-              variant="primary"
-              onClick={handleSignIn}
-              disabled={signingIn}
-              loading={signingIn}
-            >
-              Sign in
-            </Button>
+          <div className="flex flex-col gap-2 w-full max-w-sm p-4 full-signin-contauner">
+            {context.isMiniApp ? (
+              <Button
+                variant="primary"
+                onClick={handleSignIn}
+                disabled={signingIn}
+                loading={signingIn}
+              >
+                Sign in
+              </Button>
+            ) : (
+              <SignIn />
+            )}
             <Button
               variant="outline"
               onClick={handleContinueAsGuest}

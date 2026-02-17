@@ -334,7 +334,15 @@ function GameGrid({
     if (game?.customMaker?.isArt) {
       const wordCharacters = toWordCharacters(game.customMaker.word!);
       const characters = toGuessCharacters(wordCharacters, currentWord);
-      guesses.push({ characters });
+      guesses.push({
+        characters: Array.from({ length: 5 }).map(
+          (_, idx) =>
+            characters[idx] || {
+              character: currentWord[idx] || "",
+              status: "UNKNOWN" as const,
+            },
+        ),
+      });
     } else {
       guesses.push({
         characters: Array.from({ length: 5 }).map((_, idx) => ({
@@ -571,8 +579,6 @@ export function Game({
     setValidationResult,
     handleGameChange,
   ]);
-
-  console.log("CG", currentGame);
 
   const handleKeyPress = useCallback(
     (k: string) => {

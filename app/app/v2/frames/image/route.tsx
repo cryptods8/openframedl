@@ -12,15 +12,18 @@ import { GameTitle } from "@/app/image-ui/game-title";
 import { externalBaseUrl } from "@/app/constants";
 import { UserData, UserStats } from "@/app/game/game-repository";
 import { UserStatsPanel } from "@/app/image-ui/game/user-stats-panel";
-import { GameKeyboard } from "@/app/image-ui/game-keyboard";
 
 export const dynamic = "force-dynamic";
+
+function getWho(game: GuessedGame) {
+  return game.userData?.username || "They";
+}
 
 function determineGameMessage(game?: GuessedGame) {
   if (!game) {
     return "Guess a 5-letter word!";
   }
-  const who = game.userData?.username || "They";
+  const who = getWho(game);
   if (game.status === "WON") {
     const attempts = game.guesses.length;
     return `${who} won in ${attempts}${
@@ -171,11 +174,11 @@ function ResultImage({
                 lineHeight: 1.33,
               }}
             >
-              {game || !customMaker ? (
-                determineGameMessage(game)
-              ) : customMaker.isArt ? (
+              {customMaker?.isArt ? (
                 <div tw="flex flex-col items-center" style={{ gap: "1rem" }}>
-                  <div>Draw with the word</div>
+                  <div tw="flex">
+                    {game ? `${getWho(game)} drew` : "Draw"} with the word
+                  </div>
                   <div tw="flex flex-row" style={{ gap: "0.25rem" }}>
                     {customMaker.word?.split("").map((letter, idx) => (
                       <div
@@ -191,6 +194,8 @@ function ResultImage({
                     ))}
                   </div>
                 </div>
+              ) : game || !customMaker ? (
+                determineGameMessage(game)
               ) : (
                 "Guess a 5-letter word!"
               )}
@@ -229,10 +234,17 @@ export async function GET(req: NextRequest) {
 
     const userStats = await gameService.loadStats(game);
 
-    return createImageResponse(<ResultImage game={game} stats={userStats} />, {
-      width: 1200,
-      height: 800,
-    });
+    return createImageResponse(
+      <ResultImage
+        game={game}
+        customMaker={game.customMaker}
+        stats={userStats}
+      />,
+      {
+        width: 1200,
+        height: 800,
+      },
+    );
   }
   if (cwParam) {
     const customMaker = await gameService.loadCustomGameMaker(cwParam);

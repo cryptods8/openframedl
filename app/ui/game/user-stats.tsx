@@ -9,7 +9,13 @@ interface UserStatsResponse {
   data: UserStats;
 }
 
-function StatsItem({ label, value }: { label: string; value: number | string }) {
+function StatsItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
   return (
     <div className="flex flex-col items-center text-center flex-1 bg-primary-950/5 rounded-md py-2">
       <span className="text-lg font-semibold font-space">{value}</span>
@@ -33,22 +39,24 @@ function UserStats({ game }: { game: ClientGame }) {
     queryKey: ["user-stats", game.identityProvider, game.userId],
     queryFn: () =>
       fetch(
-        `/api/games/stats?ip=${game.identityProvider}&uid=${game.userId}`
+        `/api/games/stats?ip=${game.identityProvider}&uid=${game.userId}`,
       ).then((res) => res.json()),
   });
 
-  const {
-    data: { totalWins, last30, maxStreak, totalGames, currentStreak },
-  } = data || mockData;
+  const { totalWins, last30, maxStreak, totalGames, currentStreak } =
+    data?.data || mockData.data;
 
-  const last30Map = last30.reduce((acc, item) => {
-    acc[item.date] = {
-      guessCount: item.guessCount,
-      won: item.won,
-      date: item.date,
-    };
-    return acc;
-  }, {} as Record<string, { guessCount: number; won: boolean; date: string }>);
+  const last30Map = last30.reduce(
+    (acc, item) => {
+      acc[item.date] = {
+        guessCount: item.guessCount,
+        won: item.won,
+        date: item.date,
+      };
+      return acc;
+    },
+    {} as Record<string, { guessCount: number; won: boolean; date: string }>,
+  );
 
   const last7Days = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date();
@@ -61,8 +69,18 @@ function UserStats({ game }: { game: ClientGame }) {
     <div className={isLoading ? "animate-pulse" : ""}>
       <div className="flex gap-2 justify-between gap-2">
         <StatsItem label="Played" value={isLoading ? "\u00A0" : totalGames} />
-        <StatsItem label="Win %" value={isLoading ? "\u00A0" : `${Math.round((totalWins / totalGames) * 100)}%`} />
-        <StatsItem label="Streak" value={isLoading ? "\u00A0" : currentStreak} />
+        <StatsItem
+          label="Win %"
+          value={
+            isLoading
+              ? "\u00A0"
+              : `${totalGames === 0 ? 0 : Math.round((totalWins / totalGames) * 100)}%`
+          }
+        />
+        <StatsItem
+          label="Streak"
+          value={isLoading ? "\u00A0" : currentStreak}
+        />
         <StatsItem label="Max" value={isLoading ? "\u00A0" : maxStreak} />
       </div>
       <div className="flex items-center gap-2 justify-between mt-3">
