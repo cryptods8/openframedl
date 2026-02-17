@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   };
   await customGameRepo.save(customGame);
 
-  const gameUrl = `${externalBaseUrl}/?cw=${customGame.id}`;
+  const gameUrl = `${externalBaseUrl}/app/v2?cw=${customGame.id}`;
 
   return NextResponse.json(
     { id: customGame.id, config: { isArt, word: isArt ? word : null }, gameUrl },
