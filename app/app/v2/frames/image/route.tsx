@@ -107,6 +107,7 @@ function customGameBoard(): GuessedGame {
     userData: null,
     isDaily: false,
     isCustom: true,
+    customWordId: "",
     id: "",
     gameData: null,
     srcGameId: null,

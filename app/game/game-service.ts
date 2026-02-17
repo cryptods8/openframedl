@@ -141,6 +141,7 @@ export interface GuessedGame extends Omit<DBGame, "guesses"> {
   isHardMode: boolean;
   isHardModeRequired: boolean | null;
   isCustom: boolean;
+  customWordId: string | null;
   customMaker?: CustomGameMaker;
   arena?: DBArena;
 }
@@ -160,6 +161,7 @@ export interface PublicGuessedGame {
   isHardMode: boolean;
   isHardModeRequired: boolean | null;
   isCustom: boolean;
+  customWordId: string | null;
   isDaily: boolean;
   userData?: UserData | null;
   gameData?: GameData | null;
@@ -491,6 +493,9 @@ export class GameServiceImpl implements GameService {
       word,
       isHardMode,
       isCustom: game.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
+      customWordId: game.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX)
+        ? game.gameKey.substring(CUSTOM_WORD_KEY_PREFIX.length)
+        : null,
       customMaker,
       arena,
     };
@@ -565,6 +570,9 @@ export class GameServiceImpl implements GameService {
         originalGuesses: [],
         allGuessedCharacters: {},
         isCustom: key.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX),
+        customWordId: key.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX)
+          ? key.gameKey.substring(CUSTOM_WORD_KEY_PREFIX.length)
+          : null,
         customMaker,
         arena,
       };
@@ -610,6 +618,7 @@ export class GameServiceImpl implements GameService {
       isHardMode: game.isHardMode,
       isHardModeRequired: game.isHardModeRequired,
       isCustom: game.isCustom,
+      customWordId: game.customWordId,
       isDaily: game.isDaily,
       customMaker: game.customMaker,
       createdAt: game.createdAt,

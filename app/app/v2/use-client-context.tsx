@@ -64,12 +64,20 @@ export function useClientContext({
     [isPro, isMiniApp],
   );
 
-  const openUrl = useCallback((url: string) => {
-    return sdk.actions.openUrl(url);
-  }, []);
+  const openUrl = useCallback(
+    (url: string) => {
+      if (isMiniApp) {
+        return sdk.actions.openUrl(url);
+      } else {
+        window.open(url, "_blank");
+        return Promise.resolve();
+      }
+    },
+    [isMiniApp],
+  );
 
   const requestAddFrame = useCallback(async () => {
-    if (context?.client?.added) {
+    if (context?.client?.added || !isMiniApp) {
       return true;
     }
     try {
@@ -79,7 +87,7 @@ export function useClientContext({
       console.error(e);
       return false;
     }
-  }, [context]);
+  }, [context, isMiniApp]);
 
   return {
     userData,

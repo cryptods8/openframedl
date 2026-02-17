@@ -662,9 +662,16 @@ export function Game({
     e.preventDefault();
 
     const { title, text } = buildShareableResult(currentGame, config);
-    const url = `${config.externalBaseUrl}${appFrame ? "/app/v2" : "/"}?id=${
-      currentGame?.id
-    }&app=1`;
+    const params = {
+      app: "1",
+    } as Record<string, string>;
+    if (currentGame) {
+      params.id = currentGame.id;
+      if (currentGame.customWordId) {
+        params.cw = currentGame.customWordId;
+      }
+    }
+    const url = `${config.externalBaseUrl}${appFrame ? "/app/v2" : "/"}?${new URLSearchParams(params).toString()}`;
     const fullText = `${title}\n\n${text}`;
     if (onShare) {
       await onShare({ title, text, url });
@@ -794,9 +801,19 @@ export function Game({
           ) : isArt ? (
             <div className="text-xs min-[360px]:text-sm text-primary-900/50">
               Draw with the word{" "}
-              <span className="font-semibold">
-                {currentGame?.customMaker?.word?.toUpperCase()}
-              </span>
+              <div className="font-semibold inline-flex flex-row gap-0.5">
+                {currentGame?.customMaker?.word
+                  ?.toUpperCase()
+                  .split("")
+                  .map((c, i) => (
+                    <div
+                      key={i}
+                      className="bg-primary-900/10 w-5 h-5 flex items-center justify-center"
+                    >
+                      {c}
+                    </div>
+                  ))}
+              </div>
             </div>
           ) : (
             <div className="text-xs min-[360px]:text-sm text-primary-900/50">
@@ -840,6 +857,7 @@ export function Game({
                 onModeChange={setMode}
                 showDaily={!currentGame?.isDaily}
                 isAppFrame={appFrame}
+                onIntroOpen={handleIntroOpen}
               />
             </div>
             <input

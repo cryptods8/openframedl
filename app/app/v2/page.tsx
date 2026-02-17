@@ -14,13 +14,20 @@ export async function generateMetadata({
   const id = searchParams?.id;
   const cw = searchParams?.cw;
 
-  const imageUrl = id
-    ? `${externalBaseUrl}/app/v2/frames/image?id=${id}`
-    : cw
-    ? `${externalBaseUrl}/app/v2/frames/image?cw=${cw}`
+  const params = new URLSearchParams();
+  if (id) {
+    params.set("id", id.toString());
+  }
+  if (cw) {
+    params.set("cw", cw.toString());
+  }
+  const paramsString = params.toString();
+
+  const imageUrl = paramsString
+    ? `${externalBaseUrl}/app/v2/frames/image?${paramsString}`
     : isPro
-    ? `${externalBaseUrl}/init-pro.png`
-    : `${externalBaseUrl}/init-v2.png`;
+      ? `${externalBaseUrl}/init-pro.png`
+      : `${externalBaseUrl}/init-v2.png`;
   const name = isPro ? "Framedl PRO" : "Framedl";
   const miniAppMetadata = JSON.stringify({
     version: "next",
@@ -30,7 +37,7 @@ export async function generateMetadata({
       action: {
         type: "launch_miniapp",
         name,
-        url: `${externalBaseUrl}/app/v2`,
+        url: `${externalBaseUrl}/app/v2${paramsString ? `?${paramsString}` : ""}`,
         splashImageUrl: isPro
           ? `${externalBaseUrl}/splash-pro.png`
           : `${externalBaseUrl}/splash-v2.png`,
