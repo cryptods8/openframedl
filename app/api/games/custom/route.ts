@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   const gameUrl = `${externalBaseUrl}/?cw=${customGame.id}`;
 
   return NextResponse.json(
-    { id: customGame.id, gameUrl },
+    { id: customGame.id, config: { isArt, word: isArt ? word : null }, gameUrl },
     {
       status: 201,
       headers: {

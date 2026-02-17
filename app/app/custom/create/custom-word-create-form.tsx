@@ -12,10 +12,9 @@ import clsx from "clsx";
 import { Button } from "@/app/ui/button/button";
 import { CustomGameCreateRequest } from "@/app/api/games/custom/route";
 import { Dialog } from "@/app/ui/dialog";
-import { createCast } from "@/app/lib/cast";
-import { createComposeUrl } from "@/app/utils";
 import { useJwt } from "@/app/hooks/use-jwt";
 import { motion } from "framer-motion";
+import { useSharing } from "@/app/hooks/use-sharing";
 
 function Label({
   children,
@@ -32,7 +31,7 @@ function Label({
       className={clsx(
         "text-sm font-semibold text-primary-900/50",
         position === "top" && "block mb-1.5 px-1",
-        position === "left" && "pl-1 mr-3"
+        position === "left" && "pl-1 mr-3",
       )}
     >
       {children}
@@ -88,7 +87,7 @@ function InputField({
         id={id}
         className={clsx(
           "w-full rounded-md border border-primary-200 bg-white py-3 px-4",
-          "focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-500"
+          "focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-500",
         )}
         {...props}
       />
@@ -122,6 +121,7 @@ export function CustomWordCreateForm() {
   } | null>(null);
 
   const { jwt } = useJwt();
+  const { composeCast } = useSharing();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -159,16 +159,17 @@ export function CustomWordCreateForm() {
 
   const handleShare = async () => {
     if (!createdCustomWord) {
-      console.error("No arena created");
+      console.error("No custom word created");
       return;
     }
-    const { config, gameUrl } = createdCustomWord;
-    const text = "TODO\n\n" + gameUrl;
-    if (jwt) {
-      createCast(window, { text, embeds: [gameUrl] });
-    } else {
-      window.open(createComposeUrl(text, gameUrl), "_blank");
-    }
+    const {
+      gameUrl,
+      config: { isArt, word },
+    } = createdCustomWord;
+    const text = isArt
+      ? 'Create Framedl Art with "' + word?.toUpperCase() + '"'
+      : "Can you guess my custom word?";
+    await composeCast({ text, embeds: [gameUrl] });
   };
 
   return (
@@ -186,9 +187,7 @@ export function CustomWordCreateForm() {
             max={100}
             step={1}
             value={word}
-            onChange={(e) =>
-              setWord(normalizeWord(e.target.value || ""))
-            }
+            onChange={(e) => setWord(normalizeWord(e.target.value || ""))}
             helperText="Enter the 5-letter word. Can be made-up, if you want"
           />
         </div>
