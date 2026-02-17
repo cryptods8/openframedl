@@ -275,14 +275,18 @@ export class PassRequiredError extends Error {
   }
 }
 
-export class GameServiceImpl implements GameService {
-  private readonly gameRepository: GameRepository = new GameRepositoryImpl();
+function toWordCharacters(word: string): Record<string, WordCharacter> {
+  return word.split("").reduce((acc, c, idx) => {
+    if (!acc[c]) {
+      acc[c] = { count: 0, positions: {} };
+    }
+    acc[c]!.count++;
+    acc[c]!.positions[idx] = true;
+    return acc;
+  }, {} as Record<string, WordCharacter>);
+}
 
-  getDailyKey() {
-    return getDailyGameKey(new Date());
-  }
-
-  private toGuessCharacters(
+function toGuessCharacters(
     wordCharacters: Record<string, WordCharacter>,
     guess: string
   ): GuessCharacter[] {
@@ -324,6 +328,13 @@ export class GameServiceImpl implements GameService {
       }
     }
     return characters;
+  }
+
+export class GameServiceImpl implements GameService {
+  private readonly gameRepository: GameRepository = new GameRepositoryImpl();
+
+  getDailyKey() {
+    return getDailyGameKey(new Date());
   }
 
   private isHardMode(
@@ -380,29 +391,18 @@ export class GameServiceImpl implements GameService {
     return (game as gameRepo.DBGameViewWithArena).arenaUserId != null;
   }
 
-  private toWordCharacters(word: string): Record<string, WordCharacter> {
-    return word.split("").reduce((acc, c, idx) => {
-      if (!acc[c]) {
-        acc[c] = { count: 0, positions: {} };
-      }
-      acc[c]!.count++;
-      acc[c]!.positions[idx] = true;
-      return acc;
-    }, {} as Record<string, WordCharacter>);
-  }
-
   toGuessedGame(
     game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
   ): GuessedGame {
     const word = game.word;
-    const wordCharacters = this.toWordCharacters(word);
+    const wordCharacters = toWordCharacters(word);
     // guessed - correct, wrong position, incorrect
     const allGuessedCharacters: Record<string, GuessCharacter> = {};
     const guesses: Guess[] = [];
     let isHardMode = true;
     let prevGuess: GuessCharacter[] | undefined;
     for (const guess of game.guesses) {
-      const characters = this.toGuessCharacters(wordCharacters, guess);
+      const characters = toGuessCharacters(wordCharacters, guess);
       if (isHardMode) {
         if (prevGuess) {
           isHardMode = this.isHardMode(prevGuess, characters);
@@ -940,10 +940,10 @@ export class GameServiceImpl implements GameService {
     if (game.isHardModeRequired) {
       const prevGuess = game.guesses[game.guesses.length - 1];
       if (prevGuess) {
-        const wordCharacters = this.toWordCharacters(game.word);
+        const wordCharacters = toWordCharacters(game.word);
         const isHardMode = this.isHardMode(
           prevGuess.characters,
-          this.toGuessCharacters(wordCharacters, formattedGuess)
+          toGuessCharacters(wordCharacters, formattedGuess)
         );
         if (!isHardMode) {
           return "INVALID_HARD_MODE";

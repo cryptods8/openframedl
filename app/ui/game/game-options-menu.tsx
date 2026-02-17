@@ -12,14 +12,28 @@ import Link from "next/link";
 
 import { useHaptics } from "@/app/hooks/use-haptics";
 
-function MenuButton({ children, ...props }: React.ComponentProps<typeof HeadlessMenuButton>) {
+function MenuButton({
+  children,
+  ...props
+}: React.ComponentProps<typeof HeadlessMenuButton>) {
   const { impact } = useHaptics();
-  return <HeadlessMenuButton {...props} onClick={() => impact("light")}>{children}</HeadlessMenuButton>;
+  return (
+    <HeadlessMenuButton {...props} onClick={() => impact("light")}>
+      {children}
+    </HeadlessMenuButton>
+  );
 }
 
-function MenuItem({ children, ...props }: React.ComponentProps<typeof HeadlessMenuItem>) {
+function MenuItem({
+  children,
+  ...props
+}: React.ComponentProps<typeof HeadlessMenuItem>) {
   const { impact } = useHaptics();
-  return <HeadlessMenuItem {...props} onClick={() => impact("light")}>{children}</HeadlessMenuItem>;
+  return (
+    <HeadlessMenuItem {...props} onClick={() => impact("light")}>
+      {children}
+    </HeadlessMenuItem>
+  );
 }
 
 export function GameOptionsMenu({
@@ -47,7 +61,7 @@ export function GameOptionsMenu({
         }}
         className={clsx(
           "size-10 rounded-full shadow-md shadow-primary-500/10 flex items-center justify-center bg-white border-primary-100 border",
-          "hover:bg-primary-100 hover:border-primary-200 active:bg-primary-200 active:border-primary-300 active:shadow-primary-500/0 transition-all duration-150"
+          "hover:bg-primary-100 hover:border-primary-200 active:bg-primary-200 active:border-primary-300 active:shadow-primary-500/0 transition-all duration-150",
         )}
       >
         <EllipsisVerticalIcon className="size-5 text-primary-900/70" />
@@ -64,7 +78,7 @@ export function GameOptionsMenu({
           static
           anchor="top"
           className={clsx(
-            "w-48 origin-bottom-right rounded-md border border-primary-200 bg-white shadow-md shadow-primary-500/10 p-1 transition duration-100 ease-out [--anchor-gap:4px] focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 font-inter font-semibold"
+            "w-56 origin-bottom-right rounded-md border border-primary-200 bg-white shadow-md shadow-primary-500/10 p-1 transition duration-100 ease-out [--anchor-gap:4px] focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 font-inter font-semibold",
           )}
         >
           {showDaily && (
@@ -86,7 +100,7 @@ export function GameOptionsMenu({
             </button>
           </MenuItem>
           {<MenuSeparator className="my-1 h-px bg-primary-200" />}
-          {(
+          {
             <MenuItem>
               <Link
                 href="/app/arena"
@@ -95,8 +109,8 @@ export function GameOptionsMenu({
                 <span>Browse Arenas</span>
               </Link>
             </MenuItem>
-          )}
-          {(
+          }
+          {
             <MenuItem>
               <Link
                 href="/app/arena/create"
@@ -105,8 +119,18 @@ export function GameOptionsMenu({
                 <span>Create ARENA</span>
               </Link>
             </MenuItem>
+          }
+          <MenuItem>
+            <Link
+              href="/app/custom/create"
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
+            >
+              <span>Create Custom Word</span>
+            </Link>
+          </MenuItem>
+          {onModeChange && (
+            <MenuSeparator className="my-1 h-px bg-primary-200" />
           )}
-          {onModeChange && <MenuSeparator className="my-1 h-px bg-primary-200" />}
           {onModeChange && (
             <MenuItem>
               <button
@@ -126,12 +150,15 @@ export function GameOptionsMenu({
           )}
           {onIntroOpen && (
             <>
-            <MenuSeparator className="my-1 h-px bg-primary-200" />
-            <MenuItem>
-              <button onClick={onIntroOpen} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded">
-                <span>How to Play</span>
-              </button>
-            </MenuItem>
+              <MenuSeparator className="my-1 h-px bg-primary-200" />
+              <MenuItem>
+                <button
+                  onClick={onIntroOpen}
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
+                >
+                  <span>How to Play</span>
+                </button>
+              </MenuItem>
             </>
           )}
         </MenuItems>

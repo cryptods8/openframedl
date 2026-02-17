@@ -6,7 +6,7 @@ import { OGBadge } from "./og-badge";
 
 function formatGameKey(
   game: GuessedGame | undefined | null,
-  customMaker: CustomGameMaker | undefined | null
+  customMaker: CustomGameMaker | undefined | null,
 ) {
   if (!game && !customMaker) {
     return "";
@@ -32,7 +32,7 @@ export function GameTitle({
   game?: GuessedGame | null | undefined;
   customMaker?: CustomGameMaker | null | undefined;
   dark?: boolean;
-  type?: "ARENA" | "ART" | "DAILY" | "PRACTICE";
+  type?: "ARENA" | "ART" | "DAILY" | "PRACTICE" | "CUSTOM";
   size?: "sm" | "md" | "lg";
 }) {
   const isArena = type === "ARENA";
@@ -69,6 +69,17 @@ export function GameTitle({
             >
               {/* {"⚔️ ARENA"} */}
               {"⚔️ ARENA"}
+            </div>
+          )}
+          {type === "ART" && (
+            <div
+              tw="flex"
+              style={{
+                fontFamily: "SpaceGrotesk",
+                color: dark ? "white" : undefined,
+              }}
+            >
+              {"🎨 ART"}
             </div>
           )}
         </div>

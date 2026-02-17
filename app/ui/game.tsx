@@ -25,7 +25,6 @@ import { BaseUserRequest } from "../api/api-utils";
 import { useLocalStorage } from "../hooks/use-local-storage";
 import { useHaptics } from "../hooks/use-haptics";
 import { ProPassRequiredScreen } from "./game/pro-pass-required-screen";
-import { PublicArena } from "../games/arena/arena-utils";
 import { useRouter } from "next/navigation";
 import { GameIntroDialog } from "./game-intro-dialog";
 
@@ -69,7 +68,7 @@ function GameKeyboardKey({
 }) {
   // Add state for tracking the repeat interval
   const [repeatInterval, setRepeatInterval] = useState<NodeJS.Timeout | null>(
-    null
+    null,
   );
 
   // Initial delay before repeat starts (in ms)
@@ -133,14 +132,14 @@ function GameKeyboardKey({
         status === "CORRECT"
           ? "bg-green-600 text-white"
           : status === "WRONG_POSITION"
-          ? "bg-orange-600 text-white"
-          : status === "INCORRECT"
-          ? "bg-primary-950/40 text-white"
-          : keyboardKey === "enter"
-          ? "bg-primary-500 text-white"
-          : keyboardKey === "backspace" || keyboardKey === "pro"
-          ? "bg-white"
-          : "bg-primary-950/5"
+            ? "bg-orange-600 text-white"
+            : status === "INCORRECT"
+              ? "bg-primary-950/40 text-white"
+              : keyboardKey === "enter"
+                ? "bg-primary-500 text-white"
+                : keyboardKey === "backspace" || keyboardKey === "pro"
+                  ? "bg-white"
+                  : "bg-primary-950/5",
       )}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
@@ -229,7 +228,7 @@ function GameKeyboard({
 }
 
 function getValidationResultMessage(
-  validationResult: GuessValidationStatus | null
+  validationResult: GuessValidationStatus | null,
 ) {
   switch (validationResult) {
     case "INVALID_EMPTY":
@@ -255,6 +254,70 @@ const placeholderGuesses = ["JUST ", "START", "TYPIN", "G... "].map((w) => ({
     .map((c) => ({ character: c, status: "UNKNOWN" as const })),
 }));
 
+interface WordCharacter {
+  count: number;
+  positions: Record<number, boolean>;
+}
+
+// TODO this is repeated functionality
+function toWordCharacters(word: string): Record<string, WordCharacter> {
+  return word.split("").reduce(
+    (acc, c, idx) => {
+      if (!acc[c]) {
+        acc[c] = { count: 0, positions: {} };
+      }
+      acc[c]!.count++;
+      acc[c]!.positions[idx] = true;
+      return acc;
+    },
+    {} as Record<string, WordCharacter>,
+  );
+}
+
+function toGuessCharacters(
+  wordCharacters: Record<string, WordCharacter>,
+  guess: string,
+): GuessCharacter[] {
+  const characters: GuessCharacter[] = [];
+  const charMap: Record<number, GuessCharacter> = {};
+  const charCounts: Record<string, number> = {};
+  // find correct first
+  for (let i = 0; i < guess.length; i++) {
+    const c = guess[i]!;
+    const cc = wordCharacters[c];
+    if (cc && cc.positions[i]) {
+      charMap[i] = { character: c, status: "CORRECT" };
+      charCounts[c] = (charCounts[c] || 0) + 1;
+    }
+  }
+  // find the other positions
+  for (let i = 0; i < guess.length; i++) {
+    const c = guess[i]!;
+    const cc = wordCharacters[c];
+    if (cc) {
+      if (!cc.positions[i]) {
+        charCounts[c] = (charCounts[c] || 0) + 1;
+        charMap[i] = {
+          character: c,
+          status: charCounts[c]! > cc.count ? "INCORRECT" : "WRONG_POSITION",
+        };
+      }
+    } else {
+      charMap[i] = { character: c, status: "INCORRECT" };
+    }
+  }
+  for (let i = 0; i < guess.length; i++) {
+    const c = charMap[i];
+    if (c) {
+      characters.push(c);
+    } else {
+      console.error("No character found for index", i, guess);
+      characters.push({ character: guess[i]!, status: "INCORRECT" });
+    }
+  }
+  return characters;
+}
+
 function GameGrid({
   game,
   currentWord,
@@ -268,12 +331,18 @@ function GameGrid({
 }) {
   const guesses = [...(game?.guesses || [])];
   if (currentWord) {
-    guesses.push({
-      characters: Array.from({ length: 5 }).map((_, idx) => ({
-        character: currentWord[idx] || "",
-        status: "UNKNOWN" as const,
-      })),
-    });
+    if (game?.customMaker?.isArt) {
+      const wordCharacters = toWordCharacters(game.customMaker.word!);
+      const characters = toGuessCharacters(wordCharacters, currentWord);
+      guesses.push({ characters });
+    } else {
+      guesses.push({
+        characters: Array.from({ length: 5 }).map((_, idx) => ({
+          character: currentWord[idx] || "",
+          status: "UNKNOWN" as const,
+        })),
+      });
+    }
   }
   return (
     <GameGuessGrid
@@ -355,17 +424,19 @@ export function Game({
         toast(getValidationResultMessage(result));
       }
     },
-    []
+    [],
   );
   const isGameOver =
     currentGame?.status === "WON" || currentGame?.status === "LOST";
   const isArena = !!currentGame?.arena;
+  const isCustom = !!currentGame?.isCustom;
+  const isArt = !!currentGame?.customMaker?.isArt;
   const [isDialogOpen, setIsDialogOpen] = useState(isGameOver);
   const [mode, setMode] = useLocalStorage<GamePlayMode>("inputMode", "normal");
   const router = useRouter();
 
   const [isWindowFocused, setIsWindowFocused] = useState(
-    document.hasFocus() || !window.matchMedia("(hover: hover)").matches
+    document.hasFocus() || !window.matchMedia("(hover: hover)").matches,
   );
   const { status: sessionStatus } = useSession();
   const { jwt } = useJwt();
@@ -400,7 +471,7 @@ export function Game({
       setTextInputWord,
       setIsDialogOpen,
       setValidationResult,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -501,6 +572,8 @@ export function Game({
     handleGameChange,
   ]);
 
+  console.log("CG", currentGame);
+
   const handleKeyPress = useCallback(
     (k: string) => {
       // impact("light");
@@ -525,7 +598,7 @@ export function Game({
         });
       }
     },
-    [setCurrentWord, isSubmitting, isGameOver]
+    [setCurrentWord, isSubmitting, isGameOver],
   );
 
   useEffect(() => {
@@ -557,7 +630,7 @@ export function Game({
         handleGameChange(data.data);
       }
     },
-    [handleGameChange, jwt, anonUserInfo]
+    [handleGameChange, jwt, anonUserInfo],
   );
 
   useEffect(() => {
@@ -705,12 +778,20 @@ export function Game({
             <span>Framedl </span>
             {config.isPro && <span style={{ color: "green" }}>PRO </span>}
             {isArena && <span>⚔️ ARENA</span>}
-            {!isArena && currentGame && (
+            {isArt && <span>🎨 ART</span>}
+            {!isArena && !isArt && currentGame && (
               <span>{formatGameKey(currentGame)}</span>
             )}
           </div>
           {isArena ? (
             <ArenaProgressIndicator game={currentGame} />
+          ) : isArt ? (
+            <div className="text-xs min-[360px]:text-sm text-primary-900/50">
+              Draw with the word{" "}
+              <span className="font-semibold">
+                {currentGame?.customMaker?.word?.toUpperCase()}
+              </span>
+            </div>
           ) : (
             <div className="text-xs min-[360px]:text-sm text-primary-900/50">
               Guess the word
