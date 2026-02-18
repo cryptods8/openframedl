@@ -1,6 +1,5 @@
 import { db } from "./../db/db";
 import { UserDataColumn } from "../db/pg/types";
-import { v4 as uuidv4 } from "uuid";
 import answers from "../words/answer-words";
 
 export interface UserData extends Partial<UserDataColumn> {
@@ -28,6 +27,7 @@ export interface Game extends UserGameKey {
 
 export interface GameResult {
   won: boolean;
+  frozen?: boolean;
   guessCount: number;
   date: string;
 }
@@ -55,8 +55,6 @@ export interface GameSave extends Omit<Game, "id"> {
 
 export interface GameRepository {
   loadAll(): Promise<Game[]>;
-  saveStats(stats: UserStatsSave): Promise<UserStats>;
-  loadStatsByUserKey(userKey: UserKey): Promise<UserStats | null>;
 }
 
 interface GameClassic {
@@ -92,30 +90,5 @@ export class GameRepositoryImpl implements GameRepository {
       });
     }
     return await db.getAll<Game>("games/*/user_id/*");
-  }
-
-  async saveStats(stats: UserStatsSave): Promise<UserStats> {
-    try {
-      const key = `stats/${stats.identityProvider}/user_id/${stats.userId}`;
-      const newStats = {
-        ...stats,
-        id: stats.id || uuidv4(),
-      } as UserStats;
-      await db.set<UserStats>(key, newStats);
-      return newStats;
-    } catch (e) {
-      console.error("Error saving stats", stats, e);
-      return Promise.reject(e);
-    }
-  }
-
-  async loadStatsByUserKey(userKey: UserKey): Promise<UserStats | null> {
-    try {
-      const key = `stats/${userKey.identityProvider}/user_id/${userKey.userId}`;
-      return await db.get<UserStats>(key);
-    } catch (e) {
-      console.error("Error loading stats by user key", userKey, e);
-      return null;
-    }
   }
 }

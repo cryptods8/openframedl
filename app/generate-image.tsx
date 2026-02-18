@@ -232,13 +232,15 @@ function UserStatsPanel(props: UserStatsPanelProps) {
           width: LAST_X_CELL_W,
           height: LAST_X_CELL_H,
           backgroundColor: result
-            ? result.won
-              ? "green"
-              : "red"
+            ? result.frozen
+              ? "#60a5fa"
+              : result.won
+                ? "green"
+                : "red"
             : primaryColor(0.24),
         }}
       >
-        {result ? (result.won ? result.guessCount : "X") : ""}
+        {result ? (result.frozen ? "~" : result.won ? result.guessCount : "X") : ""}
       </div>
     );
   }

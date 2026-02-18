@@ -1,18 +1,17 @@
 import seedrandom from "seedrandom";
 import {
-  GameRepository,
-  GameRepositoryImpl,
   UserData,
   UserStats,
-  UserStatsSave,
   GameResult,
   UserGameKey,
   UserKey,
   GameIdentityProvider,
 } from "./game-repository";
+import * as statsRepo from "./stats-pg-repository";
 import * as gameRepo from "./game-pg-repository";
 import * as customGameRepo from "./custom-game-pg-repository";
 import { Leaderboard, LeaderboardDataItem } from "./game-pg-repository";
+import * as streakFreezeRepo from "./streak-freeze-pg-repository";
 import answers from "../words/answer-words";
 import allWords from "../words/all-words";
 import { isPro } from "../constants";
@@ -333,7 +332,6 @@ function toGuessCharacters(
   }
 
 export class GameServiceImpl implements GameService {
-  private readonly gameRepository: GameRepository = new GameRepositoryImpl();
 
   getDailyKey() {
     return getDailyGameKey(new Date());
@@ -681,81 +679,14 @@ export class GameServiceImpl implements GameService {
     return games.map((g) => this.toPublicGuessedGame(this.toGuessedGame(g)));
   }
 
-  private async loadOrCreateStats(game: GuessedGame): Promise<UserStatsSave> {
-    const stats = await this.gameRepository.loadStatsByUserKey(game);
-    if (stats) {
-      return stats;
-    }
-    const allGames = await gameRepo.findAllDailyByUserKey(game);
-    const prevGames = allGames
-      .map((g) => this.toGuessedGame(g))
-      .filter(
-        (g) =>
-          (g.status === "LOST" || g.status === "WON") &&
-          g.gameKey < game.gameKey
-      )
-      .sort((a, b) => a.gameKey.localeCompare(b.gameKey));
-    const emptyStats: UserStatsSave = {
-      userId: game.userId,
-      identityProvider: game.identityProvider,
-      totalGames: 0,
-      totalWins: 0,
-      totalLosses: 0,
-      maxStreak: 0,
-      currentStreak: 0,
-      winGuessCounts: {},
-      last30: [],
-    };
-    return prevGames.reduce((acc, g) => this.updateStats(acc, g), emptyStats);
-  }
+
 
   async loadAllDailiesByUserKey(userKey: UserKey): Promise<GuessedGame[]> {
     const games = await gameRepo.findAllDailyByUserKey(userKey);
     return games.map((g) => this.toGuessedGame(g));
   }
 
-  private isPrevGameDate(currentDate: string, prevDate: string): boolean {
-    const prev = new Date(prevDate);
-    const next = addDaysToDate(prev, 1);
-    return getDailyGameKey(next) === currentDate;
-  }
 
-  private updateStats(
-    stats: UserStatsSave,
-    guessedGame: GuessedGame
-  ): UserStatsSave {
-    const newStats = { ...stats };
-    newStats.userData = guessedGame.userData;
-    if (guessedGame.status === "WON") {
-      newStats.totalWins++;
-      const guessCount = guessedGame.guesses.length;
-      newStats.winGuessCounts[guessCount] =
-        (newStats.winGuessCounts[guessCount] || 0) + 1;
-      if (
-        stats.lastGameWonDate &&
-        this.isPrevGameDate(guessedGame.gameKey, stats.lastGameWonDate)
-      ) {
-        newStats.currentStreak++;
-      } else {
-        newStats.currentStreak = 1;
-      }
-      newStats.lastGameWonDate = guessedGame.gameKey;
-      newStats.maxStreak = Math.max(newStats.maxStreak, newStats.currentStreak);
-    } else if (guessedGame.status === "LOST") {
-      newStats.totalLosses++;
-      newStats.currentStreak = 0;
-    }
-    newStats.totalGames++;
-    newStats.last30.push({
-      won: guessedGame.status === "WON",
-      guessCount: guessedGame.guesses.length,
-      date: guessedGame.gameKey,
-    });
-    if (newStats.last30.length > 30) {
-      newStats.last30.shift();
-    }
-    return newStats;
-  }
 
   async guess(guessedGame: GuessedGame, guess: string): Promise<GuessedGame> {
     if (!this.isValidGuess(guessedGame, guess)) {
@@ -797,13 +728,40 @@ export class GameServiceImpl implements GameService {
       updatedAt: now,
       completedAt: isGameFinished ? now : null,
     };
-    if (isGameFinished && game.isDaily) {
-      // update stats
-      const stats = await this.loadOrCreateStats(guessedGame);
-      const newStats = this.updateStats(stats, updatedGame);
-      await this.gameRepository.saveStats(newStats);
+    if (isGameFinished && game.isDaily && updatedGame.status === "WON") {
+      await this.checkAndAwardFreezes(guessedGame);
     }
     return updatedGame;
+  }
+
+  private async checkAndAwardFreezes(game: GuessedGame) {
+    const stats = await statsRepo.loadStatsByUserKey(game);
+    if (!stats) return;
+
+    const streak = stats.currentStreak;
+    const FREEZE_EARN_INTERVAL = 100;
+
+    if (streak > 0 && streak % FREEZE_EARN_INTERVAL === 0) {
+      const hasEarned = await streakFreezeRepo.hasEarnedForStreak(game, streak, game.gameKey);
+      if (!hasEarned) {
+        try {
+          const { getAddressesForFid } = await import("../lib/hub");
+          const { mintStreakFreeze } = await import("../lib/streak-freeze-contract");
+
+          const addresses = await getAddressesForFid(parseInt(game.userId, 10));
+          const wallet = addresses?.[0]?.address;
+          if (!wallet) {
+            console.warn("No wallet found for user, skipping freeze mint", game.userId);
+            return;
+          }
+
+          const mintTxHash = await mintStreakFreeze(wallet, 1);
+          await streakFreezeRepo.insertEarned(game, streak, game.gameKey, mintTxHash);
+        } catch (e) {
+          console.error("Error minting streak freeze NFT", e);
+        }
+      }
+    }
   }
 
   private fromGuessedGame(game: GuessedGame): gameRepo.DBGameViewWithArena {
@@ -923,7 +881,7 @@ export class GameServiceImpl implements GameService {
   }
 
   async loadStats(userKey: UserKey): Promise<UserStats | null> {
-    return this.gameRepository.loadStatsByUserKey(userKey);
+    return statsRepo.loadStatsByUserKey(userKey);
   }
 
   validateGuess(game: GuessedGame, guess: string | null | undefined) {
@@ -988,7 +946,7 @@ export class GameServiceImpl implements GameService {
       const date = addDaysToDate(toDate, -i);
       const dateKey = getDailyGameKey(date);
       const result = resultMap[dateKey];
-      if (result) {
+      if (result && !result.frozen) {
         last14.push(result);
         if (result.won) {
           wonCount++;
@@ -1093,12 +1051,15 @@ export class GameServiceImpl implements GameService {
     return this.enrichLeaderboard(
       l,
       { userId: userId, identityProvider },
-      this.gameRepository.loadStatsByUserKey
+      statsRepo.loadStatsByUserKey
     );
   }
 
   async migrateToPg(): Promise<DBGameInsert[]> {
-    const games = await this.gameRepository.loadAll();
+    // Legacy migration - instantiate old Firebase repo only here
+    const { GameRepositoryImpl } = await import("./game-repository");
+    const legacyRepo = new GameRepositoryImpl();
+    const games = await legacyRepo.loadAll();
     const inserts = [];
     console.log("Migrating games:", games.length);
     for (const game of games) {

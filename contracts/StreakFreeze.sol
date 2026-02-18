@@ -1,0 +1,85 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract StreakFreeze is ERC1155, Ownable {
+    uint256 public constant FREEZE_TOKEN_ID = 1;
+
+    uint256 public ethPrice;
+    address public erc20Token;
+    uint256 public erc20Price;
+
+    event FreezePurchased(
+        address indexed buyer,
+        uint256 amount,
+        string paymentMethod
+    );
+
+    constructor(
+        string memory uri_,
+        uint256 ethPrice_
+    ) ERC1155(uri_) Ownable(msg.sender) {
+        ethPrice = ethPrice_;
+    }
+
+    // --- Owner-only functions ---
+
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, FREEZE_TOKEN_ID, amount, "");
+    }
+
+    function setEthPrice(uint256 price) external onlyOwner {
+        ethPrice = price;
+    }
+
+    function setErc20Payment(address token, uint256 price) external onlyOwner {
+        erc20Token = token;
+        erc20Price = price;
+    }
+
+    function setURI(string memory newuri) external onlyOwner {
+        _setURI(newuri);
+    }
+
+    function withdraw() external onlyOwner {
+        (bool success, ) = payable(owner()).call{value: address(this).balance}(
+            ""
+        );
+        require(success, "ETH transfer failed");
+    }
+
+    function withdrawErc20(address token) external onlyOwner {
+        uint256 bal = IERC20(token).balanceOf(address(this));
+        require(bal > 0, "No balance");
+        IERC20(token).transfer(owner(), bal);
+    }
+
+    // --- Public functions ---
+
+    function purchaseWithEth(uint256 amount) external payable {
+        require(ethPrice > 0, "ETH purchase disabled");
+        require(amount > 0, "Amount must be > 0");
+        require(msg.value == ethPrice * amount, "Incorrect ETH amount");
+
+        _mint(msg.sender, FREEZE_TOKEN_ID, amount, "");
+        emit FreezePurchased(msg.sender, amount, "ETH");
+    }
+
+    function purchaseWithErc20(uint256 amount) external {
+        require(erc20Token != address(0), "ERC20 purchase disabled");
+        require(amount > 0, "Amount must be > 0");
+
+        uint256 totalCost = erc20Price * amount;
+        IERC20(erc20Token).transferFrom(msg.sender, address(this), totalCost);
+
+        _mint(msg.sender, FREEZE_TOKEN_ID, amount, "");
+        emit FreezePurchased(msg.sender, amount, "ERC20");
+    }
+
+    function burn(uint256 amount) external {
+        _burn(msg.sender, FREEZE_TOKEN_ID, amount);
+    }
+}

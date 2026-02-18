@@ -18,6 +18,29 @@ export interface Database {
   championshipSignup: ChampionshipSignupTable;
   arena: ArenaTable;
   userSettings: UserSettingsTable;
+  streakFreezeMint: StreakFreezeMintTable;
+  streakFreezeApplied: StreakFreezeAppliedTable;
+}
+
+export type StreakFreezeSource = "EARNED" | "PURCHASED";
+
+export interface StreakFreezeMintTable extends UserKey {
+  id: Generated<number>;
+  createdAt: ColumnType<Date, Date, never>;
+  source: StreakFreezeSource;
+  earnedAtStreakLength: number | null;
+  earnedAtGameKey: string | null;
+  purchaseTxRef: string | null;
+  mintTxHash: string | null;
+  tokenId: string | null;
+}
+
+export interface StreakFreezeAppliedTable extends UserKey {
+  id: Generated<number>;
+  createdAt: ColumnType<Date, Date, never>;
+  appliedToGameKey: string;
+  appliedAt: Date;
+  burnTxHash: string | null;
 }
 
 interface UserKey {

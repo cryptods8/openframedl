@@ -93,13 +93,15 @@ export function GameStats(props: GameStatsProps) {
                     key={idx}
                     className={`size-12 flex items-center justify-center rounded font-bold ${
                       r
-                        ? r.won
-                          ? "bg-green-600 text-white"
-                          : "bg-red-600 text-white"
+                        ? r.frozen
+                          ? "bg-blue-400 text-white"
+                          : r.won
+                            ? "bg-green-600 text-white"
+                            : "bg-red-600 text-white"
                         : "bg-primary-200"
                     }`}
                   >
-                    {r ? (r.won ? r.guessCount : "X") : ""}
+                    {r ? (r.frozen ? "~" : r.won ? r.guessCount : "X") : ""}
                   </div>
                 ))}
               </div>

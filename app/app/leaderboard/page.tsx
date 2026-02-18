@@ -5,7 +5,7 @@ import { Button } from "@/app/ui/button/button";
 import { GameIdentityProvider } from "@/app/game/game-repository";
 import { LeaderboardEntry, LeaderboardEntryRow } from "./leaderboard-entry";
 import { pgDb } from "@/app/db/pg/pg-db";
-import { sql } from "kysely";
+import { sql, SqlBool } from "kysely";
 import { LeaderboardNav } from "./leaderboard-nav";
 
 // interface LeaderboardEntry {
@@ -28,7 +28,7 @@ function entryToLeaderboardEntry(
   e: LeaderboardDataItem,
   highlighted: boolean,
   pos: string,
-  days: number
+  days: number,
 ): LeaderboardEntryWithTotalScore {
   return {
     id: e.userId,
@@ -62,10 +62,26 @@ async function getStreakLeaderboardEntries({
     .with("daily_game", (db) =>
       db
         .selectFrom("game as g")
-        .select(["g.userId", "g.identityProvider", "g.gameKey"])
+        .select([
+          "g.userId",
+          "g.identityProvider",
+          "g.gameKey",
+          sql<boolean>`true`.as("isWin"),
+        ])
         .where("g.isDaily", "=", true)
         .where("g.gameKey", "<=", date)
         .where("g.status", "=", "WON")
+        .union(
+          db
+            .selectFrom("streakFreezeApplied")
+            .select([
+              "userId",
+              "identityProvider",
+              sql<string>`applied_to_game_key`.as("gameKey"),
+              sql<boolean>`false`.as("isWin"),
+            ])
+            .where(sql<SqlBool>`applied_to_game_key <= ${date}`),
+        ),
     )
     .with("streak", (db) =>
       db
@@ -74,10 +90,11 @@ async function getStreakLeaderboardEntries({
           "userId",
           "identityProvider",
           "gameKey",
+          sql<boolean>`is_win`.as("isWin"),
           sql<number>`(game_key::date - '2024-01-01'::date) - ROW_NUMBER() OVER (PARTITION BY user_id, identity_provider ORDER BY game_key::date)`.as(
-            "streakGroup"
+            "streakGroup",
           ),
-        ])
+        ]),
     )
     .with("streak_length", (db) =>
       db
@@ -85,11 +102,11 @@ async function getStreakLeaderboardEntries({
         .select((s) => [
           "userId",
           "identityProvider",
-          s.fn.countAll().as("streakLength"),
+          sql<number>`SUM(CASE WHEN is_win THEN 1 ELSE 0 END)`.as("streakLength"),
           s.fn.min("gameKey").as("streakStart"),
           s.fn.max("gameKey").as("streakEnd"),
         ])
-        .groupBy(["userId", "identityProvider", "streakGroup"])
+        .groupBy(["userId", "identityProvider", "streakGroup"]),
     )
     .selectFrom("streak_length as sl")
     .select((s) => [
@@ -208,7 +225,7 @@ async function getScoreLeaderboardEntries({
         prevE && prevE.totalScore === e.totalGuessCount
           ? prevE.pos
           : `${idx + 1}`,
-        days
+        days,
       );
       acc.entries.push(entry);
       acc.found = acc.found || found;
@@ -217,12 +234,12 @@ async function getScoreLeaderboardEntries({
     { entries: [], found: false } as {
       entries: (LeaderboardEntryWithTotalScore | null)[];
       found: boolean;
-    }
+    },
   );
   if (userId && !found && leaderboard.personalEntry) {
     entries.push(null);
     entries.push(
-      entryToLeaderboardEntry(leaderboard.personalEntry, true, "X", days)
+      entryToLeaderboardEntry(leaderboard.personalEntry, true, "X", days),
     );
   }
   return entries;
@@ -230,7 +247,9 @@ async function getScoreLeaderboardEntries({
 
 export default async function LeaderboardPage({
   searchParams: searchParamsPromise,
-}: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const searchParams = await searchParamsPromise;
   const typeParam = searchParams?.type as LeaderboardType | undefined;
   const userIdParam = searchParams?.uid as string | undefined;
