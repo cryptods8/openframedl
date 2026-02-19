@@ -10,7 +10,9 @@ export async function insertEarned(
   userKey: UserKey,
   streakLength: number,
   gameKey: string,
-  mintTxHash: string
+  walletAddress: string,
+  claimNonce: string,
+  claimSignature: string
 ) {
   const { userId, identityProvider } = userKey;
   return await pgDb
@@ -21,11 +23,28 @@ export async function insertEarned(
       source: "EARNED",
       earnedAtStreakLength: streakLength,
       earnedAtGameKey: gameKey,
-      mintTxHash,
+      walletAddress,
+      claimNonce,
+      claimSignature,
       createdAt: new Date(),
     })
     .returningAll()
     .executeTakeFirst();
+}
+
+export async function markClaimed(
+  userKey: UserKey,
+  id: number,
+  claimTxHash: string
+) {
+  const { userId, identityProvider } = userKey;
+  return await pgDb
+    .updateTable("streakFreezeMint")
+    .set({ claimTxHash })
+    .where("id", "=", id)
+    .where("userId", "=", userId)
+    .where("identityProvider", "=", identityProvider)
+    .execute();
 }
 
 export async function insertPurchased(
@@ -67,6 +86,19 @@ export async function hasEarnedForStreak(
     )
     .executeTakeFirst();
   return !!result;
+}
+
+export async function findUnclaimedByUser(userKey: UserKey) {
+  const { userId, identityProvider } = userKey;
+  return await pgDb
+    .selectFrom("streakFreezeMint")
+    .selectAll()
+    .where("userId", "=", userId)
+    .where("identityProvider", "=", identityProvider)
+    .where("source", "=", "EARNED")
+    .where("claimTxHash", "is", null)
+    .where("claimSignature", "is not", null)
+    .execute();
 }
 
 // --- Applied freezes (burn + use) ---

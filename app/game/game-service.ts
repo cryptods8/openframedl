@@ -746,19 +746,22 @@ export class GameServiceImpl implements GameService {
       if (!hasEarned) {
         try {
           const { getAddressesForFid } = await import("../lib/hub");
-          const { mintStreakFreeze } = await import("../lib/streak-freeze-contract");
+          const { signEarnedFreeze, buildClaimNonce } = await import("../lib/streak-freeze-contract");
 
           const addresses = await getAddressesForFid(parseInt(game.userId, 10));
           const wallet = addresses?.[0]?.address;
           if (!wallet) {
-            console.warn("No wallet found for user, skipping freeze mint", game.userId);
+            console.warn("No wallet found for user, skipping freeze sign", game.userId);
             return;
           }
 
-          const mintTxHash = await mintStreakFreeze(wallet, 1);
-          await streakFreezeRepo.insertEarned(game, streak, game.gameKey, mintTxHash);
+          const nonce = buildClaimNonce(game.identityProvider, game.userId, game.gameKey, streak);
+          const { signature } = await signEarnedFreeze(wallet, 1, nonce);
+          await streakFreezeRepo.insertEarned(
+            game, streak, game.gameKey, wallet, nonce, signature
+          );
         } catch (e) {
-          console.error("Error minting streak freeze NFT", e);
+          console.error("Error signing streak freeze claim", e);
         }
       }
     }

@@ -52,6 +52,8 @@ Defined in `app/db/pg/types.ts` using Kysely types. Key tables: `game`, `vGame` 
 ### Identity Providers
 Users are identified by `(userId, identityProvider)` pairs. Providers: `fc` (Farcaster), `xmtp`, `lens`, `anon`, `fc_unauth`.
 
+**IMPORTANT**: Always use both `userId` AND `identityProvider` together when identifying a user. Different identity providers can share the same `userId`, so using `userId` alone can cause conflicts. This applies to all queries, nonce generation, cache keys, and any other user-scoped operations.
+
 ### Game Flow
 1. Word selection uses seeded random shuffling (`seedrandom`) with `SHUFFLE_SECRET` and `SEED_SALT` env vars
 2. Daily games keyed by date string, custom games by `custom_<id>` prefix

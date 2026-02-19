@@ -4,13 +4,21 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract StreakFreeze is ERC1155, Ownable {
+    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
+
     uint256 public constant FREEZE_TOKEN_ID = 1;
 
     uint256 public ethPrice;
     address public erc20Token;
     uint256 public erc20Price;
+
+    address public signer;
+    mapping(bytes32 => bool) public usedNonces;
 
     event FreezePurchased(
         address indexed buyer,
@@ -18,17 +26,30 @@ contract StreakFreeze is ERC1155, Ownable {
         string paymentMethod
     );
 
+    event FreezeClaimed(
+        address indexed recipient,
+        uint256 amount,
+        bytes32 nonce
+    );
+
     constructor(
         string memory uri_,
-        uint256 ethPrice_
+        uint256 ethPrice_,
+        address signer_
     ) ERC1155(uri_) Ownable(msg.sender) {
         ethPrice = ethPrice_;
+        signer = signer_;
     }
 
     // --- Owner-only functions ---
 
     function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, FREEZE_TOKEN_ID, amount, "");
+    }
+
+    function setSigner(address signer_) external onlyOwner {
+        require(signer_ != address(0), "Invalid signer");
+        signer = signer_;
     }
 
     function setEthPrice(uint256 price) external onlyOwner {
@@ -58,6 +79,27 @@ contract StreakFreeze is ERC1155, Ownable {
     }
 
     // --- Public functions ---
+
+    function claimEarned(
+        address to,
+        uint256 amount,
+        bytes32 nonce,
+        bytes calldata signature
+    ) external {
+        require(!usedNonces[nonce], "Nonce already used");
+
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(to, amount, nonce, address(this))
+        );
+        bytes32 ethSignedHash = messageHash.toEthSignedMessageHash();
+        address recovered = ethSignedHash.recover(signature);
+
+        require(recovered == signer, "Invalid signature");
+
+        usedNonces[nonce] = true;
+        _mint(to, FREEZE_TOKEN_ID, amount, "");
+        emit FreezeClaimed(to, amount, nonce);
+    }
 
     function purchaseWithEth(uint256 amount) external payable {
         require(ethPrice > 0, "ETH purchase disabled");

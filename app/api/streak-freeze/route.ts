@@ -38,9 +38,21 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching on-chain balance", e);
   }
 
+  // Unclaimed earned freezes (user needs to call claimEarned on contract)
+  const unclaimed = await streakFreezeRepo.findUnclaimedByUser(userKey);
+  const pendingClaims = unclaimed.map((u) => ({
+    id: u.id,
+    walletAddress: u.walletAddress,
+    nonce: u.claimNonce,
+    signature: u.claimSignature,
+    streakLength: u.earnedAtStreakLength,
+    gameKey: u.earnedAtGameKey,
+  }));
+
   return NextResponse.json({
     available,
     applied,
+    pendingClaims,
   });
 }
 

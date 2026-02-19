@@ -33,6 +33,10 @@ export interface StreakFreezeMintTable extends UserKey {
   purchaseTxRef: string | null;
   mintTxHash: string | null;
   tokenId: string | null;
+  claimNonce: string | null;
+  claimSignature: string | null;
+  claimTxHash: string | null;
+  walletAddress: string | null;
 }
 
 export interface StreakFreezeAppliedTable extends UserKey {

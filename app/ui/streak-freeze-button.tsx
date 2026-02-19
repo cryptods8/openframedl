@@ -274,6 +274,108 @@ export function PurchaseStreakFreezeButton({
   );
 }
 
+// --- Claim Earned Button ---
+
+interface ClaimStreakFreezeButtonProps {
+  mintId: number;
+  walletAddress: string;
+  nonce: `0x${string}`;
+  signature: `0x${string}`;
+  onClaim?: () => void;
+  onError?: (error: string) => void;
+}
+
+export function ClaimStreakFreezeButton({
+  mintId,
+  walletAddress,
+  nonce,
+  signature,
+  onClaim,
+  onError,
+}: ClaimStreakFreezeButtonProps) {
+  const { isConnected, address, chainId } = useAccount();
+  const { connect } = useConnect();
+  const { switchChain } = useSwitchChain();
+
+  const { data: hash, isPending, writeContract } = useWriteContract();
+  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+    chainId,
+    query: { enabled: !!hash },
+  });
+
+  const claimHandled = React.useRef(false);
+  React.useEffect(() => {
+    if (isSuccess && hash && !claimHandled.current) {
+      claimHandled.current = true;
+      // Notify backend that the claim tx went through
+      fetch("/api/streak-freeze/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mintId, claimTxHash: hash }),
+      })
+        .then(() => onClaim?.())
+        .catch((e) => onError?.(e.message));
+      claimHandled.current = false;
+    }
+  }, [isSuccess, hash, mintId, onClaim, onError]);
+
+  const handleClick = () => {
+    try {
+      claimHandled.current = false;
+
+      if (!isConnected || !address) {
+        connect({ connector: farcasterMiniApp() });
+        return;
+      }
+
+      if (chainId !== CHAIN_CONFIG.id) {
+        switchChain({ chainId: CHAIN_CONFIG.id });
+        return;
+      }
+
+      writeContract({
+        account: address,
+        address: CONTRACT_ADDRESS,
+        abi: STREAK_FREEZE_ABI,
+        functionName: "claimEarned",
+        args: [
+          walletAddress as `0x${string}`,
+          1n,
+          nonce,
+          signature,
+        ],
+      });
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Something went wrong";
+      onError?.(msg);
+    }
+  };
+
+  if (isPending || isLoading) {
+    return (
+      <AnimatedBorder>
+        <Button variant="primary" disabled>
+          Claiming...
+        </Button>
+      </AnimatedBorder>
+    );
+  }
+
+  const getButtonText = () => {
+    if (!isConnected) return "Connect Wallet";
+    if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
+    return "Claim Streak Freeze";
+  };
+
+  return (
+    <Button variant="primary" onClick={handleClick}>
+      {getButtonText()}
+    </Button>
+  );
+}
+
 // --- Burn Button ---
 
 interface BurnStreakFreezeButtonProps {

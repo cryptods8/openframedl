@@ -1,7 +1,8 @@
 import {
   createPublicClient,
-  createWalletClient,
   http,
+  encodePacked,
+  keccak256,
   type Address,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -31,6 +32,18 @@ export const STREAK_FREEZE_ABI = [
     inputs: [
       { name: "to", type: "address" },
       { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "claimEarned",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "signature", type: "bytes" },
     ],
     outputs: [],
   },
@@ -87,6 +100,13 @@ export const STREAK_FREEZE_ABI = [
     outputs: [{ name: "", type: "uint256" }],
   },
   {
+    name: "usedNonces",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "nonce", type: "bytes32" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
     anonymous: false,
     inputs: [
       { indexed: true, name: "buyer", type: "address" },
@@ -94,6 +114,16 @@ export const STREAK_FREEZE_ABI = [
       { indexed: false, name: "paymentMethod", type: "string" },
     ],
     name: "FreezePurchased",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "recipient", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+      { indexed: false, name: "nonce", type: "bytes32" },
+    ],
+    name: "FreezeClaimed",
     type: "event",
   },
   // ERC1155 TransferSingle for burn verification
@@ -120,17 +150,12 @@ function getPublicClient() {
   });
 }
 
-function getWalletClient() {
-  const pk = process.env.STREAK_FREEZE_MINTER_PK;
+function getSignerAccount() {
+  const pk = process.env.STREAK_FREEZE_SIGNER_PK;
   if (!pk) {
-    throw new Error("STREAK_FREEZE_MINTER_PK is not set");
+    throw new Error("STREAK_FREEZE_SIGNER_PK is not set");
   }
-  const account = privateKeyToAccount(pk as `0x${string}`);
-  return createWalletClient({
-    account,
-    chain: CHAIN,
-    transport: http(),
-  });
+  return privateKeyToAccount(pk as `0x${string}`);
 }
 
 function getContractAddress(): Address {
@@ -154,22 +179,49 @@ export async function getStreakFreezeBalance(
   });
 }
 
-export async function mintStreakFreeze(
-  toAddress: string,
-  amount: number
-): Promise<string> {
-  const walletClient = getWalletClient();
-  const publicClient = getPublicClient();
+/**
+ * Build a deterministic nonce from identityProvider + userId + gameKey + streakLength.
+ * Returns a bytes32 hex string.
+ */
+export function buildClaimNonce(
+  identityProvider: string,
+  userId: string,
+  gameKey: string,
+  streakLength: number
+): `0x${string}` {
+  return keccak256(
+    encodePacked(
+      ["string", "string", "string", "uint256"],
+      [identityProvider, userId, gameKey, BigInt(streakLength)]
+    )
+  );
+}
 
-  const hash = await walletClient.writeContract({
-    address: getContractAddress(),
-    abi: STREAK_FREEZE_ABI,
-    functionName: "mint",
-    args: [toAddress as Address, BigInt(amount)],
+/**
+ * Sign an earned freeze claim. Returns { nonce, signature } that the user
+ * passes to claimEarned() on the contract.
+ */
+export async function signEarnedFreeze(
+  toAddress: string,
+  amount: number,
+  nonce: `0x${string}`
+): Promise<{ nonce: `0x${string}`; signature: `0x${string}` }> {
+  const account = getSignerAccount();
+  const ca = getContractAddress();
+
+  // Must match the contract: keccak256(abi.encodePacked(to, amount, nonce, address(this)))
+  const messageHash = keccak256(
+    encodePacked(
+      ["address", "uint256", "bytes32", "address"],
+      [toAddress as Address, BigInt(amount), nonce, ca]
+    )
+  );
+
+  const signature = await account.signMessage({
+    message: { raw: messageHash },
   });
 
-  await publicClient.waitForTransactionReceipt({ hash });
-  return hash;
+  return { nonce, signature };
 }
 
 export async function getFreezePricing() {
