@@ -9,7 +9,12 @@
     "dev:monorepo": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "hardhat:compile": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat compile",
+    "hardhat:test": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat test",
+    "hardhat:deploy:sepolia": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat ignition deploy ignition/modules/StreakFreeze.ts --network baseSepolia",
+    "hardhat:deploy:base": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat ignition deploy ignition/modules/StreakFreeze.ts --network base",
+    "hardhat:verify": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat verify --network"
   },
   "dependencies": {
     "@divvi/referral-sdk": "^2.2.0",
@@ -53,8 +58,20 @@
     "node": ">=19.0.0 <23.0.0"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@nomicfoundation/hardhat-ignition": "^0.15.10",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.10",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.12",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@typechain/ethers-v6": "^0.5.0",
+    "@typechain/hardhat": "^9.0.0",
     "@types/canvas-confetti": "^1.9.0",
+    "@types/chai": "^5.2.3",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^24.0.13",
     "@types/pg": "^8.15.4",
     "@types/react": "^18.2.0",
@@ -62,12 +79,19 @@
     "@types/seedrandom": "^3.0.8",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.21",
+    "chai": "^4.5.0",
     "concurrently": "^9.2.0",
     "dotenv": "^17.2.0",
     "eslint": "^9.30.1",
     "eslint-config-next": "^14.2.11",
+    "ethers": "^6.13.0",
+    "hardhat": "^2.22.0",
+    "hardhat-gas-reporter": "^1.0.8",
     "postcss": "^8.5.6",
+    "solidity-coverage": "^0.8.1",
     "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.0",
     "typescript": "^5.3.3"
   }
 }

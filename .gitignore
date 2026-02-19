@@ -43,3 +43,9 @@ mocks.json
 /my_scripts
 /airdrop
 /local
+
+# hardhat
+/artifacts
+/cache
+/typechain-types
+/ignition/deployments

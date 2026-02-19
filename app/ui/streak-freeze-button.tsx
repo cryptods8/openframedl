@@ -376,6 +376,120 @@ export function ClaimStreakFreezeButton({
   );
 }
 
+// --- Burn Multiple Button ---
+
+interface BurnMultipleStreakFreezeButtonProps {
+  gameKeys: string[];
+  onBurn?: () => void;
+  onError?: (error: string) => void;
+}
+
+export function BurnMultipleStreakFreezeButton({
+  gameKeys,
+  onBurn,
+  onError,
+}: BurnMultipleStreakFreezeButtonProps) {
+  const { isConnected, address, chainId } = useAccount();
+  const { connect } = useConnect();
+  const { switchChain } = useSwitchChain();
+
+  const { data: hash, isPending, writeContract } = useWriteContract();
+  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+    chainId,
+    query: { enabled: !!hash },
+  });
+
+  const { data: balance } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: STREAK_FREEZE_ABI,
+    functionName: "balanceOf",
+    args: address ? [address, STREAK_FREEZE_TOKEN_ID] : undefined,
+    query: { enabled: !!address && !!CONTRACT_ADDRESS },
+  });
+
+  const amount = BigInt(gameKeys.length);
+
+  const burnHandled = React.useRef(false);
+  React.useEffect(() => {
+    if (isSuccess && hash && !burnHandled.current) {
+      burnHandled.current = true;
+      fetch("/api/streak-freeze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameKeys, burnTxHash: hash }),
+      })
+        .then((res) => {
+          if (!res.ok) return res.json().then((d) => { throw new Error(d.error); });
+          onBurn?.();
+        })
+        .catch((e) => onError?.(e.message));
+      burnHandled.current = false;
+    }
+  }, [isSuccess, hash, gameKeys, onBurn, onError]);
+
+  const handleClick = () => {
+    try {
+      burnHandled.current = false;
+
+      if (!isConnected || !address) {
+        connect({ connector: farcasterMiniApp() });
+        return;
+      }
+
+      if (chainId !== CHAIN_CONFIG.id) {
+        switchChain({ chainId: CHAIN_CONFIG.id });
+        return;
+      }
+
+      if (!balance || balance < amount) {
+        onError?.("Not enough streak freezes available");
+        return;
+      }
+
+      writeContract({
+        account: address,
+        address: CONTRACT_ADDRESS,
+        abi: STREAK_FREEZE_ABI,
+        functionName: "burn",
+        args: [amount],
+      });
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Something went wrong";
+      onError?.(msg);
+    }
+  };
+
+  if (isPending || isLoading) {
+    return (
+      <AnimatedBorder>
+        <Button variant="primary" disabled>
+          Protecting streak...
+        </Button>
+      </AnimatedBorder>
+    );
+  }
+
+  const insufficientBalance = !balance || balance < amount;
+
+  const getButtonText = () => {
+    if (!isConnected) return "Connect Wallet";
+    if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
+    return `Protect My Streak (${gameKeys.length} freeze${gameKeys.length !== 1 ? "s" : ""})`;
+  };
+
+  return (
+    <Button
+      variant="primary"
+      onClick={handleClick}
+      disabled={insufficientBalance || gameKeys.length === 0}
+    >
+      {getButtonText()}
+    </Button>
+  );
+}
+
 // --- Burn Button ---
 
 interface BurnStreakFreezeButtonProps {

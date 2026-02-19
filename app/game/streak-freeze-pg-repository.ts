@@ -144,6 +144,88 @@ export async function findAppliedByUser(userKey: UserKey) {
     .execute();
 }
 
+/**
+ * Find streak gap dates for a user. Walks backward from yesterday:
+ * a day is "covered" if the user won or has a freeze applied.
+ * Returns uncovered dates between covered dates (the gap).
+ * Stops when hitting a LOST game or an uncovered day with no covered day after it.
+ */
+export async function findStreakGaps(userKey: UserKey): Promise<string[]> {
+  const { userId, identityProvider } = userKey;
+
+  // Get all daily game results (WON or LOST) and applied freezes
+  const [games, freezes] = await Promise.all([
+    pgDb
+      .selectFrom("game")
+      .select(["gameKey", "status"])
+      .where("userId", "=", userId)
+      .where("identityProvider", "=", identityProvider)
+      .where("isDaily", "=", true)
+      .where("status", "in", ["WON", "LOST"])
+      .orderBy("gameKey", "desc")
+      .execute(),
+    pgDb
+      .selectFrom("streakFreezeApplied")
+      .select(["appliedToGameKey"])
+      .where("userId", "=", userId)
+      .where("identityProvider", "=", identityProvider)
+      .execute(),
+  ]);
+
+  const wonSet = new Set<string>();
+  const lostSet = new Set<string>();
+  for (const g of games) {
+    if (g.status === "WON") wonSet.add(g.gameKey);
+    else if (g.status === "LOST") lostSet.add(g.gameKey);
+  }
+  const frozenSet = new Set(freezes.map((f) => f.appliedToGameKey));
+
+  // Walk backward from yesterday
+  const gaps: string[] = [];
+  const today = new Date();
+  const cursor = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  );
+  cursor.setUTCDate(cursor.getUTCDate() - 1); // start from yesterday
+
+  // We need to find the "active streak window": walk back while covered,
+  // collecting gaps along the way. Stop when we hit a loss or a day that
+  // is neither covered nor a gap (i.e., no covered day follows it).
+  let foundCoveredDay = false;
+
+  for (let i = 0; i < 365 * 3; i++) {
+    const dateStr = cursor.toISOString().split("T")[0]!;
+
+    const isWon = wonSet.has(dateStr);
+    const isFrozen = frozenSet.has(dateStr);
+    const isLost = lostSet.has(dateStr);
+    const isCovered = isWon || isFrozen;
+
+    if (isLost) {
+      // Streak is broken here — stop
+      break;
+    }
+
+    if (isCovered) {
+      foundCoveredDay = true;
+    } else {
+      // Uncovered day
+      if (!foundCoveredDay) {
+        // No covered day after this yet (looking from today backward)
+        // The streak hasn't started, stop
+        break;
+      }
+      // This is a gap within the streak window
+      gaps.push(dateStr);
+    }
+
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+
+  // Return gaps in chronological order
+  return gaps.reverse();
+}
+
 export async function countConsecutiveUsed(
   userKey: UserKey,
   targetGameKey: string

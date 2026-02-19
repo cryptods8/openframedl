@@ -49,10 +49,14 @@ export async function GET(req: NextRequest) {
     gameKey: u.earnedAtGameKey,
   }));
 
+  // Streak gaps (days within the active streak that need protection)
+  const gaps = await streakFreezeRepo.findStreakGaps(userKey);
+
   return NextResponse.json({
     available,
     applied,
     pendingClaims,
+    gaps,
   });
 }
 
@@ -63,11 +67,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { gameKey, burnTxHash } = await req.json();
+    const body = await req.json();
+    const burnTxHash: string | undefined = body.burnTxHash;
 
-    if (!gameKey || !burnTxHash) {
+    // Support batch mode (gameKeys[]) or single mode (gameKey)
+    const gameKeys: string[] = body.gameKeys ?? (body.gameKey ? [body.gameKey] : []);
+
+    if (gameKeys.length === 0 || !burnTxHash) {
       return NextResponse.json(
-        { error: "Missing required fields (gameKey, burnTxHash)" },
+        { error: "Missing required fields (gameKey/gameKeys, burnTxHash)" },
         { status: 400 }
       );
     }
@@ -75,15 +83,6 @@ export async function POST(req: NextRequest) {
     const userId = session.user.fid;
     const identityProvider: GameIdentityProvider = "fc";
     const userKey = { userId, identityProvider };
-
-    // Check if already covered
-    const existing = await streakFreezeRepo.findByGameKey(userKey, gameKey);
-    if (existing) {
-      return NextResponse.json(
-        { error: "Freeze already applied for this date" },
-        { status: 400 }
-      );
-    }
 
     // Verify burn tx on-chain
     const wallet = await resolveWallet(userId);
@@ -94,33 +93,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isValid = await verifyBurnTx(burnTxHash, wallet);
-    if (!isValid) {
+    const burnResult = await verifyBurnTx(burnTxHash, wallet);
+    if (!burnResult.valid) {
       return NextResponse.json(
         { error: "Invalid burn transaction" },
         { status: 400 }
       );
     }
 
-    // Check consecutive limit
-    const consecutive = await streakFreezeRepo.countConsecutiveUsed(
-      userKey,
-      gameKey
-    );
-    const LIMIT = 7;
-    if (consecutive >= LIMIT) {
+    // Verify burned enough tokens for the batch
+    if (burnResult.amount < BigInt(gameKeys.length)) {
       return NextResponse.json(
-        { error: `Consecutive freeze limit reached (${LIMIT} days)` },
+        {
+          error: `Burn tx only burned ${burnResult.amount} tokens, but ${gameKeys.length} required`,
+        },
         { status: 400 }
       );
     }
 
-    const result = await streakFreezeRepo.applyFreeze(
-      userKey,
-      gameKey,
-      burnTxHash
-    );
-    return NextResponse.json({ success: true, freeze: result });
+    // Check each gameKey: no duplicates, consecutive limit
+    const LIMIT = 7;
+    const results = [];
+
+    for (const gameKey of gameKeys) {
+      // Check if already covered
+      const existing = await streakFreezeRepo.findByGameKey(userKey, gameKey);
+      if (existing) {
+        return NextResponse.json(
+          { error: `Freeze already applied for ${gameKey}` },
+          { status: 400 }
+        );
+      }
+
+      // Check consecutive limit (including previously applied + ones we're about to apply)
+      const consecutive = await streakFreezeRepo.countConsecutiveUsed(
+        userKey,
+        gameKey
+      );
+      if (consecutive >= LIMIT) {
+        return NextResponse.json(
+          { error: `Consecutive freeze limit reached (${LIMIT} days) at ${gameKey}` },
+          { status: 400 }
+        );
+      }
+
+      const result = await streakFreezeRepo.applyFreeze(
+        userKey,
+        gameKey,
+        burnTxHash
+      );
+      results.push(result);
+    }
+
+    return NextResponse.json({ success: true, freezes: results });
   } catch (e) {
     console.error("Error applying freeze", e);
     return NextResponse.json(

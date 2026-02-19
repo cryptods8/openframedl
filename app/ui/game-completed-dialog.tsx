@@ -14,6 +14,8 @@ import { BaseUserRequest } from "../api/api-utils";
 import { GameMintDialogContent } from "./game/game-mint-dialogue-content";
 import { CorrectWordDisplay } from "./correct-word-display";
 import { useRouter } from "next/navigation";
+import { StreakFreezeDialog } from "./streak-freeze-dialog";
+import { SnowFlakeIcon } from "../image-ui/icons/SnowFlakeIcon";
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAME_NFT_CA;
 
@@ -80,6 +82,7 @@ export function GameCompletedDialog({
     Record<string, boolean>
   >("skippedGames", {});
   const [isNewGameLoading, setIsNewGameLoading] = useState(false);
+  const [showFreezeDialog, setShowFreezeDialog] = useState(false);
   const isMinted = (game?.gameData?.mints?.length ?? 0) > 0;
   const isSkipped = skippedGames[game?.id ?? ""] ?? false;
   const canMint = !!CONTRACT_ADDRESS;
@@ -212,8 +215,23 @@ export function GameCompletedDialog({
           {game?.isDaily && game.completedAt && (
             <div className="w-full pt-2">
               <UserStats game={game} />
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setShowFreezeDialog(true)}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <div className="size-5">
+                    <SnowFlakeIcon />
+                  </div>
+                  Streak Freezes
+                </button>
+              </div>
             </div>
           )}
+          <StreakFreezeDialog
+            open={showFreezeDialog}
+            onClose={() => setShowFreezeDialog(false)}
+          />
           {game && (
             <div className="flex flex-col gap-2 items-center w-full pt-4">
               {isArena ? (

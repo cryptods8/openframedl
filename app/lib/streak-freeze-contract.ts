@@ -251,22 +251,24 @@ export async function getFreezePricing() {
 
 /**
  * Verify a burn tx: confirms the tx burned FREEZE_TOKEN_ID from the expected sender
- * to the zero address.
+ * to the zero address. Returns the burned amount if valid.
  */
 export async function verifyBurnTx(
   burnTxHash: string,
   expectedSender: string
-): Promise<boolean> {
+): Promise<{ valid: boolean; amount: bigint }> {
   const client = getPublicClient();
   const receipt = await client.getTransactionReceipt({
     hash: burnTxHash as `0x${string}`,
   });
 
-  if (receipt.status !== "success") return false;
+  if (receipt.status !== "success")
+    return { valid: false, amount: 0n };
   if (receipt.to?.toLowerCase() !== getContractAddress().toLowerCase())
-    return false;
+    return { valid: false, amount: 0n };
 
   // Look for TransferSingle with to=0x0 (burn)
+  let totalBurned = 0n;
   for (const log of receipt.logs) {
     try {
       const { decodeEventLog } = await import("viem");
@@ -282,13 +284,13 @@ export async function verifyBurnTx(
           "0x0000000000000000000000000000000000000000" &&
         decoded.args.id === FREEZE_TOKEN_ID
       ) {
-        return true;
+        totalBurned += decoded.args.value;
       }
     } catch {
       // not this log
     }
   }
-  return false;
+  return { valid: totalBurned > 0n, amount: totalBurned };
 }
 
 /**
