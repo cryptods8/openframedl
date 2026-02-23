@@ -3,6 +3,69 @@ import { sql, SqlBool } from "kysely";
 import { UserKey, UserStats, GameResult } from "./game-repository";
 
 /**
+ * Count wins in the user's current active streak that have game_key > afterGameKey.
+ * Uses the same gaps-and-islands CTE as loadStatsByUserKey.
+ */
+export async function countWinsInCurrentStreakSince(
+  userKey: UserKey,
+  afterGameKey: string,
+): Promise<number> {
+  const { userId, identityProvider } = userKey;
+
+  const result = await pgDb
+    .with("daily_activity", (db) =>
+      db
+        .selectFrom("game")
+        .select(["gameKey", sql<boolean>`true`.as("isWin")])
+        .where("userId", "=", userId)
+        .where("identityProvider", "=", identityProvider)
+        .where("isDaily", "=", true)
+        .where("status", "=", "WON")
+        .union(
+          db
+            .selectFrom("streakFreezeApplied")
+            .select([
+              sql<string>`applied_to_game_key`.as("gameKey"),
+              sql<boolean>`false`.as("isWin"),
+            ])
+            .where("userId", "=", userId)
+            .where("identityProvider", "=", identityProvider)
+        )
+    )
+    .with("streak", (db) =>
+      db
+        .selectFrom("daily_activity")
+        .select([
+          "gameKey",
+          sql<boolean>`is_win`.as("isWin"),
+          sql<number>`game_key::date - ROW_NUMBER() OVER (ORDER BY game_key)::int`.as(
+            "grp"
+          ),
+        ])
+    )
+    .with("streak_agg", (db) =>
+      db
+        .selectFrom("streak")
+        .select((s) => [
+          "grp",
+          s.fn.max("gameKey").as("endKey"),
+        ])
+        .groupBy("grp")
+        .having(sql<SqlBool>`MAX(game_key)::date >= CURRENT_DATE - 1`)
+    )
+    .selectFrom("streak as s")
+    .innerJoin("streak_agg as sa", "s.grp", "sa.grp")
+    .select(
+      sql<number>`COUNT(*) FILTER (WHERE s.is_win = true AND s.game_key > ${afterGameKey})`.as(
+        "winCount"
+      )
+    )
+    .executeTakeFirst();
+
+  return Number(result?.winCount ?? 0);
+}
+
+/**
  * Compute user stats entirely from the PG `game` table using SQL.
  * Replaces the Firebase-based cache + TS replay loop.
  */
@@ -92,12 +155,18 @@ export async function loadStatsByUserKey(
     )
     .with("last30", (db) =>
       db
-        .selectFrom("daily")
+        .selectFrom("daily as d")
+        .leftJoin("streakFreezeApplied as sfa", (join) =>
+          join
+            .onRef("sfa.appliedToGameKey", "=", "d.gameKey")
+            .on("sfa.userId", "=", userId)
+            .on("sfa.identityProvider", "=", identityProvider)
+        )
         .select([
-          "gameKey",
-          sql<boolean>`status = 'WON'`.as("won"),
-          sql<boolean>`false`.as("frozen"),
-          "guessCount",
+          "d.gameKey",
+          sql<boolean>`d.status = 'WON'`.as("won"),
+          sql<boolean>`sfa.id IS NOT NULL`.as("frozen"),
+          "d.guessCount",
         ])
         .union(
           db

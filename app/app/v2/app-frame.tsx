@@ -213,7 +213,7 @@ function GameContainer({
 
   return (
     <div
-      className="w-full h-full flex flex-col flex-1 items-center justify-center"
+      className="w-full h-full flex flex-col flex-1 items-center"
       style={{
         paddingTop: safeAreaInsets?.top,
         paddingBottom: safeAreaInsets?.bottom,

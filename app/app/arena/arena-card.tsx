@@ -145,6 +145,8 @@ export function ArenaCard({ arena }: ArenaCardProps) {
 
   const startTime = getStartTime(arena);
   const isPending = startTime && new Date(startTime) > new Date();
+  const isCompletedForUser =
+    arena.userCompletedCount === arena.config.wordCount;
   const isCompleted =
     arena.completedCount === totalPossibleGames ||
     (arena.endsAt && new Date(arena.endsAt) < new Date());
@@ -166,20 +168,23 @@ export function ArenaCard({ arena }: ArenaCardProps) {
         </CardTitle>
         <div
           className={clsx(
-            "-mx-6 block px-6 py-2 text-sm",
+            "-mx-6 flex flex-row items-baseline gap-4 px-6 py-2 text-sm",
             isPending && "bg-gray-100 text-gray-800",
             isCompleted && "bg-green-100 text-green-800",
-            !isPending && !isCompleted && "bg-orange-100 text-orange-800"
+            !isPending && !isCompleted && "bg-orange-100 text-orange-800",
           )}
         >
           {isPending ? (
             <StatusLine
               status="Pending"
-              timeInfo={'starts in ' + formatDurationSimple(
-                Math.floor(
-                  (new Date(startTime).getTime() - Date.now()) / 1000 / 60
+              timeInfo={
+                "starts in " +
+                formatDurationSimple(
+                  Math.floor(
+                    (new Date(startTime).getTime() - Date.now()) / 1000 / 60,
+                  ),
                 )
-              )}
+              }
             />
           ) : isCompleted ? (
             <StatusLine status="Completed" />
@@ -188,16 +193,24 @@ export function ArenaCard({ arena }: ArenaCardProps) {
               status="In Progress"
               timeInfo={
                 arena.endsAt
-                  ? 'ends in ' + formatDurationSimple(
+                  ? "ends in " +
+                    formatDurationSimple(
                       Math.floor(
                         (new Date(arena.endsAt).getTime() - Date.now()) /
                           1000 /
-                          60
-                      )
+                          60,
+                      ),
                     )
                   : undefined
               }
             />
+          )}
+          {arena.userCompletedCount !== undefined && (
+            <span className="text-xs text-primary-900/60">
+              {arena.userCompletedCount > 0
+                ? `You: ${arena.userCompletedCount}/${arena.config.wordCount} words`
+                : "You: Not started"}
+            </span>
           )}
         </div>
       </CardHeader>
@@ -254,7 +267,7 @@ export function ArenaCard({ arena }: ArenaCardProps) {
             <span>{formatEndTime(arena)}</span>
           </div> */}
 
-          {/* {arena.availability.membership && (
+        {/* {arena.availability.membership && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Your status:</span>
               <Badge variant="outline" className="text-xs">
@@ -264,13 +277,15 @@ export function ArenaCard({ arena }: ArenaCardProps) {
           )} */}
         {/* </div> */}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex items-center justify-between">
         <Button
           variant="outline"
           size="sm"
-          href={`/app/arena/${arena.id}${isCompleted ? "/results" : "/join"}`}
+          href={`/app/arena/${arena.id}${
+            isCompleted || isCompletedForUser ? "/results" : "/join"
+          }`}
         >
-          {isCompleted ? "View Results" : "Join"}
+          {isCompleted || isCompletedForUser ? "View Results" : "Join"}
         </Button>
       </CardFooter>
     </Card>

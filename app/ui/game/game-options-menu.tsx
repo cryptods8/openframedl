@@ -11,6 +11,7 @@ import { EllipsisVerticalIcon } from "@heroicons/react/16/solid";
 import Link from "next/link";
 
 import { useHaptics } from "@/app/hooks/use-haptics";
+import { useAppConfig } from "@/app/contexts/app-config-context";
 
 function MenuButton({
   children,
@@ -39,18 +40,17 @@ function MenuItem({
 export function GameOptionsMenu({
   onNewGame,
   showDaily,
-  isAppFrame,
   mode,
   onModeChange,
   onIntroOpen,
 }: {
   onNewGame: (gameType: "practice" | "daily") => void;
   showDaily?: boolean;
-  isAppFrame?: boolean;
   mode?: "normal" | "pro";
   onModeChange?: (mode: "normal" | "pro") => void;
   onIntroOpen?: () => void;
 }) {
+  const { isPro } = useAppConfig();
   return (
     <Menu>
       <MenuButton
@@ -147,6 +147,19 @@ export function GameOptionsMenu({
                 </div>
               </button>
             </MenuItem>
+          )}
+          {!isPro && (
+            <>
+              <MenuSeparator className="my-1 h-px bg-primary-200" />
+              <MenuItem>
+                <Link
+                  href="/app/streak-freezes"
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
+                >
+                  <span>Streak Freezes</span>
+                </Link>
+              </MenuItem>
+            </>
           )}
           {onIntroOpen && (
             <>

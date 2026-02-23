@@ -1,18 +1,16 @@
 "use client";
 
-import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
 import React from "react";
 import {
   useAccount,
-  useConnect,
   useWaitForTransactionReceipt,
   useWriteContract,
   useSwitchChain,
   useReadContract,
 } from "wagmi";
+import { useWalletConnector } from "@/app/hooks/use-wallet-connector";
 import { AnimatedBorder } from "./animated-border";
 import { Button } from "./button/button";
-import { parseUnits } from "viem";
 import {
   STREAK_FREEZE_ABI,
   STREAK_FREEZE_CONTRACT_ADDRESS,
@@ -57,7 +55,13 @@ const ERC20_ABI = [
 
 // --- Purchase Button ---
 
-interface PurchaseStreakFreezeButtonProps {
+interface CommonButtonProps {
+  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "outline";
+  children?: React.ReactNode;
+}
+
+interface PurchaseStreakFreezeButtonProps extends CommonButtonProps {
   onPurchase?: (txHash: string) => void;
   onError?: (error: string) => void;
 }
@@ -65,9 +69,12 @@ interface PurchaseStreakFreezeButtonProps {
 export function PurchaseStreakFreezeButton({
   onPurchase,
   onError,
+  variant = "primary",
+  size = "md",
+  children,
 }: PurchaseStreakFreezeButtonProps) {
   const { isConnected, address, chainId } = useAccount();
-  const { connect } = useConnect();
+  const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
@@ -118,8 +125,7 @@ export function PurchaseStreakFreezeButton({
   });
 
   const hasErc20 =
-    erc20Token &&
-    erc20Token !== "0x0000000000000000000000000000000000000000";
+    erc20Token && erc20Token !== "0x0000000000000000000000000000000000000000";
 
   const {
     data: allowance,
@@ -129,10 +135,7 @@ export function PurchaseStreakFreezeButton({
     address: hasErc20 ? (erc20Token as `0x${string}`) : undefined,
     abi: ERC20_ABI,
     functionName: "allowance",
-    args:
-      address && hasErc20
-        ? [address, CONTRACT_ADDRESS]
-        : undefined,
+    args: address && hasErc20 ? [address, CONTRACT_ADDRESS] : undefined,
     query: { enabled: !!hasErc20 && !!address },
   });
 
@@ -150,7 +153,7 @@ export function PurchaseStreakFreezeButton({
       fetch("/api/streak-freeze/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ txHash: hash }),
+        body: JSON.stringify({ txHash: hash, walletAddress: address }),
       }).catch(console.error);
       onPurchase?.(hash);
       purchaseHandled.current = false;
@@ -202,19 +205,14 @@ export function PurchaseStreakFreezeButton({
         refetchAllowance();
       }
     }
-  }, [
-    isApprovalReceiptSuccess,
-    refetchAllowance,
-    triggerPurchase,
-    erc20Price,
-  ]);
+  }, [isApprovalReceiptSuccess, refetchAllowance, triggerPurchase, erc20Price]);
 
   const handleClick = () => {
     try {
       purchaseHandled.current = false;
 
       if (!isConnected || !address) {
-        connect({ connector: farcasterMiniApp() });
+        connectWallet();
         return;
       }
 
@@ -250,12 +248,12 @@ export function PurchaseStreakFreezeButton({
   if (isBusy) {
     return (
       <AnimatedBorder>
-        <Button variant="primary" disabled>
+        <Button variant={variant} size={size} disabled>
           {isAllowanceFetching
             ? "Checking..."
             : needsApproval
-            ? "Approving..."
-            : "Purchasing..."}
+              ? "Approving..."
+              : "Purchasing..."}
         </Button>
       </AnimatedBorder>
     );
@@ -264,11 +262,11 @@ export function PurchaseStreakFreezeButton({
   const getButtonText = () => {
     if (!isConnected) return "Connect Wallet";
     if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
-    return "Buy Streak Freeze";
+    return children || "Buy Streak Freeze";
   };
 
   return (
-    <Button variant="primary" onClick={handleClick}>
+    <Button variant={variant} size={size} onClick={handleClick}>
       {getButtonText()}
     </Button>
   );
@@ -276,7 +274,7 @@ export function PurchaseStreakFreezeButton({
 
 // --- Claim Earned Button ---
 
-interface ClaimStreakFreezeButtonProps {
+interface ClaimStreakFreezeButtonProps extends CommonButtonProps {
   mintId: number;
   walletAddress: string;
   nonce: `0x${string}`;
@@ -292,9 +290,11 @@ export function ClaimStreakFreezeButton({
   signature,
   onClaim,
   onError,
+  children,
+  ...props
 }: ClaimStreakFreezeButtonProps) {
   const { isConnected, address, chainId } = useAccount();
-  const { connect } = useConnect();
+  const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
@@ -312,7 +312,7 @@ export function ClaimStreakFreezeButton({
       fetch("/api/streak-freeze/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mintId, claimTxHash: hash }),
+        body: JSON.stringify({ mintId, claimTxHash: hash, walletAddress }),
       })
         .then(() => onClaim?.())
         .catch((e) => onError?.(e.message));
@@ -325,7 +325,7 @@ export function ClaimStreakFreezeButton({
       claimHandled.current = false;
 
       if (!isConnected || !address) {
-        connect({ connector: farcasterMiniApp() });
+        connectWallet();
         return;
       }
 
@@ -339,12 +339,7 @@ export function ClaimStreakFreezeButton({
         address: CONTRACT_ADDRESS,
         abi: STREAK_FREEZE_ABI,
         functionName: "claimEarned",
-        args: [
-          walletAddress as `0x${string}`,
-          1n,
-          nonce,
-          signature,
-        ],
+        args: [walletAddress as `0x${string}`, 1n, nonce, signature],
       });
     } catch (error) {
       const msg =
@@ -356,7 +351,7 @@ export function ClaimStreakFreezeButton({
   if (isPending || isLoading) {
     return (
       <AnimatedBorder>
-        <Button variant="primary" disabled>
+        <Button variant="primary" disabled {...props}>
           Claiming...
         </Button>
       </AnimatedBorder>
@@ -366,11 +361,11 @@ export function ClaimStreakFreezeButton({
   const getButtonText = () => {
     if (!isConnected) return "Connect Wallet";
     if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
-    return "Claim Streak Freeze";
+    return children || "Claim Streak Freeze";
   };
 
   return (
-    <Button variant="primary" onClick={handleClick}>
+    <Button variant="primary" onClick={handleClick} {...props}>
       {getButtonText()}
     </Button>
   );
@@ -378,7 +373,7 @@ export function ClaimStreakFreezeButton({
 
 // --- Burn Multiple Button ---
 
-interface BurnMultipleStreakFreezeButtonProps {
+interface BurnMultipleStreakFreezeButtonProps extends CommonButtonProps {
   gameKeys: string[];
   onBurn?: () => void;
   onError?: (error: string) => void;
@@ -388,9 +383,11 @@ export function BurnMultipleStreakFreezeButton({
   gameKeys,
   onBurn,
   onError,
+  children,
+  ...props
 }: BurnMultipleStreakFreezeButtonProps) {
   const { isConnected, address, chainId } = useAccount();
-  const { connect } = useConnect();
+  const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
@@ -417,10 +414,17 @@ export function BurnMultipleStreakFreezeButton({
       fetch("/api/streak-freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameKeys, burnTxHash: hash }),
+        body: JSON.stringify({
+          gameKeys,
+          burnTxHash: hash,
+          walletAddress: address,
+        }),
       })
         .then((res) => {
-          if (!res.ok) return res.json().then((d) => { throw new Error(d.error); });
+          if (!res.ok)
+            return res.json().then((d) => {
+              throw new Error(d.error);
+            });
           onBurn?.();
         })
         .catch((e) => onError?.(e.message));
@@ -433,7 +437,7 @@ export function BurnMultipleStreakFreezeButton({
       burnHandled.current = false;
 
       if (!isConnected || !address) {
-        connect({ connector: farcasterMiniApp() });
+        connectWallet();
         return;
       }
 
@@ -464,7 +468,7 @@ export function BurnMultipleStreakFreezeButton({
   if (isPending || isLoading) {
     return (
       <AnimatedBorder>
-        <Button variant="primary" disabled>
+        <Button variant="primary" disabled {...props}>
           Protecting streak...
         </Button>
       </AnimatedBorder>
@@ -476,7 +480,10 @@ export function BurnMultipleStreakFreezeButton({
   const getButtonText = () => {
     if (!isConnected) return "Connect Wallet";
     if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
-    return `Protect My Streak (${gameKeys.length} freeze${gameKeys.length !== 1 ? "s" : ""})`;
+    return (
+      children ||
+      `Protect My Streak (${gameKeys.length} Freeze${gameKeys.length !== 1 ? "s" : ""})`
+    );
   };
 
   return (
@@ -484,6 +491,7 @@ export function BurnMultipleStreakFreezeButton({
       variant="primary"
       onClick={handleClick}
       disabled={insufficientBalance || gameKeys.length === 0}
+      {...props}
     >
       {getButtonText()}
     </Button>
@@ -492,7 +500,7 @@ export function BurnMultipleStreakFreezeButton({
 
 // --- Burn Button ---
 
-interface BurnStreakFreezeButtonProps {
+interface BurnStreakFreezeButtonProps extends CommonButtonProps {
   gameKey: string;
   onBurn?: () => void;
   onError?: (error: string) => void;
@@ -502,9 +510,11 @@ export function BurnStreakFreezeButton({
   gameKey,
   onBurn,
   onError,
+  children,
+  ...props
 }: BurnStreakFreezeButtonProps) {
   const { isConnected, address, chainId } = useAccount();
-  const { connect } = useConnect();
+  const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
@@ -531,7 +541,11 @@ export function BurnStreakFreezeButton({
       fetch("/api/streak-freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameKey, burnTxHash: hash }),
+        body: JSON.stringify({
+          gameKeys: [gameKey],
+          burnTxHash: hash,
+          walletAddress: address,
+        }),
       })
         .then(() => onBurn?.())
         .catch((e) => onError?.(e.message));
@@ -544,7 +558,7 @@ export function BurnStreakFreezeButton({
       burnHandled.current = false;
 
       if (!isConnected || !address) {
-        connect({ connector: farcasterMiniApp() });
+        connectWallet();
         return;
       }
 
@@ -575,7 +589,7 @@ export function BurnStreakFreezeButton({
   if (isPending || isLoading) {
     return (
       <AnimatedBorder>
-        <Button variant="primary" disabled>
+        <Button variant="primary" disabled {...props}>
           Applying freeze...
         </Button>
       </AnimatedBorder>
@@ -585,11 +599,16 @@ export function BurnStreakFreezeButton({
   const getButtonText = () => {
     if (!isConnected) return "Connect Wallet";
     if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
-    return "Use Streak Freeze";
+    return children || "Use Streak Freeze";
   };
 
   return (
-    <Button variant="primary" onClick={handleClick} disabled={!balance || balance === 0n}>
+    <Button
+      variant="primary"
+      onClick={handleClick}
+      disabled={!balance || balance === 0n}
+      {...props}
+    >
       {getButtonText()}
     </Button>
   );

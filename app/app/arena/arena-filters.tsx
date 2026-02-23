@@ -32,6 +32,14 @@ export function ArenaFilters({ currentFilter }: ArenaFiltersProps) {
         Upcoming
       </NavLink>
       {status === "authenticated" && (
+        <NavLink
+          href={createHref("playable")}
+          active={currentFilter === "playable"}
+        >
+          Playable
+        </NavLink>
+      )}
+      {status === "authenticated" && (
         <NavLink href={createHref("mine")} active={currentFilter === "mine"}>
           Mine
         </NavLink>

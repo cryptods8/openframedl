@@ -1,14 +1,13 @@
-import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
 import { getReferralTag, submitReferral } from "@divvi/referral-sdk";
 import React from "react";
 import {
   useAccount,
-  useConnect,
   useWaitForTransactionReceipt,
   useWriteContract,
   useSwitchChain,
   useReadContract,
 } from "wagmi";
+import { useWalletConnector } from "@/app/hooks/use-wallet-connector";
 import { AnimatedBorder } from "./animated-border";
 import { Button } from "./button/button";
 import { decodeEventLog, parseEther, parseUnits } from "viem";
@@ -189,7 +188,7 @@ export function MintButton({
   onError,
 }: MintButtonProps) {
   const { isConnected, address, chainId } = useAccount();
-  const { connect } = useConnect();
+  const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
 
   const [optimisticApproval, setOptimisticApproval] = React.useState(false);
@@ -325,7 +324,7 @@ export function MintButton({
       successHandled.current = false;
 
       if (!isConnected || !address) {
-        connect({ connector: farcasterMiniApp() });
+        connectWallet();
         return;
       }
 

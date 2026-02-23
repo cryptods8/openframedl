@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
 
   const gap = 8;
   const cellSize = 48;
-  const rows = 16;
-  const cols = 16;
+  const rows = 14;
+  const cols = 14;
   const padding = 0;
   const width = cols * cellSize + gap * (cols - 1) + padding * 2;
   const height = rows * cellSize + gap * (rows - 1) + padding * 2;
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       width,
       height,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
+      background: { r: 255, g: 255, b: 255, alpha: 0 },
     },
   });
 
@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
             col === 1
               ? "rgb(0,128,0)" // green
               : col === 2
-              ? "rgb(255,165,0)" // orange
-              : null;
+                ? "rgb(255,165,0)" // orange
+                : null;
 
           if (color == null) {
             return null;
@@ -74,14 +74,17 @@ export async function GET(request: NextRequest) {
 
           if (isFrozen) {
             // Adjust colors to be more "icy"
-            if (col === 1) color = "rgb(150, 220, 180)"; // Icy green
-            if (col === 2) color = "rgb(255, 220, 150)"; // Icy orange
+            if (col === 1) color = "rgb(0,128,228)"; // "rgba(12, 87, 131, 1)"; // Icy green
+            if (col === 2) color = "rgb(255,165,228)"; // "rgba(0, 204, 255, 1)"; // Icy orange
+            // if (col === 1) color = "rgba(12, 87, 131, 1)"; // Icy green
+            // if (col === 2) color = "rgba(0, 204, 255, 1)"; // Icy orange
           }
 
           const rowNum = i + (rows - fRows) / 2;
           const colNum = j + (cols - fCols) / 2;
           const x = padding + colNum * (cellSize + gap);
           const y = padding + rowNum * (cellSize + gap);
+          const opacity = isFrozen ? 0.75 : 1;
           return `
         <rect
         x="${x}"
@@ -89,7 +92,7 @@ export async function GET(request: NextRequest) {
         width="${cellSize}"
         height="${cellSize}"
         fill="${color}"
-        ${isFrozen ? 'filter="url(#frost)" opacity="0.8"' : ""}
+        opacity="${opacity}"
         />
         `;
         })
@@ -110,29 +113,73 @@ export async function GET(request: NextRequest) {
     <path d="M34.3,31.9L45.4,29c0.6-0.1,1.1,0.1,1.2,0.7l0.5,1.9c0.1,0.6-0.1,1.1-0.7,1.2l-7.3,1.9L41,42  c0.1,0.6-0.1,1.1-0.7,1.2l-1.9,0.5c-0.6,0.1-1.1-0.1-1.2-0.7L34.3,31.9" />
   `;
 
-  const snowflakes = isFrozen
-    ? [1, 2, 3, 4, 5]
-        .map(() => {
-          const x = Math.random() * width;
-          const y = Math.random() * height;
-          const s = 0.2 + Math.random() * 0.4;
-          return `<g transform="translate(${x}, ${y}) scale(${s})" fill="rgba(200, 230, 255, 0.6)" filter="url(#glow)">${snowflakePath}</g>`;
-        })
-        .join("")
-    : "";
+  let snowflakes = "";
+  if (isFrozen) {
+    const snowflakesArr: {
+      x: number;
+      y: number;
+      s: number;
+      opacity: number;
+    }[] = [];
+    let attempts = 0;
+    const maxAttempts = 10000;
+
+    while (snowflakesArr.length < 50 && attempts < maxAttempts) {
+      const s = 4 * (0.2 + Math.random() * 0.4);
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+
+      let overlap = false;
+      for (const sf of snowflakesArr) {
+        const cx1 = sf.x + 25 * sf.s;
+        const cy1 = sf.y + 25 * sf.s;
+        const cx2 = x + 25 * s;
+        const cy2 = y + 25 * s;
+
+        const dx = cx1 - cx2;
+        const dy = cy1 - cy2;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        const minDist = 22 * s + 22 * sf.s;
+        if (dist < minDist) {
+          overlap = true;
+          break;
+        }
+      }
+
+      if (!overlap) {
+        const opacity = 0.5; //((s - 0.4) / 2.2) * 0.75 + 0.25;
+        snowflakesArr.push({ x, y, s, opacity });
+      }
+      attempts++;
+    }
+
+    snowflakes = snowflakesArr
+      .map(({ x, y, s, opacity }) => {
+        return `<g transform="translate(${x}, ${y}) scale(${s})" fill="rgba(255, 255, 255, ${opacity})">${snowflakePath}</g>`;
+      })
+      .join("");
+  }
 
   const overlay = isFrozen
-    ? `<rect x="0" y="0" width="${width}" height="${height}" fill="rgba(100, 200, 255, 0.15)" />`
-    : "";
+    ? `<rect x="0" y="0" width="${width}" height="${height}" fill="rgba(195, 230, 255, 0.25)" />`
+    : // ? "" // `<rect x="0" y="0" width="${width}" height="${height}" fill="rgba(100, 200, 255, 0.5)" />`
+      "";
 
   const svg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       ${filters}
-      ${overlay}
       ${svgRects}
+      ${overlay}
       ${snowflakes}
     </svg>
   `;
+  // const svg = `
+  //   <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+  //     ${svgRects}
+  //     ${snowflakes}
+  //   </svg>
+  // `;
 
   // Composite the SVG onto the white background
   const buffer = await image

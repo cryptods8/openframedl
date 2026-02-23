@@ -12,7 +12,6 @@
 
 # next.js
 /.next/
-/out/
 
 # production
 /build
@@ -44,8 +43,7 @@ mocks.json
 /airdrop
 /local
 
-# hardhat
-/artifacts
+# foundry
+/out
 /cache
-/typechain-types
-/ignition/deployments
+/broadcast

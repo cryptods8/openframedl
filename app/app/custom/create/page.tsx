@@ -6,7 +6,7 @@ import { isPro } from "@/app/constants";
 export default function Page() {
   return (
     <ProfileApp headerless>
-      <div className="w-full p-4 h-full flex-1 flex flex-col max-w-screen-md">
+      <div className="w-full p-4 h-full min-h-dvh flex-1 flex flex-col max-w-screen-md">
         <div className="sm:pt-4 sm:px-4 flex items-center gap-2 justify-between">
           <div>
             <h1 className="text-xl font-semibold font-space">

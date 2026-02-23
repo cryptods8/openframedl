@@ -17,12 +17,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { mintId, claimTxHash } = await req.json();
+    const { mintId, claimTxHash, walletAddress } = await req.json();
 
     if (!mintId || !claimTxHash) {
       return NextResponse.json(
         { error: "Missing required fields (mintId, claimTxHash)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -30,13 +30,18 @@ export async function POST(req: NextRequest) {
     const identityProvider: GameIdentityProvider = "fc";
     const userKey = { userId, identityProvider };
 
-    await streakFreezeRepo.markClaimed(userKey, mintId, claimTxHash);
+    await streakFreezeRepo.markClaimed(
+      userKey,
+      mintId,
+      claimTxHash,
+      walletAddress,
+    );
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error("Error marking claim", e);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

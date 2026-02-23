@@ -69,7 +69,7 @@ const getWordForIndex = (index: number, seed: string): string => {
 const getWordForDateString = (dateString: string, seed: string): string => {
   const date = new Date(dateString);
   const days = Math.floor(
-    (date.getTime() - startingDate.getTime()) / (1000 * 60 * 60 * 24)
+    (date.getTime() - startingDate.getTime()) / (1000 * 60 * 60 * 24),
   );
   return getWordForIndex(days, seed);
 };
@@ -85,7 +85,7 @@ interface GameWord {
 }
 
 export const getWordForUserGameKey = async (
-  userGameKey: UserGameKey
+  userGameKey: UserGameKey,
 ): Promise<GameWord> => {
   const seed =
     userGameKey.identityProvider +
@@ -98,7 +98,7 @@ export const getWordForUserGameKey = async (
 
   if (userGameKey.gameKey.startsWith(CUSTOM_WORD_KEY_PREFIX)) {
     const customGameId = userGameKey.gameKey.substring(
-      CUSTOM_WORD_KEY_PREFIX.length
+      CUSTOM_WORD_KEY_PREFIX.length,
     );
     const customGame = await customGameRepo.findById(customGameId);
     if (customGame) {
@@ -106,7 +106,7 @@ export const getWordForUserGameKey = async (
     } else {
       console.warn(
         "Invalid custom game id, falling back to random word",
-        customGameId
+        customGameId,
       );
     }
   }
@@ -210,30 +210,30 @@ export type LoadLeaderboardOptions =
 export interface GameService {
   loadOrCreate(
     userGameKey: UserGameKey,
-    options?: LoadOrCreateOptions
+    options?: LoadOrCreateOptions,
   ): Promise<GuessedGame>;
   load(id: string): Promise<GuessedGame | null>;
   loadAllDailiesByUserKey(userKey: UserKey): Promise<GuessedGame[]>;
   loadPublic(id: string, personal: boolean): Promise<PublicGuessedGame | null>;
   loadPublicByUserGameKey(
-    userGameKey: UserGameKey
+    userGameKey: UserGameKey,
   ): Promise<PublicGuessedGame | null>;
   loadAllPublic(
     filter: gameRepo.GameFilter,
-    personal: boolean
+    personal: boolean,
   ): Promise<PublicGuessedGame[]>;
   guess(game: GuessedGame, guess: string): Promise<GuessedGame>;
   undoGuess(game: GuessedGame): Promise<GuessedGame>;
   reset(game: GuessedGame): Promise<GuessedGame>;
   validateGuess(
     game: GuessedGame,
-    guess: string | null | undefined
+    guess: string | null | undefined,
   ): GuessValidationStatus;
   generateRandomWords(count: number): string[];
   loadStats(userKey: UserKey): Promise<UserStats | null>;
   loadLeaderboard(
     identityProvider: GameIdentityProvider,
-    options: LoadLeaderboardOptions
+    options: LoadLeaderboardOptions,
   ): Promise<PersonalLeaderboard>;
   loadReplacedScore(game: UserGameKey): Promise<number | null>;
   loadCustomGameMaker(customId: string): Promise<CustomGameMaker | null>;
@@ -277,69 +277,71 @@ export class PassRequiredError extends Error {
 }
 
 function toWordCharacters(word: string): Record<string, WordCharacter> {
-  return word.split("").reduce((acc, c, idx) => {
-    if (!acc[c]) {
-      acc[c] = { count: 0, positions: {} };
-    }
-    acc[c]!.count++;
-    acc[c]!.positions[idx] = true;
-    return acc;
-  }, {} as Record<string, WordCharacter>);
+  return word.split("").reduce(
+    (acc, c, idx) => {
+      if (!acc[c]) {
+        acc[c] = { count: 0, positions: {} };
+      }
+      acc[c]!.count++;
+      acc[c]!.positions[idx] = true;
+      return acc;
+    },
+    {} as Record<string, WordCharacter>,
+  );
 }
 
 function toGuessCharacters(
-    wordCharacters: Record<string, WordCharacter>,
-    guess: string
-  ): GuessCharacter[] {
-    const characters: GuessCharacter[] = [];
-    const charMap: Record<number, GuessCharacter> = {};
-    const charCounts: Record<string, number> = {};
-    // find correct first
-    for (let i = 0; i < guess.length; i++) {
-      const c = guess[i]!;
-      const cc = wordCharacters[c];
-      if (cc && cc.positions[i]) {
-        charMap[i] = { character: c, status: "CORRECT" };
-        charCounts[c] = (charCounts[c] || 0) + 1;
-      }
+  wordCharacters: Record<string, WordCharacter>,
+  guess: string,
+): GuessCharacter[] {
+  const characters: GuessCharacter[] = [];
+  const charMap: Record<number, GuessCharacter> = {};
+  const charCounts: Record<string, number> = {};
+  // find correct first
+  for (let i = 0; i < guess.length; i++) {
+    const c = guess[i]!;
+    const cc = wordCharacters[c];
+    if (cc && cc.positions[i]) {
+      charMap[i] = { character: c, status: "CORRECT" };
+      charCounts[c] = (charCounts[c] || 0) + 1;
     }
-    // find the other positions
-    for (let i = 0; i < guess.length; i++) {
-      const c = guess[i]!;
-      const cc = wordCharacters[c];
-      if (cc) {
-        if (!cc.positions[i]) {
-          charCounts[c] = (charCounts[c] || 0) + 1;
-          charMap[i] = {
-            character: c,
-            status: charCounts[c]! > cc.count ? "INCORRECT" : "WRONG_POSITION",
-          };
-        }
-      } else {
-        charMap[i] = { character: c, status: "INCORRECT" };
-      }
-    }
-    for (let i = 0; i < guess.length; i++) {
-      const c = charMap[i];
-      if (c) {
-        characters.push(c);
-      } else {
-        console.error("No character found for index", i, guess);
-        characters.push({ character: guess[i]!, status: "INCORRECT" });
-      }
-    }
-    return characters;
   }
+  // find the other positions
+  for (let i = 0; i < guess.length; i++) {
+    const c = guess[i]!;
+    const cc = wordCharacters[c];
+    if (cc) {
+      if (!cc.positions[i]) {
+        charCounts[c] = (charCounts[c] || 0) + 1;
+        charMap[i] = {
+          character: c,
+          status: charCounts[c]! > cc.count ? "INCORRECT" : "WRONG_POSITION",
+        };
+      }
+    } else {
+      charMap[i] = { character: c, status: "INCORRECT" };
+    }
+  }
+  for (let i = 0; i < guess.length; i++) {
+    const c = charMap[i];
+    if (c) {
+      characters.push(c);
+    } else {
+      console.error("No character found for index", i, guess);
+      characters.push({ character: guess[i]!, status: "INCORRECT" });
+    }
+  }
+  return characters;
+}
 
 export class GameServiceImpl implements GameService {
-
   getDailyKey() {
-    return getDailyGameKey(new Date());
+    return getDailyGameKey(new Date(Date.now() - 1000 * 60 * 60 * 24 * 0));
   }
 
   private isHardMode(
     prevGuess: GuessCharacter[],
-    characters: GuessCharacter[]
+    characters: GuessCharacter[],
   ) {
     for (let i = 0; i < prevGuess.length; i++) {
       const hint = prevGuess[i]!;
@@ -352,7 +354,7 @@ export class GameServiceImpl implements GameService {
       } else if (hint.status === "WRONG_POSITION") {
         // check the character is in the guess
         const currentChar = characters.find(
-          (c) => c.character === hint.character
+          (c) => c.character === hint.character,
         );
         if (!currentChar) {
           return false;
@@ -361,12 +363,15 @@ export class GameServiceImpl implements GameService {
     }
     // check that all prevGuess characters are in the current guess with at least the same multiplicities
     const toMultiplicityMap = (chars: GuessCharacter[]) =>
-      chars.reduce((acc, c) => {
-        if (c.status === "CORRECT" || c.status === "WRONG_POSITION") {
-          acc[c.character] = (acc[c.character] || 0) + 1;
-        }
-        return acc;
-      }, {} as Record<string, number>);
+      chars.reduce(
+        (acc, c) => {
+          if (c.status === "CORRECT" || c.status === "WRONG_POSITION") {
+            acc[c.character] = (acc[c.character] || 0) + 1;
+          }
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
     const prevCharMap = toMultiplicityMap(prevGuess);
     const currentCharMap = toMultiplicityMap(characters);
     for (const key in prevCharMap) {
@@ -380,19 +385,19 @@ export class GameServiceImpl implements GameService {
   }
 
   private isDBGameView(
-    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
+    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena,
   ): game is DBGameView {
     return (game as DBGameView).customUserId !== undefined;
   }
 
   private isDBGameViewWithArena(
-    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
+    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena,
   ): game is gameRepo.DBGameViewWithArena {
     return (game as gameRepo.DBGameViewWithArena).arenaUserId != null;
   }
 
   toGuessedGame(
-    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena
+    game: DBGame | DBGameView | gameRepo.DBGameViewWithArena,
   ): GuessedGame {
     const word = game.word;
     const wordCharacters = toWordCharacters(word);
@@ -428,13 +433,13 @@ export class GameServiceImpl implements GameService {
       lastGuess &&
       lastGuess.characters.reduce(
         (acc, c) => acc && c.status === "CORRECT",
-        true
+        true,
       );
     const status = won
       ? "WON"
       : game.guesses.length >= MAX_GUESSES
-      ? "LOST"
-      : "IN_PROGRESS";
+        ? "LOST"
+        : "IN_PROGRESS";
 
     let customMaker: CustomGameMaker | undefined;
     if (this.isDBGameView(game)) {
@@ -520,7 +525,7 @@ export class GameServiceImpl implements GameService {
 
   async loadOrCreate(
     key: UserGameKey,
-    options?: LoadOrCreateOptions
+    options?: LoadOrCreateOptions,
   ): Promise<GuessedGame> {
     const game = await gameRepo.findByUserGameKey(key);
     if (!game) {
@@ -586,7 +591,7 @@ export class GameServiceImpl implements GameService {
               break;
             default:
               console.warn(
-                "Invalid init word: " + word + ", validation: " + validation
+                "Invalid init word: " + word + ", validation: " + validation,
               );
               break;
           }
@@ -638,7 +643,7 @@ export class GameServiceImpl implements GameService {
 
   async loadPublic(
     id: string,
-    personal: boolean
+    personal: boolean,
   ): Promise<PublicGuessedGame | null> {
     const game = await gameRepo.findById(id);
     if (!game) {
@@ -658,7 +663,7 @@ export class GameServiceImpl implements GameService {
   }
 
   async loadPublicByUserGameKey(
-    userGameKey: UserGameKey
+    userGameKey: UserGameKey,
   ): Promise<PublicGuessedGame | null> {
     const game = await gameRepo.findByUserGameKey(userGameKey);
     if (!game) {
@@ -670,7 +675,7 @@ export class GameServiceImpl implements GameService {
 
   async loadAllPublic(
     filter: gameRepo.GameFilter,
-    personal: boolean
+    personal: boolean,
   ): Promise<PublicGuessedGame[]> {
     const games = await gameRepo.findAllByFilter(filter);
     if (personal) {
@@ -679,14 +684,10 @@ export class GameServiceImpl implements GameService {
     return games.map((g) => this.toPublicGuessedGame(this.toGuessedGame(g)));
   }
 
-
-
   async loadAllDailiesByUserKey(userKey: UserKey): Promise<GuessedGame[]> {
     const games = await gameRepo.findAllDailyByUserKey(userKey);
     return games.map((g) => this.toGuessedGame(g));
   }
-
-
 
   async guess(guessedGame: GuessedGame, guess: string): Promise<GuessedGame> {
     if (!this.isValidGuess(guessedGame, guess)) {
@@ -697,7 +698,7 @@ export class GameServiceImpl implements GameService {
 
   private async guessUnvalidated(
     guessedGame: GuessedGame,
-    guess: string
+    guess: string,
   ): Promise<GuessedGame> {
     // const game = await gameRepo.findByUserGameKey(guessedGame);
     const game = this.fromGuessedGame(guessedGame);
@@ -735,35 +736,29 @@ export class GameServiceImpl implements GameService {
   }
 
   private async checkAndAwardFreezes(game: GuessedGame) {
-    const stats = await statsRepo.loadStatsByUserKey(game);
-    if (!stats) return;
-
-    const streak = stats.currentStreak;
     const FREEZE_EARN_INTERVAL = 100;
 
-    if (streak > 0 && streak % FREEZE_EARN_INTERVAL === 0) {
-      const hasEarned = await streakFreezeRepo.hasEarnedForStreak(game, streak, game.gameKey);
-      if (!hasEarned) {
-        try {
-          const { getAddressesForFid } = await import("../lib/hub");
-          const { signEarnedFreeze, buildClaimNonce } = await import("../lib/streak-freeze-contract");
+    try {
+      const anchor = await streakFreezeRepo.getLastEarnedFreeze(game);
+      const afterGameKey = anchor?.earnedAtGameKey ?? "";
+      const winsSince = await statsRepo.countWinsInCurrentStreakSince(
+        game,
+        afterGameKey,
+      );
 
-          const addresses = await getAddressesForFid(parseInt(game.userId, 10));
-          const wallet = addresses?.[0]?.address;
-          if (!wallet) {
-            console.warn("No wallet found for user, skipping freeze sign", game.userId);
-            return;
-          }
-
-          const nonce = buildClaimNonce(game.identityProvider, game.userId, game.gameKey, streak);
-          const { signature } = await signEarnedFreeze(wallet, 1, nonce);
-          await streakFreezeRepo.insertEarned(
-            game, streak, game.gameKey, wallet, nonce, signature
-          );
-        } catch (e) {
-          console.error("Error signing streak freeze claim", e);
+      if (winsSince > 0 && winsSince % FREEZE_EARN_INTERVAL === 0) {
+        const alreadyEarned = await streakFreezeRepo.hasEarnedForGameKey(
+          game,
+          game.gameKey,
+        );
+        if (!alreadyEarned) {
+          const stats = await statsRepo.loadStatsByUserKey(game);
+          const streakLength = stats?.currentStreak ?? winsSince;
+          await streakFreezeRepo.insertEarned(game, streakLength, game.gameKey);
         }
       }
+    } catch (e) {
+      console.error("Error in checkAndAwardFreezes", e);
     }
   }
 
@@ -819,7 +814,7 @@ export class GameServiceImpl implements GameService {
     if (!guessedGame.customMaker?.isArt) {
       console.warn(
         "Request to undo non-custom game. Skipping...",
-        guessedGame.id
+        guessedGame.id,
       );
       return guessedGame;
     }
@@ -850,7 +845,7 @@ export class GameServiceImpl implements GameService {
     if (!guessedGame.customMaker?.isArt) {
       console.warn(
         "Request to reset non-custom game. Skipping...",
-        guessedGame.id
+        guessedGame.id,
       );
       return guessedGame;
     }
@@ -879,7 +874,7 @@ export class GameServiceImpl implements GameService {
   generateRandomWords(count: number): string[] {
     const rng = seedrandom();
     return Array.from({ length: count }, (_, i) =>
-      getWordForIndex(Math.floor(rng() * answers.length), shuffleSecret!)
+      getWordForIndex(Math.floor(rng() * answers.length), shuffleSecret!),
     );
   }
 
@@ -913,7 +908,7 @@ export class GameServiceImpl implements GameService {
         const wordCharacters = toWordCharacters(game.word);
         const isHardMode = this.isHardMode(
           prevGuess.characters,
-          toGuessCharacters(wordCharacters, formattedGuess)
+          toGuessCharacters(wordCharacters, formattedGuess),
         );
         if (!isHardMode) {
           return "INVALID_HARD_MODE";
@@ -929,12 +924,15 @@ export class GameServiceImpl implements GameService {
 
   private async toLeaderboardEntry(
     stats: UserStats,
-    lastDate: string
+    lastDate: string,
   ): Promise<LeaderboardDataItem> {
-    const resultMap = stats.last30.reduce((acc, g) => {
-      acc[g.date] = g;
-      return acc;
-    }, {} as Record<string, GameResult>);
+    const resultMap = stats.last30.reduce(
+      (acc, g) => {
+        acc[g.date] = g;
+        return acc;
+      },
+      {} as Record<string, GameResult>,
+    );
     const toDate = resultMap[lastDate]
       ? new Date(lastDate)
       : addDaysToDate(new Date(lastDate), -1);
@@ -990,13 +988,13 @@ export class GameServiceImpl implements GameService {
     l: Leaderboard,
     userKey: UserKey,
     loadStatsByUserKey: (
-      userKey: UserKey
-    ) => Promise<UserStats | null | undefined>
+      userKey: UserKey,
+    ) => Promise<UserStats | null | undefined>,
   ): Promise<PersonalLeaderboard> {
     const personalEntryIndex = l.entries.findIndex(
       (e) =>
         e.userId === userKey.userId &&
-        e.identityProvider === userKey.identityProvider
+        e.identityProvider === userKey.identityProvider,
     );
     if (personalEntryIndex !== -1) {
       const personalEntry = l.entries[personalEntryIndex];
@@ -1014,7 +1012,7 @@ export class GameServiceImpl implements GameService {
     if (statsForFid) {
       const personalEntry = await this.toLeaderboardEntry(
         statsForFid,
-        l.metadata.date
+        l.metadata.date,
       );
       return {
         ...l,
@@ -1026,7 +1024,7 @@ export class GameServiceImpl implements GameService {
 
   async loadLeaderboard(
     identityProvider: GameIdentityProvider,
-    options: LoadLeaderboardOptions
+    options: LoadLeaderboardOptions,
   ) {
     // if (options.type === "TOP_N") {
     //   l = await gameRepo.(
@@ -1044,7 +1042,7 @@ export class GameServiceImpl implements GameService {
     const l = await gameRepo.loadLeaderboard(
       identityProvider,
       leaderboardDate,
-      days
+      days,
     );
     console.log("Loaded leaderboard in", Date.now() - start, "ms");
     const { userId } = options;
@@ -1054,7 +1052,7 @@ export class GameServiceImpl implements GameService {
     return this.enrichLeaderboard(
       l,
       { userId: userId, identityProvider },
-      statsRepo.loadStatsByUserKey
+      statsRepo.loadStatsByUserKey,
     );
   }
 
@@ -1132,7 +1130,7 @@ export class GameServiceImpl implements GameService {
     const userGameKey = {
       ...game,
       gameKey: getDailyGameKey(
-        addDaysToDate(new Date(game.gameKey), -DEFAULT_LEADERBOARD_DAYS)
+        addDaysToDate(new Date(game.gameKey), -DEFAULT_LEADERBOARD_DAYS),
       ),
     };
     const prevGame = await gameRepo.findByUserGameKey(userGameKey);

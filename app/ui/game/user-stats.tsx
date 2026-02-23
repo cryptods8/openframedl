@@ -57,9 +57,10 @@ function UserStats({ game }: { game: ClientGame }) {
     >,
   );
 
-  const last7Days = Array.from({ length: 7 }).map((_, index) => {
+  const daysShown = 7;
+  const lastNDays = Array.from({ length: daysShown }).map((_, index) => {
     const date = new Date();
-    date.setDate(date.getDate() - (6 - index));
+    date.setDate(date.getDate() - (daysShown - 1 - index));
     const gameKey = getDailyGameKey(date);
     return last30Map[gameKey];
   });
@@ -83,20 +84,22 @@ function UserStats({ game }: { game: ClientGame }) {
         <StatsItem label="Max" value={isLoading ? "\u00A0" : maxStreak} />
       </div>
       <div className="flex items-center gap-2 justify-between mt-3">
-        <span className="text-sm text-primary-950/50 pl-2">Last 7</span>
+        <span className="text-sm text-primary-950/50 pl-2">
+          Last {daysShown}
+        </span>
         <div className="flex items-center gap-1">
-          {last7Days.map((item, index) => {
+          {lastNDays.map((item, index) => {
             return (
               <div
                 key={index}
-                className={`rounded-md size-7 font-semibold flex items-center justify-center text-white ${
+                className={`rounded-md size-7 font-semibold flex items-center justify-center ${
                   item
                     ? item.frozen
-                      ? "bg-blue-600"
+                      ? "bg-blue-100 text-blue-500"
                       : item.won
-                        ? "bg-green-600"
-                        : "bg-red-600"
-                    : "bg-primary-950/5"
+                        ? "bg-green-600 text-white"
+                        : "bg-red-600 text-white"
+                    : "bg-primary-950/5 text-white"
                 }`}
               >
                 {item ? (

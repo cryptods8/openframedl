@@ -22,27 +22,37 @@ export function useSharing() {
   useEffect(() => {
     const load = async () => {
       const context = await sdk.context;
+      const ima = await sdk.isInMiniApp();
       setIsMiniApp(!!context);
-    }
+      console.log("CTX");
+    };
     load();
   }, []);
 
-  const composeCast = useCallback(async (cast: Cast) => {
-    if (isMiniApp) {
-      await sdk.actions.composeCast({
-        ...cast,
-        channelKey: cast.channelKey || (isPro ? "framedl-pro" : "framedl"),
-      });
-      return;
-    } else if (jwt) {
-      // legacy, revisit
-      createCast(window, cast);
-    // } else if (navigator.share) {
-    //   navigator.share({ text: cast.text, url: cast.embeds[0] });
-    } else {
-      window.open(createComposeUrl(cast.text, cast.embeds[0] ?? "", { isPro }), "_blank");
-    }
-  }, [isMiniApp, jwt, isPro]);
+  console.log("IS_MINI_APP", isMiniApp);
+
+  const composeCast = useCallback(
+    async (cast: Cast) => {
+      if (isMiniApp) {
+        await sdk.actions.composeCast({
+          ...cast,
+          channelKey: cast.channelKey || (isPro ? "framedl-pro" : "framedl"),
+        });
+        return;
+      } else if (jwt) {
+        // legacy, revisit
+        createCast(window, cast);
+        // } else if (navigator.share) {
+        //   navigator.share({ text: cast.text, url: cast.embeds[0] });
+      } else {
+        window.open(
+          createComposeUrl(cast.text, cast.embeds[0] ?? "", { isPro }),
+          "_blank",
+        );
+      }
+    },
+    [isMiniApp, jwt, isPro],
+  );
 
   return { composeCast };
 }

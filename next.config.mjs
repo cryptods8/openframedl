@@ -45,10 +45,17 @@ const nextConfig = {
       };
       config.plugins = config.plugins || [];
       config.plugins.push(
-        new webpack.IgnorePlugin({ resourceRegExp: /@xmtp\/node-bindings/ }),
-        new webpack.IgnorePlugin({ resourceRegExp: /@xmtp\/node-sdk/ }),
-        new webpack.IgnorePlugin({ resourceRegExp: /@xmtp\/proto/ })
-      );
+          new webpack.IgnorePlugin({ resourceRegExp: /@xmtp\/node-bindings/ }),
+          new webpack.IgnorePlugin({ resourceRegExp: /@xmtp\/node-sdk/ }),
+          new webpack.IgnorePlugin({ resourceRegExp: /@xmtp\/proto/ }),
+          new webpack.IgnorePlugin({ resourceRegExp: /@react-native-async-storage/ }),
+          new webpack.IgnorePlugin({ resourceRegExp: /pino-pretty/ })
+          );
+    }
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@react-native-async-storage/async-storage': false,
+      'pino-pretty': false
     }
     return config;
   },

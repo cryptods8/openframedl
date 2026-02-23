@@ -4,10 +4,11 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-contract StreakFreeze is ERC1155, Ownable {
+contract StreakFreeze is ERC1155, Ownable, IERC2981 {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -16,6 +17,9 @@ contract StreakFreeze is ERC1155, Ownable {
     uint256 public ethPrice;
     address public erc20Token;
     uint256 public erc20Price;
+
+    address public royaltyReceiver;
+    uint96 public royaltyBps; // basis points (500 = 5%)
 
     address public signer;
     mapping(bytes32 => bool) public usedNonces;
@@ -39,6 +43,8 @@ contract StreakFreeze is ERC1155, Ownable {
     ) ERC1155(uri_) Ownable(msg.sender) {
         ethPrice = ethPrice_;
         signer = signer_;
+        royaltyReceiver = msg.sender;
+        royaltyBps = 500; // 5%
     }
 
     // --- Owner-only functions ---
@@ -59,6 +65,13 @@ contract StreakFreeze is ERC1155, Ownable {
     function setErc20Payment(address token, uint256 price) external onlyOwner {
         erc20Token = token;
         erc20Price = price;
+    }
+
+    function setRoyalty(address receiver, uint96 bps) external onlyOwner {
+        require(bps <= 1000, "Max 10%");
+        require(receiver != address(0), "Invalid receiver");
+        royaltyReceiver = receiver;
+        royaltyBps = bps;
     }
 
     function setURI(string memory newuri) external onlyOwner {
@@ -123,5 +136,22 @@ contract StreakFreeze is ERC1155, Ownable {
 
     function burn(uint256 amount) external {
         _burn(msg.sender, FREEZE_TOKEN_ID, amount);
+    }
+
+    // --- ERC-2981 Royalty ---
+
+    function royaltyInfo(
+        uint256,
+        uint256 salePrice
+    ) external view override returns (address receiver, uint256 royaltyAmount) {
+        return (royaltyReceiver, (salePrice * royaltyBps) / 10000);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155, IERC165) returns (bool) {
+        return
+            interfaceId == type(IERC2981).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 }

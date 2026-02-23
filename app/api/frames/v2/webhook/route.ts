@@ -13,7 +13,7 @@ import { createVerifyAppKey } from "@/app/lib/hub";
 async function setUserNotificationDetails(
   userKey: UserKey,
   userSettings: DBUserSettings | undefined,
-  notificationDetails: { token: string; url: string }
+  notificationDetails: { token: string; url: string },
 ) {
   if (userSettings) {
     await updateUserSettings(userKey, {
@@ -34,7 +34,7 @@ async function setUserNotificationDetails(
 
 async function deleteUserNotificationDetails(
   userKey: UserKey,
-  userSettings: DBUserSettings | undefined
+  userSettings: DBUserSettings | undefined,
 ) {
   if (!userSettings) {
     return;
@@ -62,19 +62,19 @@ export async function POST(request: NextRequest) {
         // The request data is invalid
         return Response.json(
           { success: false, error: error.message },
-          { status: 400 }
+          { status: 400 },
         );
       case "VerifyJsonFarcasterSignature.InvalidAppKeyError":
         // The app key is invalid
         return Response.json(
           { success: false, error: error.message },
-          { status: 401 }
+          { status: 401 },
         );
       case "VerifyJsonFarcasterSignature.VerifyAppKeyError":
         // Internal error verifying the app key (caller may want to try again)
         return Response.json(
           { success: false, error: error.message },
-          { status: 500 }
+          { status: 500 },
         );
     }
   }
@@ -90,12 +90,14 @@ export async function POST(request: NextRequest) {
   const userSettings = await findUserSettingsByUserKey(userKey);
 
   switch (event.event) {
+    case "miniapp_added":
+    // @ts-ignore
     case "frame_added":
       if (event.notificationDetails) {
         await setUserNotificationDetails(
           userKey,
           userSettings,
-          event.notificationDetails
+          event.notificationDetails,
         );
         await sendFrameNotifications({
           recipients: [{ fid, notificationDetails: event.notificationDetails }],
@@ -107,6 +109,8 @@ export async function POST(request: NextRequest) {
       }
 
       break;
+    case "miniapp_removed":
+    // @ts-ignore
     case "frame_removed":
       await deleteUserNotificationDetails(userKey, userSettings);
 
@@ -115,7 +119,7 @@ export async function POST(request: NextRequest) {
       await setUserNotificationDetails(
         userKey,
         userSettings,
-        event.notificationDetails
+        event.notificationDetails,
       );
       await sendFrameNotifications({
         recipients: [{ fid, notificationDetails: event.notificationDetails }],

@@ -856,7 +856,6 @@ export function Game({
                 mode={mode}
                 onModeChange={setMode}
                 showDaily={!currentGame?.isDaily}
-                isAppFrame={appFrame}
                 onIntroOpen={handleIntroOpen}
               />
             </div>
@@ -907,7 +906,6 @@ export function Game({
             <GameOptionsMenu
               onNewGame={handleNewGame}
               showDaily={!currentGame?.isDaily}
-              isAppFrame={appFrame}
               mode={mode}
               onModeChange={setMode}
               onIntroOpen={handleIntroOpen}
