@@ -161,7 +161,6 @@ export function PurchaseStreakFreezeButton({
         .catch(console.error)
         .finally(() => {
           setIsBackendSyncing(false);
-          purchaseHandled.current = false;
         });
     }
   }, [isSuccess, hash, onPurchase, address]);
@@ -332,7 +331,6 @@ export function ClaimStreakFreezeButton({
         .catch((e) => onError?.(e.message))
         .finally(() => {
           setIsBackendSyncing(false);
-          claimHandled.current = false;
         });
     }
   }, [isSuccess, hash, mintId, onClaim, onError, walletAddress]);
