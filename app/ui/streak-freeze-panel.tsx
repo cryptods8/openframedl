@@ -12,6 +12,7 @@ import {
 import { toast } from "./toasts/toast";
 import { SnowFlakeIcon } from "../image-ui/icons/SnowFlakeIcon";
 import { PanelTitle } from "./panel-title";
+import { cn } from "../utils";
 
 const MINT_PRICE =
   process.env.NEXT_PUBLIC_STREAK_FREEZE_NFT_MINT_PRICE || "0.0025";
@@ -42,7 +43,7 @@ interface StreakFreezeData {
 export function StreakFreezePanel() {
   const { address } = useAccount();
 
-  const { data, isLoading, refetch } = useQuery<StreakFreezeData>({
+  const { data, isLoading, isFetching, refetch } = useQuery<StreakFreezeData>({
     queryKey: ["streak-freeze", address],
     queryFn: () => {
       const url = address
@@ -76,7 +77,7 @@ export function StreakFreezePanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", isFetching && "animate-pulse")}>
       {/* Balance display */}
       <div className="">
         <div className="flex items-center gap-3 p-4 bg-primary-100 rounded-md">

@@ -21,16 +21,7 @@ export function ArenaFilters({ currentFilter }: ArenaFiltersProps) {
   }
 
   return (
-    <div className="flex items-center gap-1 bg-primary-200/50 sm:rounded-full px-4 py-2">
-      <NavLink href={createHref("open")} active={currentFilter === "open"}>
-        Open
-      </NavLink>
-      <NavLink href={createHref("past")} active={currentFilter === "past"}>
-        Past
-      </NavLink>
-      <NavLink href={createHref("upcoming")} active={currentFilter === "upcoming"}>
-        Upcoming
-      </NavLink>
+    <div className="flex items-center gap-1 bg-primary-200/50 sm:rounded-full px-4 py-2 overflow-x-auto">
       {status === "authenticated" && (
         <NavLink
           href={createHref("playable")}
@@ -44,6 +35,18 @@ export function ArenaFilters({ currentFilter }: ArenaFiltersProps) {
           Mine
         </NavLink>
       )}
+      <NavLink href={createHref("open")} active={currentFilter === "open"}>
+        Open
+      </NavLink>
+      <NavLink href={createHref("past")} active={currentFilter === "past"}>
+        Past
+      </NavLink>
+      {/* <NavLink
+        href={createHref("upcoming")}
+        active={currentFilter === "upcoming"}
+      >
+        Upcoming
+      </NavLink> */}
     </div>
   );
 }

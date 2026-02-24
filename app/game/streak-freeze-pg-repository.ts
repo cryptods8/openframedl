@@ -103,7 +103,11 @@ export async function getLastEarnedFreeze(
     .orderBy("earnedAtGameKey", "desc")
     .limit(1)
     .executeTakeFirst();
-  if (!result || !result.earnedAtGameKey || result.earnedAtStreakLength == null) {
+  if (
+    !result ||
+    !result.earnedAtGameKey ||
+    result.earnedAtStreakLength == null
+  ) {
     return null;
   }
   return {
@@ -119,7 +123,9 @@ export interface ActiveStreakWin {
   winIndexInStreak: number;
 }
 
-export async function findUsersWithActiveStreaks(): Promise<ActiveStreakWin[]> {
+export async function findUsersWithStreaks(
+  streakLengthMin: number = 100,
+): Promise<ActiveStreakWin[]> {
   const result = await sql<ActiveStreakWin>`
     WITH daily_activity AS (
       SELECT user_id, identity_provider, game_key, true AS is_win
@@ -149,7 +155,7 @@ export async function findUsersWithActiveStreaks(): Promise<ActiveStreakWin[]> {
         MAX(game_key) AS end_key
       FROM streak_groups
       GROUP BY user_id, identity_provider, grp
-      HAVING MAX(game_key)::date >= CURRENT_DATE - 1
+      HAVING COUNT(*) >= ${streakLengthMin}
     ),
     active_wins AS (
       SELECT
@@ -157,7 +163,7 @@ export async function findUsersWithActiveStreaks(): Promise<ActiveStreakWin[]> {
         sg.identity_provider,
         sg.game_key,
         ROW_NUMBER() OVER (
-          PARTITION BY sg.user_id, sg.identity_provider ORDER BY sg.game_key
+          PARTITION BY sg.user_id, sg.identity_provider, sg.grp ORDER BY sg.game_key
         )::int AS win_index_in_streak
       FROM streak_groups sg
       INNER JOIN streak_agg sa

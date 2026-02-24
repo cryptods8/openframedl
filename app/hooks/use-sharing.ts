@@ -22,14 +22,10 @@ export function useSharing() {
   useEffect(() => {
     const load = async () => {
       const context = await sdk.context;
-      const ima = await sdk.isInMiniApp();
       setIsMiniApp(!!context);
-      console.log("CTX");
     };
     load();
   }, []);
-
-  console.log("IS_MINI_APP", isMiniApp);
 
   const composeCast = useCallback(
     async (cast: Cast) => {

@@ -12,6 +12,7 @@ import { ProfileGallery } from "../../profile-gallery";
 import { EmptyMessage } from "../../empty-message";
 import ProfileGameStats from "../../profile-game-stats";
 import { getFarcasterSession } from "@/app/lib/auth";
+import { SignIn } from "@/app/ui/auth/sign-in";
 
 export default async function ProfilePage({
   params,
@@ -39,17 +40,22 @@ export default async function ProfilePage({
   const userData = await gameService.loadUserData(userKey);
 
   return (
-    <ProfileApp>
+    <ProfileApp headerless>
       <div className="w-full h-full bg-primary-100 text-left flex-1 text-primary-900 py-8 sm:px-8">
         <div className="max-w-xs md:max-w-screen-sm lg:max-w-screen-lg xl:max-w-screen-xl mx-auto px-2">
-          <ProfileHeader
-            ip={userKey.identityProvider}
-            uid={userKey.userId}
-            userData={userData}
-          />
+          <div className="flex gap-2 items-center">
+            <div className="flex-1">
+              <ProfileHeader
+                ip={userKey.identityProvider}
+                uid={userKey.userId}
+                userData={userData}
+              />
+            </div>
+            <SignIn />
+          </div>
         </div>
-        <div>
-          <div className="border-t border-b border-primary-200 py-4 mt-6 mb-4 bg-gradient-to-r from-transparent via-primary-200/50 to-transparent">
+        <div className="pt-4 space-y-4">
+          <div className="flex items-center gap-1 bg-primary-200/50 sm:rounded-full px-4 py-2 overflow-x-auto">
             <ProfileNav isCurrentUser={isCurrentUser} />
           </div>
           <Container>

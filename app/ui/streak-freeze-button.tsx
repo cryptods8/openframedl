@@ -145,20 +145,26 @@ export function PurchaseStreakFreezeButton({
     return !allowance || allowance < erc20Price;
   }, [hasErc20, erc20Price, allowance, optimisticApproval]);
 
+  const [isBackendSyncing, setIsBackendSyncing] = React.useState(false);
   const purchaseHandled = React.useRef(false);
   React.useEffect(() => {
     if (isSuccess && hash && !purchaseHandled.current) {
       purchaseHandled.current = true;
+      setIsBackendSyncing(true);
       // Log purchase to backend
       fetch("/api/streak-freeze/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ txHash: hash, walletAddress: address }),
-      }).catch(console.error);
-      onPurchase?.(hash);
-      purchaseHandled.current = false;
+      })
+        .then(() => onPurchase?.(hash))
+        .catch(console.error)
+        .finally(() => {
+          setIsBackendSyncing(false);
+          purchaseHandled.current = false;
+        });
     }
-  }, [isSuccess, hash, onPurchase]);
+  }, [isSuccess, hash, onPurchase, address]);
 
   const triggerPurchase = React.useCallback(() => {
     if (!address) return;
@@ -243,7 +249,11 @@ export function PurchaseStreakFreezeButton({
 
   const isApprovalLoading = isApprovalPending || isApprovalReceiptLoading;
   const isBusy =
-    isPending || isLoading || isApprovalLoading || isAllowanceFetching;
+    isPending ||
+    isLoading ||
+    isApprovalLoading ||
+    isAllowanceFetching ||
+    isBackendSyncing;
 
   if (isBusy) {
     return (
@@ -253,7 +263,9 @@ export function PurchaseStreakFreezeButton({
             ? "Checking..."
             : needsApproval
               ? "Approving..."
-              : "Purchasing..."}
+              : isBackendSyncing
+                ? "Finalizing..."
+                : "Purchasing..."}
         </Button>
       </AnimatedBorder>
     );
@@ -304,10 +316,12 @@ export function ClaimStreakFreezeButton({
     query: { enabled: !!hash },
   });
 
+  const [isBackendSyncing, setIsBackendSyncing] = React.useState(false);
   const claimHandled = React.useRef(false);
   React.useEffect(() => {
     if (isSuccess && hash && !claimHandled.current) {
       claimHandled.current = true;
+      setIsBackendSyncing(true);
       // Notify backend that the claim tx went through
       fetch("/api/streak-freeze/claim", {
         method: "POST",
@@ -315,10 +329,13 @@ export function ClaimStreakFreezeButton({
         body: JSON.stringify({ mintId, claimTxHash: hash, walletAddress }),
       })
         .then(() => onClaim?.())
-        .catch((e) => onError?.(e.message));
-      claimHandled.current = false;
+        .catch((e) => onError?.(e.message))
+        .finally(() => {
+          setIsBackendSyncing(false);
+          claimHandled.current = false;
+        });
     }
-  }, [isSuccess, hash, mintId, onClaim, onError]);
+  }, [isSuccess, hash, mintId, onClaim, onError, walletAddress]);
 
   const handleClick = () => {
     try {
@@ -348,11 +365,11 @@ export function ClaimStreakFreezeButton({
     }
   };
 
-  if (isPending || isLoading) {
+  if (isPending || isLoading || isBackendSyncing) {
     return (
       <AnimatedBorder>
         <Button variant="primary" disabled {...props}>
-          Claiming...
+          {isBackendSyncing ? "Finalizing..." : "Claiming..."}
         </Button>
       </AnimatedBorder>
     );
@@ -407,10 +424,12 @@ export function BurnMultipleStreakFreezeButton({
 
   const amount = BigInt(gameKeys.length);
 
+  const [isBackendSyncing, setIsBackendSyncing] = React.useState(false);
   const burnHandled = React.useRef(false);
   React.useEffect(() => {
     if (isSuccess && hash && !burnHandled.current) {
       burnHandled.current = true;
+      setIsBackendSyncing(true);
       fetch("/api/streak-freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -427,10 +446,12 @@ export function BurnMultipleStreakFreezeButton({
             });
           onBurn?.();
         })
-        .catch((e) => onError?.(e.message));
-      burnHandled.current = false;
+        .catch((e) => onError?.(e.message))
+        .finally(() => {
+          setIsBackendSyncing(false);
+        });
     }
-  }, [isSuccess, hash, gameKeys, onBurn, onError]);
+  }, [isSuccess, hash, gameKeys, address, onBurn, onError]);
 
   const handleClick = () => {
     try {
@@ -465,11 +486,11 @@ export function BurnMultipleStreakFreezeButton({
     }
   };
 
-  if (isPending || isLoading) {
+  if (isPending || isLoading || isBackendSyncing) {
     return (
       <AnimatedBorder>
         <Button variant="primary" disabled {...props}>
-          Protecting streak...
+          {isBackendSyncing ? "Finalizing..." : "Protecting streak..."}
         </Button>
       </AnimatedBorder>
     );
@@ -533,10 +554,12 @@ export function BurnStreakFreezeButton({
     query: { enabled: !!address && !!CONTRACT_ADDRESS },
   });
 
+  const [isBackendSyncing, setIsBackendSyncing] = React.useState(false);
   const burnHandled = React.useRef(false);
   React.useEffect(() => {
     if (isSuccess && hash && !burnHandled.current) {
       burnHandled.current = true;
+      setIsBackendSyncing(true);
       // Notify backend about the burn
       fetch("/api/streak-freeze", {
         method: "POST",
@@ -548,10 +571,12 @@ export function BurnStreakFreezeButton({
         }),
       })
         .then(() => onBurn?.())
-        .catch((e) => onError?.(e.message));
-      burnHandled.current = false;
+        .catch((e) => onError?.(e.message))
+        .finally(() => {
+          setIsBackendSyncing(false);
+        });
     }
-  }, [isSuccess, hash, gameKey, onBurn, onError]);
+  }, [isSuccess, hash, gameKey, address, onBurn, onError]);
 
   const handleClick = () => {
     try {
@@ -586,11 +611,11 @@ export function BurnStreakFreezeButton({
     }
   };
 
-  if (isPending || isLoading) {
+  if (isPending || isLoading || isBackendSyncing) {
     return (
       <AnimatedBorder>
         <Button variant="primary" disabled {...props}>
-          Applying freeze...
+          {isBackendSyncing ? "Finalizing..." : "Applying freeze..."}
         </Button>
       </AnimatedBorder>
     );

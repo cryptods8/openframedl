@@ -15,17 +15,33 @@ export async function POST(req: NextRequest) {
   if (apiKey !== ADMIN_SECRET) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+  const body = await req.json();
+  const { userKeys } = body;
+  const userKeySet =
+    userKeys && userKeys.length > 0
+      ? new Set(
+          userKeys.map(
+            ({
+              userId,
+              identityProvider,
+            }: {
+              userId: string;
+              identityProvider: string;
+            }) => `${identityProvider}:${userId}`,
+          ),
+        )
+      : undefined;
 
   try {
-    const wins = await streakFreezeRepo.findUsersWithActiveStreaks();
+    const wins = await streakFreezeRepo.findUsersWithStreaks();
 
     // Group by user
-    const byUser = new Map<
-      string,
-      streakFreezeRepo.ActiveStreakWin[]
-    >();
+    const byUser = new Map<string, streakFreezeRepo.ActiveStreakWin[]>();
     for (const win of wins) {
       const key = `${win.identityProvider}:${win.userId}`;
+      if (userKeySet && !userKeySet.has(key)) {
+        continue;
+      }
       if (!byUser.has(key)) {
         byUser.set(key, []);
       }

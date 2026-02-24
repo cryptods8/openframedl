@@ -25,7 +25,7 @@ export default function RootLayout({
         </head>
       )}
       <body className="bg-primary-100 text-primary-900/80">
-        <div className="w-full min-h-dvh flex flex-col items-center justify-center font-inter">
+        <div className="w-full min-h-dvh flex flex-col items-center justify-center font-inter app-layout">
           <AppConfigProvider config={{ externalBaseUrl, isPro }}>
             <Providers>{children}</Providers>
           </AppConfigProvider>

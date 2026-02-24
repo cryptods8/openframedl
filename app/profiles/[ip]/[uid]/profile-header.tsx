@@ -11,17 +11,19 @@ export interface ProfileHeaderProps {
 export function ProfileHeader(props: ProfileHeaderProps) {
   const { userData } = props;
   return (
-    <div className="flex flex-row gap-6 items-center">
+    <div className="flex flex-row gap-3 md:gap-6 items-center">
       <div
-        className="bg-cover bg-center size-16 md:size-24 rounded"
+        className="bg-cover bg-center size-12 md:size-20 rounded"
         style={{ backgroundImage: `url('${userData?.profileImage}')` }}
       />
       <div className="flex-1">
-        <h2 className="text-2xl font-space flex flex-wrap items-baseline gap-x-3">
-          <strong>{userData?.displayName || `User ${props.uid}`}</strong>
-          <span className="text-primary-900/60 text-xl">@{userData?.username || `!${props.uid}`}</span>
+        <h2 className="text-lg md:text-2xl text-primary-900/80 font-semibold">
+          {userData?.displayName || `User ${props.uid}`}
         </h2>
-        <div className="max-w-prose text-primary-900/80 line-clamp-3 hidden md:block">{userData?.bio}</div>
+        <span className="text-primary-900/60 text-sm md:text-lg">
+          @{userData?.username || `!${props.uid}`}
+        </span>
+        {/* <div className="max-w-prose text-primary-900/80 line-clamp-3 hidden md:block">{userData?.bio}</div> */}
       </div>
     </div>
   );

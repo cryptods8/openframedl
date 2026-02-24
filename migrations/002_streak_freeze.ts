@@ -5,7 +5,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     CREATE TABLE streak_freeze_mint (
       id serial PRIMARY KEY,
       user_id text NOT NULL,
-      identity_provider text NOT NULL,
+      identity_provider identity_provider_type NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now(),
       source text NOT NULL,
       earned_at_streak_length integer,
@@ -24,7 +24,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     CREATE TABLE streak_freeze_applied (
       id serial PRIMARY KEY,
       user_id text NOT NULL,
-      identity_provider text NOT NULL,
+      identity_provider identity_provider_type NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now(),
       applied_to_game_key text NOT NULL,
       applied_at timestamptz NOT NULL,

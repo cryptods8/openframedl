@@ -336,7 +336,7 @@ function toGuessCharacters(
 
 export class GameServiceImpl implements GameService {
   getDailyKey() {
-    return getDailyGameKey(new Date(Date.now() - 1000 * 60 * 60 * 24 * 0));
+    return getDailyGameKey(new Date());
   }
 
   private isHardMode(
