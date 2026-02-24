@@ -19,6 +19,8 @@ export function useWalletConnector() {
 
   useEffect(() => {
     const load = async () => {
+      // @ts-ignore
+      window["_frmdl_connectors"] = connectors;
       const inMiniApp = await sdk.isInMiniApp();
       setIsMiniApp(inMiniApp);
     };
