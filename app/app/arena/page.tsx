@@ -4,6 +4,7 @@ import { ProfileApp } from "@/app/profiles/profile-app";
 import { isPro } from "@/app/constants";
 import { ArenaList } from "./arena-list";
 import { ArenaFilter } from "@/app/api/arenas/list/route";
+import { getFarcasterSession } from "@/app/lib/auth";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -12,8 +13,17 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ ft: ArenaFilter }> }) {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ ft: ArenaFilter }>;
+}) {
   const { ft } = await searchParams;
+  const session = await getFarcasterSession();
+
+  const defaultFilterType = session?.user?.fid ? "playable" : "open";
+  const filterType = ft ?? defaultFilterType;
+
   return (
     <ProfileApp headerless>
       <div className="w-full max-w-4xl p-4 h-full flex-1 flex flex-col">
@@ -24,14 +34,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ f
               {isPro && <span style={{ color: "green" }}> PRO</span>}
               <span> ⚔️ ARENA</span>
             </h1>
-            <div className="text-primary-900/50 text-sm">Browse and join arenas</div>
+            <div className="text-primary-900/50 text-sm">
+              Browse and join arenas
+            </div>
           </div>
           <div>
             <SignIn />
           </div>
         </div>
         <div className="flex-1 flex sm:px-4 pt-6">
-          <ArenaList filterType={ft ?? "open"} />
+          <ArenaList filterType={filterType} />
         </div>
       </div>
     </ProfileApp>

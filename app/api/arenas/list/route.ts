@@ -34,9 +34,8 @@ export interface ArenaListResponse {
 export async function GET(req: NextRequest) {
   try {
     const jwt = req.headers.get("Authorization")?.split(" ")[1];
-    const { userData, userKey, anonymous } = await getUserInfoFromJwtOrSession(
-      jwt,
-    );
+    const { userData, userKey, anonymous } =
+      await getUserInfoFromJwtOrSession(jwt);
     const { searchParams } = new URL(req.url);
 
     const page = parseInt(searchParams.get("page") || "1");
@@ -81,13 +80,58 @@ export async function GET(req: NextRequest) {
               )
               .as("completedCount"),
             db.fn.min<Date>("createdAt").as("firstStartedAt"),
+            db.val(0).as("playerCount2"),
+            db.fn
+              .count<number>(
+                db.eb.fn("concat", [
+                  db.ref("identityProvider"),
+                  sql<string>`'/'`,
+                  db.ref("userId"),
+                ]),
+              )
+              .distinct()
+              .as("playerCount"),
           ])
           .where("arenaId", "is not", null)
           .groupBy("arenaId"),
       )
+      .with("arena_base_meta", (db) =>
+        db.selectFrom("arena as a").select((db) => [
+          "a.id",
+          db
+            .eb(
+              sql<number>`jsonb_array_length(a.config->'words')::int`,
+              "*",
+              sql<number>`(a.config->>'audienceSize')::int`,
+            )
+            .as("totalGameCount"),
+          sql<number>`(config->>'audienceSize')::int`.as("audienceSize"),
+          db
+            .case()
+            .when(sql<number>`a.config->'start'->>'date'`, "is", null)
+            .then(db.val(null))
+            .else(sql<Date>`(a.config->'start'->>'date')::timestamp`)
+            .end()
+            .as("startAt"),
+          db
+            .case()
+            .when(
+              sql<string>`(config->'duration'->>'type')::text`,
+              "=",
+              "unlimited",
+            )
+            .then(db.val(null))
+            .else(
+              sql<Date>`(config->'duration'->>'minutes' || ' minutes')::interval`,
+            )
+            .end()
+            .as("duration"),
+        ]),
+      )
       .with("arena_meta", (db) =>
         db
           .selectFrom("arena as a")
+          .innerJoin("arena_base_meta as abm", "a.id", "abm.id")
           .leftJoin("arena_game_stats as ags", "a.id", "ags.arenaId")
           .select((db) => [
             "a.id",
@@ -95,40 +139,35 @@ export async function GET(req: NextRequest) {
             db.fn
               .coalesce("ags.completedCount", db.val(0))
               .as("completedCount"),
-            db
-              .eb(
-                sql<number>`jsonb_array_length(a.config->'words')::int`,
-                "*",
-                sql<number>`(a.config->>'audienceSize')::int`,
-              )
-              .as("totalGameCount"),
+            "abm.totalGameCount",
             "ags.firstStartedAt",
+            "abm.startAt",
+            "abm.duration",
+            "abm.audienceSize",
+            "ags.playerCount",
             db
               .case()
-              .when(sql<number>`a.config->'start'->>'date'`, "is", null)
-              .then(db.val(null))
-              .else(sql<Date>`(a.config->'start'->>'date')::timestamp`)
-              .end()
-              .as("startAt"),
-            db
-              .case()
-              .when(
-                sql<string>`(config->'duration'->>'type')::text`,
-                "=",
-                "unlimited",
-              )
+              .when("abm.duration", "is", null)
               .then(db.val(null))
               .when(
-                db.fn.coalesce("a.startedAt", "ags.firstStartedAt"),
+                db.fn.coalesce(
+                  "abm.startAt",
+                  "a.startedAt",
+                  "ags.firstStartedAt",
+                ),
                 "is",
                 null,
               )
               .then(db.val(null))
               .else(
                 db.eb(
-                  db.fn.coalesce("a.startedAt", "ags.firstStartedAt"),
+                  db.fn.coalesce(
+                    "abm.startAt",
+                    "a.startedAt",
+                    "ags.firstStartedAt",
+                  ),
                   "+",
-                  sql<Date>`(config->'duration'->>'minutes' || ' minutes')::interval`,
+                  db.ref("abm.duration"),
                 ),
               )
               .end()
@@ -267,6 +306,11 @@ export async function GET(req: NextRequest) {
                 ),
                 // sql`uas."userCompletedCount" is null`,
                 // sql`uas."userCompletedCount" < jsonb_array_length(arena.config->'words')::int`,
+              ]),
+              // user is member, or arena does have free spots
+              db.or([
+                db.eb("uas.arenaId", "is not", null),
+                db.eb("am.playerCount", "<", db.ref("am.audienceSize")),
               ]),
             ]),
           );
