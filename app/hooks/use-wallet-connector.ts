@@ -19,29 +19,19 @@ export function useWalletConnector() {
 
   useEffect(() => {
     const load = async () => {
-      // @ts-ignore
-      window["_frmdl_connectors"] = connectors;
       const inMiniApp = await sdk.isInMiniApp();
       setIsMiniApp(inMiniApp);
     };
     load();
   }, []);
 
-  console.log("[DEBUG] isMiniApp", isMiniApp);
-
   const connectWallet = useCallback(() => {
-    console.groupCollapsed("[DEBUG] connectWallet");
-    console.log(
-      "[DEBUG] connector IDs: ",
-      connectors.map((x) => x.id),
-    );
     if (isMiniApp) {
-      const fcConnector = connectors.find((c) => c.id === "farcasterMiniApp");
-      console.log("[DEBUG] isMiniApp");
+      const fcConnector =
+        connectors.find((c) => c.id === "farcasterMiniApp" || "farcaster") ??
+        connectors[0];
       if (fcConnector) {
         connect({ connector: fcConnector });
-        console.log("[DEBUG] fcConnector", fcConnector);
-        console.groupEnd();
         return;
       }
     }
@@ -49,8 +39,6 @@ export function useWalletConnector() {
     // In a regular browser, open the RainbowKit wallet selection modal
     if (openConnectModal) {
       openConnectModal();
-      console.log("[DEBUG] openConnectModal");
-      console.groupEnd();
       return;
     }
 
@@ -58,8 +46,6 @@ export function useWalletConnector() {
     const injectedConnector = connectors.find((c) => c.id === "injected");
     if (injectedConnector) {
       connect({ connector: injectedConnector });
-      console.log("[DEBUG] injectedConnector", injectedConnector);
-      console.groupEnd();
       return;
     }
   }, [connect, connectors, isMiniApp, openConnectModal]);
