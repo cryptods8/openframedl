@@ -23,7 +23,7 @@ export async function GET(
   const metadata = {
     name: `${appName} Streak Freeze`,
     description: `Protects your ${appName} daily streak when you miss a day. Burn one Streak Freeze to cover a missed game and keep your streak alive.`,
-    image: `${externalBaseUrl}/api/nfts/streak-freeze/${FREEZE_TOKEN_ID}/image`,
+    image: `${externalBaseUrl}/streak-freeze-nft.png`,
     external_url: `${externalBaseUrl}`,
     properties: {
       category: "utility",
