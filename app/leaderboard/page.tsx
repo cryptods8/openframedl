@@ -5,7 +5,7 @@ import { fetchMetadata } from "frames.js/next";
 import { basePath } from "../games/frames";
 import { currentURL } from "../utils";
 import { toLeaderboardSearchParams } from "./leaderboard-utils";
-import { isPro } from "../constants";
+import { externalBaseUrl, isPro } from "../constants";
 import { Button } from "../ui/button/button";
 
 export async function generateMetadata({
@@ -25,7 +25,7 @@ export async function generateMetadata({
   }
 
   const leaderboardUrl = currentURL(
-    `${basePath}/leaderboard?${queryParams.toString()}`
+    `${basePath}/leaderboard?${queryParams.toString()}`,
   );
   const other = await fetchMetadata(leaderboardUrl);
   return {
@@ -40,14 +40,13 @@ export default async function Home({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  console.log("SP", searchParams);
   const sp = await searchParams;
   const queryParams = toLeaderboardSearchParams(sp || {});
   if (sp?.prize) {
     queryParams.set("prize", sp.prize as string);
   }
   return (
-    <div className="flex flex-col p-6 w-full justify-center items-center text-slate-600 gap-4 max-w-sm">
+    <div className="flex flex-col p-6 w-full justify-center items-center text-slate-600 gap-4 max-w-sm min-h-dvh">
       <div>
         Framedl {isPro ? "PRO " : ""}Leaderboard by{" "}
         <Link
@@ -58,7 +57,7 @@ export default async function Home({
         </Link>
       </div>
       <Button
-        href={`/api/leaderboard/daily?${queryParams.toString()}`}
+        href={`${externalBaseUrl}/api/leaderboard/daily?${queryParams.toString()}`}
         target="_blank"
       >
         Share

@@ -52,7 +52,7 @@ const handleRequest = frames(async (ctx) => {
     if (isTopN) {
       const n = parseInt(
         inputStr || leaderboardSearchParams.get("n") || "30",
-        10
+        10,
       );
       if (n > 0) {
         leaderboardSearchParams.set("n", n.toString());
@@ -78,17 +78,20 @@ const handleRequest = frames(async (ctx) => {
 
   const imageUrl = constructImageUrl(
     ctx.createUrl("/api/images/leaderboard"),
-    leaderboardSearchParams
+    leaderboardSearchParams,
   );
   const leaderboardUrl = urlWithParams(
     ctx.createExternalUrl("/leaderboard"),
-    leaderboardSearchParams
+    leaderboardSearchParams,
   );
 
   let shareText = "Framedl Leaderboard";
   if (searchParams.type !== "TOP_N" && searchParams.prize) {
-    const date = leaderboardSearchParams.get("date") ?? getDailyGameKey(new Date());
-    const days = searchParams.days ? parseInt(searchParams.days, 10) : undefined;
+    const date =
+      leaderboardSearchParams.get("date") ?? getDailyGameKey(new Date());
+    const days = searchParams.days
+      ? parseInt(searchParams.days, 10)
+      : undefined;
     const prize = parseInt(searchParams.prize, 10);
     const ipParam = (searchParams.ip ?? "fc") as GameIdentityProvider;
     const leaderboard = await gameService.loadLeaderboard(ipParam, {
@@ -102,7 +105,9 @@ const handleRequest = frames(async (ctx) => {
     for (let i = 0; i < leaderboard.entries.length; i++) {
       const entry = leaderboard.entries[i]!;
       const prev = res[res.length - 1];
-      const person = entry.userData?.username ? `@${entry.userData.username}` : `@!${entry.userId}`;
+      const person = entry.userData?.username
+        ? `@${entry.userData.username}`
+        : `@!${entry.userId}`;
       if (!prev || prev.score !== entry.totalGuessCount) {
         if (count >= 3) {
           break;
@@ -121,7 +126,7 @@ const handleRequest = frames(async (ctx) => {
     for (let i = 0; i < res.length; i++) {
       const entry = res[i]!;
       const peopleCount = entry.people.length;
-      const totalRungValue = getTotalRungValue(pos - 1, peopleCount)
+      const totalRungValue = getTotalRungValue(pos - 1, peopleCount);
       const allocatedPrize = totalRungValue * basePrize;
       const personPrize = Math.ceil(allocatedPrize / peopleCount);
       for (let j = 0; j < peopleCount; j++) {
@@ -133,7 +138,6 @@ const handleRequest = frames(async (ctx) => {
     }
 
     shareText = `framedl${isPro ? " pro" : ""} results ${date}\n\n${peopleText}`;
-    console.log('SHARE TEXT', shareText);
   }
   const shareUrl = createComposeUrl(shareText, imageUrl);
 
