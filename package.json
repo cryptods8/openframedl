@@ -14,7 +14,6 @@
     "db:migrate:down": "npx tsx app/db/pg/migrate.ts --down"
   },
   "dependencies": {
-    "@divvi/referral-sdk": "^2.2.0",
     "@farcaster/auth-client": "^0.7.0",
     "@farcaster/auth-kit": "^0.8.1",
     "@farcaster/core": "^0.18.3",
@@ -23,6 +22,7 @@
     "@farcaster/miniapp-wagmi-connector": "^1.0.0",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
+    "@msgpack/msgpack": "^3.1.3",
     "@neynar/nodejs-sdk": "^3.24.0",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.82.0",
@@ -31,6 +31,7 @@
     "@withfabric/protocol-sdks": "^2.0.2",
     "@xmtp/frames-validator": "^2.0.1",
     "alchemy-sdk": "^3.6.1",
+    "blakejs": "^1.2.1",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.3",
@@ -39,6 +40,7 @@
     "kysely": "^0.28.2",
     "next": "^14.2.25",
     "next-auth": "^4.24.11",
+    "ox": "^0.14.0",
     "pg": "^8.16.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -49,8 +51,8 @@
     "signed": "^2.1.0",
     "sonner": "^2.0.6",
     "uuid": "^11.1.0",
-    "viem": "^2.31.7",
-    "wagmi": "^2.15.6"
+    "viem": "^2",
+    "wagmi": "^2"
   },
   "engines": {
     "node": ">=19.0.0 <23.0.0"
