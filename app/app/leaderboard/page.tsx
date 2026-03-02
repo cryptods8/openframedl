@@ -7,6 +7,8 @@ import { LeaderboardEntry, LeaderboardEntryRow } from "./leaderboard-entry";
 import { pgDb } from "@/app/db/pg/pg-db";
 import { sql, SqlBool } from "kysely";
 import { LeaderboardNav } from "./leaderboard-nav";
+import { LeaderboardDateNav } from "./leaderboard-date-nav";
+import { isPro } from "@/app/constants";
 
 // interface LeaderboardEntry {
 //   id: string;
@@ -102,7 +104,9 @@ async function getStreakLeaderboardEntries({
         .select((s) => [
           "userId",
           "identityProvider",
-          sql<number>`SUM(CASE WHEN is_win THEN 1 ELSE 0 END)`.as("streakLength"),
+          sql<number>`SUM(CASE WHEN is_win THEN 1 ELSE 0 END)`.as(
+            "streakLength",
+          ),
           s.fn.min("gameKey").as("streakStart"),
           s.fn.max("gameKey").as("streakEnd"),
         ])
@@ -291,9 +295,9 @@ export default async function LeaderboardPage({
     >
       <div className="w-full pb-6 pt-2 px-2 flex gap-2 items-center flex-wrap justify-between">
         <div className="font-space font-semibold text-xl">
-          Framedl Leaderboard
+          Framedl {isPro ? "PRO " : ""}Leaderboard
         </div>
-        <div className="text-sm text-primary-900/50">{date}</div>
+        <LeaderboardDateNav date={date} />
       </div>
       <div className="mb-4 -mx-4 sm:-mx-2">
         <LeaderboardNav activeType={typeParam ?? "SCORE"} />
