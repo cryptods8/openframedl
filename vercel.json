@@ -1,32 +1,28 @@
 {
   "crons": [
     {
-      "path": "/api/bot/reminders/process",
-      "schedule": "0 2 * * *"
+      "path": "/api/notifications/enqueue/daily-reminder?variant=new",
+      "schedule": "10 0 * * *"
     },
     {
-      "path": "/api/bot/reminders/process",
-      "schedule": "30 22 * * *"
+      "path": "/api/notifications/enqueue/daily-reminder?variant=mid",
+      "schedule": "5 13 * * *"
     },
     {
-      "path": "/api/bot/reminders/arena/process",
+      "path": "/api/notifications/enqueue/daily-reminder?variant=late",
+      "schedule": "45 19 * * *"
+    },
+    {
+      "path": "/api/notifications/enqueue/arena",
       "schedule": "5/10 * * * *"
+    },
+    {
+      "path": "/api/notifications/process",
+      "schedule": "*/2 * * * *"
     },
     {
       "path": "/api/bot/casts/daily/process",
       "schedule": "0 1 * * *"
-    },
-    {
-      "path": "/api/frames/v2/notifications/process?type=new",
-      "schedule": "10 0 * * *"
-    },
-    {
-      "path": "/api/frames/v2/notifications/process?type=mid",
-      "schedule": "5 13 * * *"
-    },
-    {
-      "path": "/api/frames/v2/notifications/process?type=late",
-      "schedule": "45 19 * * *"
     }
   ]
 }

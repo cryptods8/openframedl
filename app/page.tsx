@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { fetchMetadata } from "frames.js/next";
+import { redirect } from "next/navigation";
 
 import GameResult from "./ui/game-result";
 
@@ -34,10 +35,10 @@ export async function generateMetadata({
   const imageUrl = id
     ? `${externalBaseUrl}/app/v2/frames/image?id=${id}`
     : cw
-    ? `${externalBaseUrl}/app/v2/frames/image?cw=${cw}`
-    : isPro
-    ? `${externalBaseUrl}/init-pro.png`
-    : `${externalBaseUrl}/init-v2.png`;
+      ? `${externalBaseUrl}/app/v2/frames/image?cw=${cw}`
+      : isPro
+        ? `${externalBaseUrl}/init-pro.png`
+        : `${externalBaseUrl}/init-v2.png`;
   const name = isPro ? "Framedl PRO" : "Framedl";
   const miniAppMetadata = JSON.stringify({
     version: "next",
@@ -72,10 +73,14 @@ export default async function Home({
 }) {
   const searchParams = await searchParamsPromise;
   const gameIdParam = searchParams?.id as string;
+  if (!gameIdParam) {
+    redirect("/app/v2");
+  }
+
   const gameById = gameIdParam
     ? await gameService.loadPublic(
         gameIdParam,
-        isUrlSigned(externalBaseUrl, searchParams)
+        isUrlSigned(externalBaseUrl, searchParams),
       )
     : null;
 
