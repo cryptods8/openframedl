@@ -20,6 +20,7 @@ export interface Database {
   userSettings: UserSettingsTable;
   streakFreezeMint: StreakFreezeMintTable;
   streakFreezeApplied: StreakFreezeAppliedTable;
+  notificationQueue: NotificationQueueTable;
 }
 
 export type StreakFreezeSource = "EARNED" | "PURCHASED";
@@ -242,3 +243,38 @@ export type DBArenaUpdate = Updateable<ArenaTable>;
 export type DBUserSettings = Selectable<UserSettingsTable>;
 export type DBUserSettingsInsert = Insertable<UserSettingsTable>;
 export type DBUserSettingsUpdate = Updateable<UserSettingsTable>;
+
+export type NotificationType =
+  | "daily_reminder"
+  | "arena_new"
+  | "streak_freeze_earned";
+export type NotificationChannel = "frame" | "direct_cast";
+export type NotificationStatus =
+  | "pending"
+  | "processing"
+  | "sent"
+  | "stale"
+  | "failed"
+  | "rate_limited";
+
+export interface NotificationQueueTable extends UserKey {
+  id: Generated<number>;
+  createdAt: ColumnType<Date, Date | undefined, never>;
+  scheduledAt: Date;
+  processedAt: Date | null;
+  type: NotificationType;
+  channel: NotificationChannel;
+  status: ColumnType<NotificationStatus, NotificationStatus | undefined, NotificationStatus>;
+  payload: JSONColumnType<Record<string, any>>;
+  groupKey: string | null;
+  refId: string | null;
+  attempts: ColumnType<number, number | undefined, number>;
+  maxAttempts: ColumnType<number, number | undefined, number>;
+  lastError: string | null;
+  lockedBy: string | null;
+  lockedAt: Date | null;
+}
+
+export type DBNotificationQueue = Selectable<NotificationQueueTable>;
+export type DBNotificationQueueInsert = Insertable<NotificationQueueTable>;
+export type DBNotificationQueueUpdate = Updateable<NotificationQueueTable>;
