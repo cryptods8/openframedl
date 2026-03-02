@@ -1,4 +1,3 @@
-import { getReferralTag, submitReferral } from "@divvi/referral-sdk";
 import React from "react";
 import {
   useAccount,
@@ -89,7 +88,7 @@ const ERC20_ABI = [
 
 const CHAIN_ID = parseInt(
   process.env.NEXT_PUBLIC_GAME_NFT_CHAIN_ID || "84532",
-  10
+  10,
 );
 
 const CHAIN_CONFIGS = {
@@ -109,7 +108,7 @@ const CHAIN_CONFIG: { id: number; name: string } = CHAIN_CONFIGS[CHAIN_ID] || {
 
 if (process.env.NEXT_PUBLIC_GAME_NFT_CHAIN_ID && CHAIN_CONFIG.id === 0) {
   throw new Error(
-    `Invalid NEXT_PUBLIC_GAME_NFT_CHAIN_ID: ${process.env.NEXT_PUBLIC_GAME_NFT_CHAIN_ID}`
+    `Invalid NEXT_PUBLIC_GAME_NFT_CHAIN_ID: ${process.env.NEXT_PUBLIC_GAME_NFT_CHAIN_ID}`,
   );
 }
 
@@ -251,10 +250,6 @@ export function MintButton({
   React.useEffect(() => {
     if (hash && chainId && address && !mintStartedHandled.current) {
       mintStartedHandled.current = true;
-      submitReferral({
-        txHash: hash,
-        chainId,
-      });
       onMintStarted({ hash, chainId, walletAddress: address });
       mintStartedHandled.current = false;
     }
@@ -289,11 +284,6 @@ export function MintButton({
   const triggerMint = React.useCallback(() => {
     if (!address) return;
 
-    const dataSuffix = getReferralTag({
-      user: address as `0x${string}`,
-      consumer: "0x000Cbf0BEC88214AAB15bC1Fa40d3c30b3CA97a9",
-    });
-
     // Mint the game
     if (erc20Token?.address) {
       // Use mintGameWithToken for ERC20 tokens
@@ -303,7 +293,6 @@ export function MintButton({
         abi: CONTRACT_ABI,
         functionName: "mintGameWithToken",
         args: [gameId],
-        dataSuffix: `0x${dataSuffix}`,
       });
     } else {
       // Use regular mintGame for ETH
@@ -314,7 +303,6 @@ export function MintButton({
         functionName: "mintGame",
         args: [gameId],
         value: parseEther(MINT_PRICE),
-        dataSuffix: `0x${dataSuffix}`,
       });
     }
   }, [address, erc20Token, gameId, writeContract]);
@@ -350,7 +338,7 @@ export function MintButton({
     } catch (error) {
       if (!isUserRejectionError(error)) {
         onError(
-          error instanceof Error ? error.message : "Something went wrong"
+          error instanceof Error ? error.message : "Something went wrong",
         );
       }
       successHandled.current = false;
@@ -386,7 +374,7 @@ export function MintButton({
 
           // If we exhaust retries, mint anyway (optimistic approval is set)
           console.warn(
-            "Allowance not reflected after retries, proceeding with mint anyway"
+            "Allowance not reflected after retries, proceeding with mint anyway",
           );
           triggerMint();
         };
@@ -413,8 +401,8 @@ export function MintButton({
         {isAllowanceFetching
           ? "Checking allowance..."
           : erc20Token?.address && needsApproval
-          ? `Approving ${erc20Token.symbol}...`
-          : "Collecting..."}
+            ? `Approving ${erc20Token.symbol}...`
+            : "Collecting..."}
       </Button>
     </AnimatedBorder>
   ) : (

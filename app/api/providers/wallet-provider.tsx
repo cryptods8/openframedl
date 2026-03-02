@@ -8,6 +8,9 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 import { injected, coinbaseWallet } from "wagmi/connectors";
+import { Attribution } from "ox/erc8021";
+
+const DATA_SUFFIX = Attribution.toDataSuffix({ codes: ["bc_qbh52a7w"] });
 
 const browserConnectors = [injected(), coinbaseWallet({ appName: "Framedl" })];
 
@@ -18,6 +21,7 @@ export const config = createConfig({
     [baseSepolia.id]: http(),
   },
   connectors: [farcasterMiniApp(), ...browserConnectors],
+  dataSuffix: DATA_SUFFIX,
 });
 
 const queryClient = new QueryClient();
