@@ -12,6 +12,7 @@ import * as gameRepo from "./game-pg-repository";
 import * as customGameRepo from "./custom-game-pg-repository";
 import { Leaderboard, LeaderboardDataItem } from "./game-pg-repository";
 import * as streakFreezeRepo from "./streak-freeze-pg-repository";
+import * as notificationQueueRepo from "./notification-queue-pg-repository";
 import answers from "../words/answer-words";
 import allWords from "../words/all-words";
 import { isPro } from "../constants";
@@ -755,6 +756,24 @@ export class GameServiceImpl implements GameService {
           const stats = await statsRepo.loadStatsByUserKey(game);
           const streakLength = stats?.currentStreak ?? winsSince;
           await streakFreezeRepo.insertEarned(game, streakLength, game.gameKey);
+          try {
+            await notificationQueueRepo.enqueue([
+              {
+                userId: game.userId,
+                identityProvider: game.identityProvider,
+                type: "streak_freeze_earned",
+                channel: "frame",
+                scheduledAt: new Date(),
+                payload: JSON.stringify({
+                  streakLength,
+                  gameKey: game.gameKey,
+                }),
+                refId: `freeze-${game.gameKey}`,
+              },
+            ]);
+          } catch (nqError) {
+            console.error("Error enqueueing streak freeze notification", nqError);
+          }
         }
       }
     } catch (e) {
