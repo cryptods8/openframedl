@@ -1,4 +1,5 @@
 import { useAppConfig } from "@/app/contexts/app-config-context";
+import { useSafeAreaInsets } from "@/app/contexts/safe-area-context";
 import { UserData } from "@/app/game/game-repository";
 import { composeCast, createComposeUrl } from "@/app/utils";
 import { Context } from "@farcaster/miniapp-node";
@@ -29,6 +30,20 @@ export function useClientContext({
   const [context, setContext] = useState<Context.MiniAppContext | undefined>();
   const [ready, setReady] = useState(false);
   const [isMiniApp, setIsMiniApp] = useState(false);
+  const { setInsets } = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (context?.client?.safeAreaInsets) {
+      const sai = context.client.safeAreaInsets;
+      setInsets({
+        top: sai.top ?? 0,
+        bottom: sai.bottom ?? 0,
+        left: sai.left ?? 0,
+        right: sai.right ?? 0,
+      });
+    }
+  }, [context?.client?.safeAreaInsets, setInsets]);
+
   useEffect(() => {
     const load = async () => {
       const ctx = await sdk.context;

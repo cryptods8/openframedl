@@ -1,7 +1,6 @@
 import { getDailyGameKey } from "@/app/game/game-utils";
 import { gameService } from "@/app/game/game-service";
 import { LeaderboardDataItem } from "@/app/game/game-pg-repository";
-import { Button } from "@/app/ui/button/button";
 import { GameIdentityProvider } from "@/app/game/game-repository";
 import { LeaderboardEntry, LeaderboardEntryRow } from "./leaderboard-entry";
 import { pgDb } from "@/app/db/pg/pg-db";
@@ -9,6 +8,7 @@ import { sql, SqlBool } from "kysely";
 import { LeaderboardNav } from "./leaderboard-nav";
 import { LeaderboardDateNav } from "./leaderboard-date-nav";
 import { isPro } from "@/app/constants";
+import { LeaderboardBackBar } from "./leaderboard-back-bar";
 
 // interface LeaderboardEntry {
 //   id: string;
@@ -314,15 +314,7 @@ export default async function LeaderboardPage({
           return <LeaderboardEntryRow key={entry.id} entry={entry} />;
         })}
       </div>
-      {gameHref && (
-        <div className="fixed border-t border-primary-500/10 w-full bottom-14 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10">
-          <div className="flex items-center justify-center h-full p-4">
-            <Button variant="outline" href={gameHref}>
-              Back to Game
-            </Button>
-          </div>
-        </div>
-      )}
+      {gameHref && <LeaderboardBackBar gameHref={gameHref} />}
     </div>
   );
 }

@@ -16,7 +16,7 @@ import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HapticsTest } from "./haptics-test";
 import { ClientContext, useClientContext } from "./use-client-context";
-import { BOTTOM_NAV_HEIGHT } from "@/app/ui/bottom-nav";
+import { useBottomOffset } from "@/app/ui/bottom-nav";
 import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
 
 function toUserData(user: Context.MiniAppContext["user"]) {
@@ -140,7 +140,7 @@ function GameContainer({
     data: FarcasterSession | null;
     status: "loading" | "unauthenticated" | "authenticated";
   };
-  const { isNavVisible, showNav } = useNavVisibility();
+  const bottomOffset = useBottomOffset();
 
   const [signInFailure, setSignInFailure] = useState<string | undefined>();
   const [signingIn, setSigningIn] = useState(false);
@@ -209,11 +209,10 @@ function GameContainer({
   }, []);
 
   const handleGameOver = useCallback(() => {
-    showNav();
     context.requestAddFrame().catch((e) => {
       console.error(e);
     });
-  }, [context, showNav]);
+  }, [context]);
 
   // useEffect(() => {
   //   if (context.client && !context.client.added && !isFirstLoad) {
@@ -230,7 +229,7 @@ function GameContainer({
       className="w-full h-full flex flex-col flex-1 items-center"
       style={{
         paddingTop: safeAreaInsets?.top,
-        paddingBottom: (safeAreaInsets?.bottom ?? 0) + (isNavVisible ? BOTTOM_NAV_HEIGHT : 0),
+        paddingBottom: bottomOffset,
         paddingLeft: safeAreaInsets?.left,
         paddingRight: safeAreaInsets?.right,
       }}

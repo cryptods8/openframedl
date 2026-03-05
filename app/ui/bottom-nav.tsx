@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
+import { useSafeAreaInsets } from "@/app/contexts/safe-area-context";
 import {
   HomeIcon as HomeOutline,
   TrophyIcon as TrophyOutline,
@@ -19,6 +20,12 @@ import {
 } from "@heroicons/react/24/solid";
 
 export const BOTTOM_NAV_HEIGHT = 56;
+
+export function useBottomOffset() {
+  const { isNavVisible } = useNavVisibility();
+  const { insets } = useSafeAreaInsets();
+  return insets.bottom + (isNavVisible ? BOTTOM_NAV_HEIGHT : 0);
+}
 
 const NAV_ITEMS = [
   {
@@ -62,13 +69,14 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
   const { isNavVisible } = useNavVisibility();
+  const { insets } = useSafeAreaInsets();
 
   return (
     <nav
       className={`fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md border-t border-primary-200/80 transition-transform duration-300 ease-in-out ${
         isNavVisible ? "translate-y-0" : "translate-y-full"
       }`}
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ paddingBottom: insets.bottom }}
     >
       <div className="flex items-stretch h-14">
         {NAV_ITEMS.map(({ href, label, OutlineIcon, SolidIcon, match }) => {

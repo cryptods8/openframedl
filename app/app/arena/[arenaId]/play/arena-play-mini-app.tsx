@@ -12,7 +12,6 @@ import { Game } from "@/app/ui/game";
 import { toast } from "@/app/ui/toasts/toast";
 
 import { Button } from "@/app/ui/button/button";
-import { BOTTOM_NAV_HEIGHT } from "@/app/ui/bottom-nav";
 import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
 
 export function ArenaPlayMiniApp({ arena }: { arena?: PublicArenaWithGames }) {

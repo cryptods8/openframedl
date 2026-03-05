@@ -23,8 +23,7 @@ import { toast } from "@/app/ui/toasts/toast";
 import { useFarcasterSession } from "@/app/hooks/use-farcaster-session";
 import { PaddedContainer } from "@/app/ui/padded-container";
 import { ArenaResults } from "./arena-results";
-import { BOTTOM_NAV_HEIGHT } from "@/app/ui/bottom-nav";
-import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
+import { useBottomOffset } from "@/app/ui/bottom-nav";
 import Link from "next/link";
 
 function renderMessageWithHighlights(
@@ -139,6 +138,7 @@ function ArenaResultsPanel({
   currentUser?: UserKey;
 }) {
   const { isPro, externalBaseUrl } = useAppConfig();
+  const bottomOffset = useBottomOffset();
   const [arena, setArena] = useState(initialArena);
   const [buttonContainerRef, { height: buttonContainerHeight }] =
     useMeasure<HTMLDivElement>();
@@ -240,11 +240,12 @@ function ArenaResultsPanel({
       </div>
       <div style={{ height: buttonContainerHeight }} />
       <div
-        className="fixed border-t border-primary-500/10 w-full bottom-14 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10"
+        className="fixed border-t border-primary-500/10 w-full left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10"
+        style={{ bottom: bottomOffset }}
         ref={buttonContainerRef}
       >
         <div className="p-4">
-          <PaddedContainer context={context} sides="rbl">
+          <PaddedContainer context={context} sides="rl">
             <div className="flex flex-col gap-2">
               {status === "ENDED" ||
               completionStatus === "COMPLETED" ||
@@ -289,7 +290,7 @@ function AuthContainer({
 }) {
   const { isPro } = useAppConfig();
   const { session, status } = useFarcasterSession();
-  const { isNavVisible } = useNavVisibility();
+  const bottomOffset = useBottomOffset();
 
   const currentUser = useMemo(() => {
     if (!session?.user) {
@@ -358,7 +359,8 @@ function AuthContainer({
     <PaddedContainer
       className="w-full h-full flex-1 flex flex-col items-center justify-center"
       context={context}
-      extraBottom={isNavVisible ? BOTTOM_NAV_HEIGHT : 0}
+      sides="trl"
+      extraBottom={bottomOffset}
     >
       <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center">
         <ArenaResultsPanel
