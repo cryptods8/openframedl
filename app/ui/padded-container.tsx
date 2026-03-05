@@ -9,16 +9,20 @@ export function PaddedContainer({
   context,
   sides = "trbl",
   className,
+  extraBottom = 0,
 }: {
   children: React.ReactNode;
   context: ClientContext;
   sides?: PaddedContainerSides;
   className?: string;
+  extraBottom?: number;
 }) {
   const safeAreaInsets = context?.client?.safeAreaInsets;
   const style = {
     paddingTop: sides.includes("t") ? safeAreaInsets?.top : 0,
-    paddingBottom: sides.includes("b") ? safeAreaInsets?.bottom : 0,
+    paddingBottom: sides.includes("b")
+      ? (safeAreaInsets?.bottom ?? 0) + extraBottom
+      : extraBottom || 0,
     paddingLeft: sides.includes("l") ? safeAreaInsets?.left : 0,
     paddingRight: sides.includes("r") ? safeAreaInsets?.right : 0,
   };

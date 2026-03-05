@@ -16,6 +16,8 @@ import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HapticsTest } from "./haptics-test";
 import { ClientContext, useClientContext } from "./use-client-context";
+import { BOTTOM_NAV_HEIGHT } from "@/app/ui/bottom-nav";
+import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
 
 function toUserData(user: Context.MiniAppContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
@@ -53,8 +55,18 @@ function Game({
   const [error, setError] = useState<ErrorResponse | undefined>();
   const [loading, setLoading] = useState(false);
   const { sessionId } = useSessionId();
+  const { hideNav, showNav } = useNavVisibility();
 
   const userData = props.userData;
+
+  useEffect(() => {
+    if (loadedGame?.status === "IN_PROGRESS") {
+      hideNav();
+    } else {
+      showNav();
+    }
+    return () => showNav();
+  }, [loadedGame?.status, hideNav, showNav]);
 
   useEffect(() => {
     const load = async () => {
@@ -128,6 +140,7 @@ function GameContainer({
     data: FarcasterSession | null;
     status: "loading" | "unauthenticated" | "authenticated";
   };
+  const { isNavVisible, showNav } = useNavVisibility();
 
   const [signInFailure, setSignInFailure] = useState<string | undefined>();
   const [signingIn, setSigningIn] = useState(false);
@@ -196,10 +209,11 @@ function GameContainer({
   }, []);
 
   const handleGameOver = useCallback(() => {
+    showNav();
     context.requestAddFrame().catch((e) => {
       console.error(e);
     });
-  }, [context]);
+  }, [context, showNav]);
 
   // useEffect(() => {
   //   if (context.client && !context.client.added && !isFirstLoad) {
@@ -216,7 +230,7 @@ function GameContainer({
       className="w-full h-full flex flex-col flex-1 items-center"
       style={{
         paddingTop: safeAreaInsets?.top,
-        paddingBottom: safeAreaInsets?.bottom,
+        paddingBottom: (safeAreaInsets?.bottom ?? 0) + (isNavVisible ? BOTTOM_NAV_HEIGHT : 0),
         paddingLeft: safeAreaInsets?.left,
         paddingRight: safeAreaInsets?.right,
       }}

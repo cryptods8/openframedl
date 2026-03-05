@@ -27,6 +27,8 @@ import { useMeasure } from "react-use";
 import { useRouter } from "next/navigation";
 import { toast } from "@/app/ui/toasts/toast";
 import { useFarcasterSession } from "@/app/hooks/use-farcaster-session";
+import { BOTTOM_NAV_HEIGHT } from "@/app/ui/bottom-nav";
+import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
 import { PaddedContainer } from "@/app/ui/padded-container";
 import { ArenaHeader } from "./arena-header";
 import Link from "next/link";
@@ -459,7 +461,7 @@ function JoinArena({
       </div>
       <div style={{ height: buttonContainerHeight }} />
       <div
-        className="fixed border-t border-primary-500/10 w-full bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10"
+        className="fixed border-t border-primary-500/10 w-full bottom-14 left-0 right-0 bg-white/30 backdrop-blur-sm shadow-xl shadow-primary-500/10"
         ref={buttonContainerRef}
       >
         <div className="p-4">
@@ -519,6 +521,7 @@ function AuthContainer({
 }) {
   const { isPro } = useAppConfig();
   const { session, status } = useFarcasterSession();
+  const { isNavVisible } = useNavVisibility();
 
   const currentUser = useMemo(() => {
     if (!session?.user) {
@@ -603,6 +606,7 @@ function AuthContainer({
     <PaddedContainer
       className="w-full h-full flex-1 flex flex-col items-center justify-center"
       context={context}
+      extraBottom={isNavVisible ? BOTTOM_NAV_HEIGHT : 0}
     >
       <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center">
         {status === "authenticated" ? (
