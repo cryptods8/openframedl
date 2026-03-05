@@ -208,11 +208,14 @@ function GameContainer({
     setSignInFailure(undefined);
   }, []);
 
+  const { showNav } = useNavVisibility();
+
   const handleGameOver = useCallback(() => {
+    showNav();
     context.requestAddFrame().catch((e) => {
       console.error(e);
     });
-  }, [context]);
+  }, [context, showNav]);
 
   // useEffect(() => {
   //   if (context.client && !context.client.added && !isFirstLoad) {
