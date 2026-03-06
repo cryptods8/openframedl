@@ -13,10 +13,11 @@ interface ProfileGalleryProps {
   isCurrentUser: boolean;
   filter: GameFilter;
   userData: UserData | null;
+  narrow?: boolean;
 }
 
 export function ProfileGallery(props: ProfileGalleryProps) {
-  const { filter, userData } = props;
+  const { filter, userData, narrow } = props;
   const [games, setGames] = useState<PublicGuessedGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -68,7 +69,7 @@ export function ProfileGallery(props: ProfileGalleryProps) {
         searchParams.set("limit", ITEMS_PER_PAGE.toString());
 
         const response = await fetch(
-          `/api/games/public?${searchParams.toString()}`
+          `/api/games/public?${searchParams.toString()}`,
         );
 
         if (!response.ok) {
@@ -102,7 +103,7 @@ export function ProfileGallery(props: ProfileGalleryProps) {
       <div className="p-2">
         <ProfileGalleryFilter />
       </div>
-      <GamesGrid games={sortedGames} context="PROFILE" />
+      <GamesGrid games={sortedGames} context="PROFILE" narrow={narrow} />
       {loading && (
         <div className="flex justify-center p-[1.3125rem]">
           <Loader />

@@ -2,6 +2,7 @@
 
 import { GameResult, UserStats } from "@/app/game/game-repository";
 import { addDaysToDate, getDailyGameKey } from "@/app/game/game-utils";
+import { PanelTitle } from "../ui/panel-title";
 
 export interface GameStatsProps {
   stats: UserStats;
@@ -21,22 +22,24 @@ function StatItem(props: {
   indicator?: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 w-full">
-      <div className="flex gap-2 justify-between w-full items-baseline text-primary-900/60">
-        <div>{props.label}</div>
-        {props.indicator && <div className="text-sm/5">{props.indicator}</div>}
-      </div>
+    <div className="flex flex-col gap-0 w-full">
+      <PanelTitle className="mb-2">
+        <div className="flex gap-2 justify-between w-full items-baseline">
+          <div>{props.label}</div>
+          {props.indicator && (
+            <div className="text-sm/5 text-primary-900/60">
+              {props.indicator}
+            </div>
+          )}
+        </div>
+      </PanelTitle>
       <div className="font-semibold text-5xl">{props.value}</div>
     </div>
   );
 }
 
 function StatsCard({ children }: React.PropsWithChildren<{}>) {
-  return (
-    <div className="bg-white/30 border border-primary-200 rounded p-6 min-w-60">
-      {children}
-    </div>
-  );
+  return <div className="bg-white rounded p-6 min-w-60">{children}</div>;
 }
 
 export function GameStats(props: GameStatsProps) {
@@ -47,17 +50,20 @@ export function GameStats(props: GameStatsProps) {
       label: "Wins",
       value: formatNumber(stats.totalWins),
       indicator: formatPercentage(
-        stats.totalGames > 0 ? stats.totalWins / stats.totalGames : 0
+        stats.totalGames > 0 ? stats.totalWins / stats.totalGames : 0,
       ),
     },
     { label: "Current streak", value: formatNumber(stats.currentStreak) },
     { label: "Max streak", value: formatNumber(stats.maxStreak) },
   ];
 
-  const last30Map = stats.last30.reduce((acc, g) => {
-    acc[g.date] = g;
-    return acc;
-  }, {} as { [key: string]: GameResult });
+  const last30Map = stats.last30.reduce(
+    (acc, g) => {
+      acc[g.date] = g;
+      return acc;
+    },
+    {} as { [key: string]: GameResult },
+  );
   const lastN = [];
   const N = 30;
   const startDate = new Date();
@@ -70,7 +76,7 @@ export function GameStats(props: GameStatsProps) {
 
   const maxWinGuessCount = Object.keys(stats.winGuessCounts).reduce(
     (acc, key) => Math.max(acc, stats.winGuessCounts[parseInt(key, 10)] || 0),
-    0
+    0,
   );
 
   return (
@@ -122,7 +128,7 @@ export function GameStats(props: GameStatsProps) {
                         key={idx}
                         className="flex w-full text-2xl items-center"
                       >
-                        <div className="flex w-8 text-primary-900/60 font-normal">
+                        <div className="flex w-8 text-primary-900/60 font-space">
                           {idx + 1}
                         </div>
                         <div className="flex flex-1 bg-primary-200 h-12">

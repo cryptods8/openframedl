@@ -57,12 +57,12 @@ const NAV_ITEMS = [
     match: (p: string) => p.startsWith("/app/custom"),
   },
   {
-    href: "/app/settings",
+    href: "/app/profile",
     label: "Profile",
     OutlineIcon: UserOutline,
     SolidIcon: UserSolid,
     match: (p: string) =>
-      p.startsWith("/app/settings") || p.startsWith("/app/streak-freezes"),
+      p.startsWith("/app/profile") || p.startsWith("/app/streak-freezes"),
   },
 ];
 
@@ -78,7 +78,7 @@ export function BottomNav() {
       }`}
       style={{ paddingBottom: insets.bottom }}
     >
-      <div className="flex items-stretch h-14">
+      <div className="flex items-stretch h-14 max-w-lg mx-auto">
         {NAV_ITEMS.map(({ href, label, OutlineIcon, SolidIcon, match }) => {
           const active = match(pathname);
           const Icon = active ? SolidIcon : OutlineIcon;
