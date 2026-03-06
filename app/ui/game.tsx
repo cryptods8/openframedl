@@ -660,6 +660,7 @@ export function Game({
       }
       const key = e.key.toLowerCase();
       if (key === "enter") {
+        e.preventDefault();
         handleSubmit();
       } else {
         handleKeyPress(key);
