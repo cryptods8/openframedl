@@ -27,6 +27,7 @@ import { useHaptics } from "../hooks/use-haptics";
 import { ProPassRequiredScreen } from "./game/pro-pass-required-screen";
 import { useRouter } from "next/navigation";
 import { GameIntroDialog } from "./game-intro-dialog";
+import { useNavVisibility } from "../contexts/nav-visibility-context";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -451,6 +452,16 @@ export function Game({
   const { sessionId } = useSessionId();
   const config = useAppConfig();
   const { impact, notification } = useHaptics();
+  const { hideNav, showNav } = useNavVisibility();
+
+  useEffect(() => {
+    if (isGameOver) {
+      showNav();
+    } else {
+      hideNav();
+    }
+    return () => showNav();
+  }, [isGameOver, hideNav, showNav]);
 
   useEffect(() => {
     const onFocus = () => setIsWindowFocused(true);

@@ -8,10 +8,9 @@ import {
   Transition,
 } from "@headlessui/react";
 import { EllipsisVerticalIcon } from "@heroicons/react/16/solid";
-import Link from "next/link";
 
 import { useHaptics } from "@/app/hooks/use-haptics";
-import { useAppConfig } from "@/app/contexts/app-config-context";
+import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
 
 function MenuButton({
   children,
@@ -50,7 +49,7 @@ export function GameOptionsMenu({
   onModeChange?: (mode: "normal" | "pro") => void;
   onIntroOpen?: () => void;
 }) {
-  const { isPro } = useAppConfig();
+  const { isNavVisible, hideNav, showNav } = useNavVisibility();
   return (
     <Menu>
       <MenuButton
@@ -99,35 +98,6 @@ export function GameOptionsMenu({
               <span>Practice</span>
             </button>
           </MenuItem>
-          {<MenuSeparator className="my-1 h-px bg-primary-200" />}
-          {
-            <MenuItem>
-              <Link
-                href="/app/arena"
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
-              >
-                <span>Browse Arenas</span>
-              </Link>
-            </MenuItem>
-          }
-          {
-            <MenuItem>
-              <Link
-                href="/app/arena/create"
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
-              >
-                <span>Create ARENA</span>
-              </Link>
-            </MenuItem>
-          }
-          <MenuItem>
-            <Link
-              href="/app/custom/create"
-              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
-            >
-              <span>Create Custom Word</span>
-            </Link>
-          </MenuItem>
           {onModeChange && (
             <MenuSeparator className="my-1 h-px bg-primary-200" />
           )}
@@ -148,27 +118,6 @@ export function GameOptionsMenu({
               </button>
             </MenuItem>
           )}
-          {!isPro && (
-            <>
-              <MenuSeparator className="my-1 h-px bg-primary-200" />
-              <MenuItem>
-                <Link
-                  href="/app/streak-freezes"
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
-                >
-                  <span>Streak Freezes</span>
-                </Link>
-              </MenuItem>
-            </>
-          )}
-          <MenuItem>
-            <Link
-              href="/app/settings"
-              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
-            >
-              <span>Settings</span>
-            </Link>
-          </MenuItem>
           {onIntroOpen && (
             <>
               <MenuSeparator className="my-1 h-px bg-primary-200" />
@@ -182,6 +131,15 @@ export function GameOptionsMenu({
               </MenuItem>
             </>
           )}
+          <MenuSeparator className="my-1 h-px bg-primary-200" />
+          <MenuItem>
+            <button
+              onClick={() => (isNavVisible ? hideNav() : showNav())}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
+            >
+              <span>{isNavVisible ? "Hide Navigation" : "Show Navigation"}</span>
+            </button>
+          </MenuItem>
         </MenuItems>
       </Transition>
     </Menu>

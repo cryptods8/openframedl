@@ -20,6 +20,7 @@ import { buildArenaShareText } from "@/app/game/arena-utils";
 import { useJwt } from "@/app/hooks/use-jwt";
 import { IconButton } from "@/app/ui/button/icon-button";
 import { useSharing } from "@/app/hooks/use-sharing";
+import { useBottomOffset } from "@/app/ui/bottom-nav";
 
 function Label({
   children,
@@ -127,6 +128,7 @@ export function ArenaCreateForm() {
 
   const { jwt } = useJwt();
   const { composeCast } = useSharing();
+  const bottomOffset = useBottomOffset();
 
   const actualAudienceSize = audienceSize ?? 50;
   const actualWordCount = wordCount ?? 5;
@@ -434,7 +436,7 @@ export function ArenaCreateForm() {
           )}
         </div>
       </div>
-      <div className="flex flex-row justify-end pt-4 pb-8">
+      <div className="flex flex-row justify-end pt-4" style={{ paddingBottom: bottomOffset + 16 }}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create"}
         </Button>

@@ -15,6 +15,7 @@ import { Dialog } from "@/app/ui/dialog";
 import { useJwt } from "@/app/hooks/use-jwt";
 import { motion } from "framer-motion";
 import { useSharing } from "@/app/hooks/use-sharing";
+import { useBottomOffset } from "@/app/ui/bottom-nav";
 
 function Label({
   children,
@@ -122,6 +123,7 @@ export function CustomWordCreateForm() {
 
   const { jwt } = useJwt();
   const { composeCast } = useSharing();
+  const bottomOffset = useBottomOffset();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -214,7 +216,7 @@ export function CustomWordCreateForm() {
           <WordGrid word={word} />
         </div>
       </div>
-      <div className="flex flex-row justify-end pt-4 pb-8">
+      <div className="flex flex-row justify-end pt-4" style={{ paddingBottom: bottomOffset + 16 }}>
         <Button type="submit" variant="primary" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create"}
         </Button>

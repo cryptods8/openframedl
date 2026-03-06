@@ -17,7 +17,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { HapticsTest } from "./haptics-test";
 import { ClientContext, useClientContext } from "./use-client-context";
 import { useBottomOffset } from "@/app/ui/bottom-nav";
-import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
 
 function toUserData(user: Context.MiniAppContext["user"]) {
   return { ...user, profileImage: user.pfpUrl };
@@ -55,18 +54,8 @@ function Game({
   const [error, setError] = useState<ErrorResponse | undefined>();
   const [loading, setLoading] = useState(false);
   const { sessionId } = useSessionId();
-  const { hideNav, showNav } = useNavVisibility();
 
   const userData = props.userData;
-
-  useEffect(() => {
-    if (loadedGame?.status === "IN_PROGRESS") {
-      hideNav();
-    } else {
-      showNav();
-    }
-    return () => showNav();
-  }, [loadedGame?.status, hideNav, showNav]);
 
   useEffect(() => {
     const load = async () => {
@@ -208,14 +197,11 @@ function GameContainer({
     setSignInFailure(undefined);
   }, []);
 
-  const { showNav } = useNavVisibility();
-
   const handleGameOver = useCallback(() => {
-    showNav();
     context.requestAddFrame().catch((e) => {
       console.error(e);
     });
-  }, [context, showNav]);
+  }, [context]);
 
   // useEffect(() => {
   //   if (context.client && !context.client.added && !isFirstLoad) {

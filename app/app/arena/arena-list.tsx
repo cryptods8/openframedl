@@ -6,6 +6,7 @@ import { ArenaFilters } from "./arena-filters";
 import { Button } from "@/app/ui/button/button";
 import { Loader } from "@/app/ui/loader";
 import { FloatingActionButton } from "@/app/ui/floating-action-button";
+import { useBottomOffset } from "@/app/ui/bottom-nav";
 import { PublicArenaListItem, ArenaFilter } from "@/app/api/arenas/list/route";
 
 interface ArenaListResponse {
@@ -23,6 +24,7 @@ export function ArenaList({ filterType }: { filterType: ArenaFilter }) {
   const [error, setError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
+  const bottomOffset = useBottomOffset();
 
   const fetchArenas = useCallback(
     async (page: number, ft: ArenaFilter, append = false) => {
@@ -100,7 +102,7 @@ export function ArenaList({ filterType }: { filterType: ArenaFilter }) {
 
   return (
     <>
-      <div className="w-full flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-6" style={{ paddingBottom: bottomOffset + 80 }}>
         <div className="-mx-4">
           <ArenaFilters currentFilter={filterType} />
         </div>

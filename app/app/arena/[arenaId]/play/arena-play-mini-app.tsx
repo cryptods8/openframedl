@@ -12,17 +12,12 @@ import { Game } from "@/app/ui/game";
 import { toast } from "@/app/ui/toasts/toast";
 
 import { Button } from "@/app/ui/button/button";
-import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
+import { useBottomOffset } from "@/app/ui/bottom-nav";
 
 export function ArenaPlayMiniApp({ arena }: { arena?: PublicArenaWithGames }) {
   const clientContext = useClientContext({});
   const { status } = useFarcasterSession();
-  const { hideNav, showNav } = useNavVisibility();
-
-  useEffect(() => {
-    hideNav();
-    return () => showNav();
-  }, [hideNav, showNav]);
+  const bottomOffset = useBottomOffset();
 
   const [game, setGame] = useState<ClientGame | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,7 +50,8 @@ export function ArenaPlayMiniApp({ arena }: { arena?: PublicArenaWithGames }) {
     <PaddedContainer
       className="w-full h-full flex-1 flex flex-col items-center justify-center"
       context={clientContext}
-      sides="trbl"
+      sides="trl"
+      extraBottom={bottomOffset}
     >
       {arena ? (
         status === "authenticated" ? (
