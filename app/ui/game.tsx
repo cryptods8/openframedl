@@ -28,6 +28,7 @@ import { ProPassRequiredScreen } from "./game/pro-pass-required-screen";
 import { useRouter } from "next/navigation";
 import { GameIntroDialog } from "./game-intro-dialog";
 import { useNavVisibility } from "../contexts/nav-visibility-context";
+import { Dialog } from "./dialog";
 
 // TODO: move to common file
 const KEYS: string[][] = [
@@ -725,6 +726,7 @@ export function Game({
   const isDaily = currentGame?.isDaily;
 
   const [isIntroOpen, setIsIntroOpen] = useState(false);
+  const [isNoteOpen, setIsNoteOpen] = useState(false);
 
   useEffect(() => {
     if (
@@ -736,6 +738,12 @@ export function Game({
       toast(`Win in ${replacedScore} to keep your average`);
     }
   }, [replacedScore, completedCount, isDaily, isCompleted]);
+
+  useEffect(() => {
+    if (isFreshGame && currentGame?.arena?.config?.authorNote) {
+      setIsNoteOpen(true);
+    }
+  }, [isFreshGame, currentGame?.arena?.config?.authorNote]);
 
   useEffect(() => {
     if (completedCount === 0 && statsLoaded && isFreshGame && isDaily) {
@@ -750,6 +758,10 @@ export function Game({
   const handleIntroOpen = useCallback(() => {
     setIsIntroOpen(true);
   }, [setIsIntroOpen]);
+
+  const handleNoteOpen = useCallback(() => {
+    setIsNoteOpen(true);
+  }, [setIsNoteOpen]);
 
   const handleIntroClose = useCallback(() => {
     setIsIntroOpen(false);
@@ -869,6 +881,11 @@ export function Game({
                 onModeChange={setMode}
                 showDaily={!currentGame?.isDaily}
                 onIntroOpen={handleIntroOpen}
+                onNoteOpen={
+                  currentGame?.arena?.config?.authorNote
+                    ? handleNoteOpen
+                    : undefined
+                }
               />
             </div>
             <input
@@ -912,6 +929,29 @@ export function Game({
         anonUserInfo={anonUserInfo}
       />
       <GameIntroDialog isOpen={isIntroOpen} onClose={handleIntroClose} />
+      {currentGame?.arena?.config?.authorNote && (
+        <Dialog open={isNoteOpen} onClose={() => setIsNoteOpen(false)}>
+          <div className="w-full flex flex-col gap-3 max-w-sm">
+            <p className="text-sm font-semibold text-primary-900/50">
+              Note from{" "}
+              {currentGame.arena.userData?.username
+                ? `${currentGame.arena.userData?.username}, `
+                : ""}
+              the Arena creator
+            </p>
+            <p className="text-base text-primary-900 whitespace-pre-wrap">
+              {currentGame.arena.config.authorNote}
+            </p>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsNoteOpen(false)}
+            >
+              Got it
+            </Button>
+          </div>
+        </Dialog>
+      )}
       {mode === "normal" && (
         <div className="w-[640px] max-w-full p-0.5 relative">
           <div className="absolute -top-12 right-4">
@@ -921,6 +961,11 @@ export function Game({
               mode={mode}
               onModeChange={setMode}
               onIntroOpen={handleIntroOpen}
+              onNoteOpen={
+                currentGame?.arena?.config?.authorNote
+                  ? handleNoteOpen
+                  : undefined
+              }
             />
           </div>
           <GameKeyboard

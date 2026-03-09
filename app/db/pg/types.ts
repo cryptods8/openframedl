@@ -208,6 +208,7 @@ export type ArenaConfig = {
   initWords: string[] | null | undefined;
   randomWords: boolean | null | undefined;
   isHardModeRequired: boolean | null | undefined;
+  authorNote?: string | null;
 };
 
 export interface ArenaTable extends AuthoredTable {

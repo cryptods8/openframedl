@@ -42,12 +42,14 @@ export function GameOptionsMenu({
   mode,
   onModeChange,
   onIntroOpen,
+  onNoteOpen,
 }: {
   onNewGame: (gameType: "practice" | "daily") => void;
   showDaily?: boolean;
   mode?: "normal" | "pro";
   onModeChange?: (mode: "normal" | "pro") => void;
   onIntroOpen?: () => void;
+  onNoteOpen?: () => void;
 }) {
   const { isNavVisible, hideNav, showNav } = useNavVisibility();
   return (
@@ -117,6 +119,19 @@ export function GameOptionsMenu({
                 </div>
               </button>
             </MenuItem>
+          )}
+          {onNoteOpen && (
+            <>
+              <MenuSeparator className="my-1 h-px bg-primary-200" />
+              <MenuItem>
+                <button
+                  onClick={onNoteOpen}
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary-100 data-[focus]:bg-primary-100 rounded"
+                >
+                  <span>Author&apos;s Note</span>
+                </button>
+              </MenuItem>
+            </>
           )}
           {onIntroOpen && (
             <>

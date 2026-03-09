@@ -119,6 +119,7 @@ export function ArenaCreateForm() {
   const [arenaWord, setArenaWord] = useState("");
   const [arenaWords, setArenaWords] = useState<string[]>([]);
   const [wordMode, setWordMode] = useState<"random" | "custom">("random");
+  const [authorNote, setAuthorNote] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -163,6 +164,7 @@ export function ArenaCreateForm() {
       initWords:
         initWordsEnabled && initWords.length > 0 ? initWords : undefined,
       isHardModeRequired,
+      ...(authorNote.trim() ? { authorNote: authorNote.trim() } : {}),
     };
 
     try {
@@ -542,6 +544,27 @@ export function ArenaCreateForm() {
               </div>
             </div>
           )}
+        </div>
+        <div>
+          <Field>
+            <Label>Author&apos;s note</Label>
+            <textarea
+              id="author-note"
+              className={clsx(
+                "w-full rounded-md border border-primary-200 bg-white py-3 px-4",
+                "focus:outline-none focus:outline-2 focus:-outline-offset-2 focus:outline-primary-500",
+                "resize-y min-h-[80px]"
+              )}
+              placeholder="Leave a note for players..."
+              value={authorNote}
+              onChange={(e) => setAuthorNote(e.target.value)}
+              maxLength={500}
+              rows={3}
+            />
+            <HeadlessDescription className="text-xs text-primary-900/50 mt-1 px-1">
+              Optional. A hint, theme, or message shown to players when they start the arena.
+            </HeadlessDescription>
+          </Field>
         </div>
       </div>
       <div className="flex flex-row justify-end pt-4" style={{ paddingBottom: bottomOffset + 16 }}>
