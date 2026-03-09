@@ -116,6 +116,9 @@ export function ArenaCreateForm() {
   const [initWords, setInitWords] = useState<string[]>([]);
   const [initWordsEnabled, setInitWordsEnabled] = useState(false);
   const [isHardModeRequired, setIsHardModeRequired] = useState(false);
+  const [arenaWord, setArenaWord] = useState("");
+  const [arenaWords, setArenaWords] = useState<string[]>([]);
+  const [wordMode, setWordMode] = useState<"random" | "custom">("random");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -131,7 +134,8 @@ export function ArenaCreateForm() {
   const bottomOffset = useBottomOffset();
 
   const actualAudienceSize = audienceSize ?? 50;
-  const actualWordCount = wordCount ?? 5;
+  const hasCustomArenaWords = wordMode === "custom" && arenaWords.length > 0;
+  const actualWordCount = hasCustomArenaWords ? arenaWords.length : (wordCount ?? 5);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -154,7 +158,8 @@ export function ArenaCreateForm() {
         identityProvider: "fc",
         username: u.username,
       })),
-      randomWords: !sameWordsForEveryone,
+      randomWords: hasCustomArenaWords ? false : !sameWordsForEveryone,
+      words: hasCustomArenaWords ? arenaWords : undefined,
       initWords:
         initWordsEnabled && initWords.length > 0 ? initWords : undefined,
       isHardModeRequired,
@@ -207,6 +212,17 @@ export function ArenaCreateForm() {
     }
   };
 
+  const isArenaWordValid = (word: string) => {
+    return /^[a-zA-Z]{5}$/.test(word);
+  };
+
+  const addArenaWordIfValid = (word: string) => {
+    if (arenaWords.length < 24 && isArenaWordValid(word)) {
+      setArenaWords([...arenaWords, word.toLowerCase()]);
+      setArenaWord("");
+    }
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -242,20 +258,109 @@ export function ArenaCreateForm() {
           </Field>
         </div>
         <div>
-          <InputField
-            label="How many words?"
-            id="word-count"
-            type="number"
-            placeholder="5"
-            min={1}
-            max={24}
-            step={1}
-            value={wordCount ?? ""}
-            onChange={(e) =>
-              setWordCount(e.target.value ? parseInt(e.target.value, 10) : null)
-            }
-            helperText="The number of words in the arena. Default is 5, minimum is 1, maximum is 24."
-          />
+          <Field>
+            <Label>Words</Label>
+          </Field>
+          <div className="flex flex-row rounded-md border border-primary-200 overflow-hidden mb-3">
+            <button
+              type="button"
+              onClick={() => setWordMode("random")}
+              className={clsx(
+                "flex-1 py-2 text-sm font-semibold transition-colors",
+                wordMode === "random"
+                  ? "bg-primary-500 text-white"
+                  : "bg-white text-primary-900/60 hover:bg-primary-50"
+              )}
+            >
+              Generate random
+            </button>
+            <button
+              type="button"
+              onClick={() => setWordMode("custom")}
+              className={clsx(
+                "flex-1 py-2 text-sm font-semibold transition-colors border-l border-primary-200",
+                wordMode === "custom"
+                  ? "bg-primary-500 text-white"
+                  : "bg-white text-primary-900/60 hover:bg-primary-50"
+              )}
+            >
+              Pick your own
+            </button>
+          </div>
+          {wordMode === "random" ? (
+            <InputField
+              id="word-count"
+              type="number"
+              placeholder="5"
+              min={1}
+              max={24}
+              step={1}
+              value={wordCount ?? ""}
+              onChange={(e) =>
+                setWordCount(e.target.value ? parseInt(e.target.value, 10) : null)
+              }
+              helperText="Framedl will pick random words. Default is 5, max is 24."
+            />
+          ) : (
+            <div className="p-4 border border-primary-200 rounded-md bg-primary-200/50">
+              <InputField
+                placeholder="Enter a 5-letter word..."
+                id="arena-word"
+                value={arenaWord}
+                onChange={(e) => setArenaWord(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addArenaWordIfValid(arenaWord);
+                  }
+                }}
+                onBlur={() => addArenaWordIfValid(arenaWord)}
+                helperText={`Add up to 24 words, 5 letters each. ${arenaWords.length} added so far.`}
+                disabled={arenaWords.length >= 24}
+                rightAddon={
+                  <div>
+                    <Button
+                      size="sm"
+                      type="button"
+                      disabled={arenaWords.length >= 24 || !isArenaWordValid(arenaWord)}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.preventDefault();
+                        addArenaWordIfValid(arenaWord);
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                }
+              />
+              {arenaWords.length > 0 && (
+                <div className="flex flex-row flex-wrap items-center gap-2 pt-2">
+                  {arenaWords.map((word, idx) => (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        setArenaWords(arenaWords.filter((_, i) => i !== idx))
+                      }
+                      key={`${word}-${idx}`}
+                      className="text-sm font-bold text-white flex flex-row items-center gap-2 bg-primary-500 rounded-full pl-4 pr-1 py-1"
+                    >
+                      {word.toUpperCase()}
+                      <IconButton
+                        variant="ghost"
+                        size="xs"
+                        onClick={() =>
+                          setArenaWords(arenaWords.filter((_, i) => i !== idx))
+                        }
+                      >
+                        <XMarkIcon className="size-6 text-white/70" />
+                      </IconButton>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 items-start gap-6">
           <div className="flex flex-row items-center gap-2 w-full">
@@ -312,15 +417,18 @@ export function ArenaCreateForm() {
             <div className="flex flex-row items-center">
               <Label position="left">Same words for everyone</Label>
               <Switch
-                checked={sameWordsForEveryone}
+                checked={hasCustomArenaWords || sameWordsForEveryone}
                 onChange={setSameWordsForEveryone}
+                disabled={hasCustomArenaWords}
                 className="group inline-flex h-6 w-11 items-center rounded-full bg-primary-200 transition data-[checked]:bg-primary-500 disabled:opacity-50"
               >
                 <span className="size-4 translate-x-1 rounded-full bg-white transition group-data-[checked]:translate-x-6" />
               </Switch>
             </div>
             <HeadlessDescription className="text-xs text-primary-900/50 px-1 mt-1.5">
-              Each player will get the same words for the arena
+              {hasCustomArenaWords
+                ? "Forced on because custom arena words are specified"
+                : "Each player will get the same words for the arena"}
             </HeadlessDescription>
           </Field>
         </div>

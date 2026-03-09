@@ -310,6 +310,7 @@ export async function GET(req: NextRequest) {
               // user is member, or arena does have free spots
               db.or([
                 db.eb("uas.arenaId", "is not", null),
+                db.eb("am.playerCount", "is", null),
                 db.eb("am.playerCount", "<", db.ref("am.audienceSize")),
               ]),
             ]),

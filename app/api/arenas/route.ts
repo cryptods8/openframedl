@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export interface ArenaCreateRequest {
   wordCount: number;
+  words?: string[];
   start: ArenaStart;
   duration: ArenaDuration;
   audience: ArenaAudienceMember[];
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
 
   const {
     wordCount,
+    words: customWords,
     start,
     duration,
     audienceSize,
@@ -61,15 +63,32 @@ export async function POST(req: NextRequest) {
     isHardModeRequired,
   } = (await req.json()) as Partial<ArenaCreateRequest>;
 
+  let arenaWords: string[];
+  let arenaRandomWords: boolean | null;
+  if (customWords && customWords.length > 0) {
+    const wordPattern = /^[a-zA-Z]{5}$/;
+    if (!customWords.every((w) => wordPattern.test(w))) {
+      return NextResponse.json(
+        { error: "Each custom word must be exactly 5 letters (a-z)" },
+        { status: 400 }
+      );
+    }
+    arenaWords = customWords.map((w) => w.toLowerCase());
+    arenaRandomWords = false;
+  } else {
+    arenaWords = gameService.generateRandomWords(wordCount ?? 5);
+    arenaRandomWords = randomWords ?? null;
+  }
+
   const config = {
     audience: audience ?? [],
     audienceSize: audienceSize ?? 2,
     duration: duration ?? { type: "unlimited" },
     start: start ?? { type: "immediate" },
-    words: gameService.generateRandomWords(wordCount ?? 5),
+    words: arenaWords,
     suddenDeath: suddenDeath ?? null,
     initWords: initWords ?? null,
-    randomWords: randomWords ?? null,
+    randomWords: arenaRandomWords,
     isHardModeRequired: isHardModeRequired ?? null,
   } satisfies ArenaConfig;
   const arena = {
