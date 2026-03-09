@@ -159,7 +159,7 @@ async function processFrameItems(
   // Send each group
   for (const [, group] of groups) {
     const config = notificationTypeRegistry[group.items[0]!.type];
-    const { title, body } = config.buildMessage(group.items);
+    const { title, body, targetUrl } = config.buildMessage(group.items);
 
     // Send in sub-batches of 100 (Farcaster API limit)
     for (let i = 0; i < group.recipients.length; i += 100) {
@@ -172,6 +172,7 @@ async function processFrameItems(
           recipients: recipientSlice,
           title,
           body,
+          targetUrl,
         });
 
         const hasRateLimit = results.some((r) => r.state === "rate_limit");
@@ -216,12 +217,12 @@ async function processDirectCastItems(
       continue;
     }
 
-    const { title, body } = config.buildMessage([item]);
+    const { title, body, targetUrl } = config.buildMessage([item]);
 
     try {
       const cast: DirectCast = {
         recipientFid: parseInt(item.userId, 10),
-        message: `${title}\n\n${body}\n\n${externalBaseUrl}/app/v2`,
+        message: `${title}\n\n${body}\n\n${targetUrl ?? `${externalBaseUrl}/app/v2`}`,
         idempotencyKey: `nq-${item.id}`,
       };
       await sendDirectCast(cast);

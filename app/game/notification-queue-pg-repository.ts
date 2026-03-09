@@ -3,6 +3,8 @@ import { sql } from "kysely";
 import {
   DBNotificationQueueInsert,
   DBNotificationQueue,
+  NotificationChannel,
+  NotificationType,
 } from "@/app/db/pg/types";
 
 export async function enqueue(
@@ -147,6 +149,89 @@ export async function releaseStaleLocks(minutes: number): Promise<number> {
     .executeTakeFirst();
 
   return Number(result.numUpdatedRows);
+}
+
+/**
+ * Find users who were recently sent a notification of the given type+channel.
+ * Returns a Set of "userId:identityProvider" keys.
+ */
+export async function findRecentlyNotifiedUsers(
+  type: NotificationType,
+  channel: NotificationChannel,
+  withinMinutes: number
+): Promise<Set<string>> {
+  const cutoff = new Date(Date.now() - withinMinutes * 60 * 1000);
+
+  const rows = await pgDb
+    .selectFrom("notificationQueue")
+    .select(["userId", "identityProvider"])
+    .distinct()
+    .where("type", "=", type)
+    .where("channel", "=", channel)
+    .where("status", "=", "sent")
+    .where("processedAt", ">", cutoff)
+    .execute();
+
+  return new Set(rows.map((r) => `${r.userId}:${r.identityProvider}`));
+}
+
+export interface GroupedNotificationItem extends DBNotificationQueueInsert {
+  arenaId: number;
+}
+
+/**
+ * Enqueue grouped arena notifications. Uses an upsert: if a row with the same
+ * ref_id already exists (pending/processing/rate_limited), appends the arena ID
+ * to the payload's arenaIds array instead of inserting a new row.
+ */
+export async function enqueueGrouped(
+  items: GroupedNotificationItem[]
+): Promise<void> {
+  if (items.length === 0) return;
+
+  // Deduplicate by (userId, identityProvider, refId) — keep the last arenaId
+  // and collect all arenaIds so we can batch per unique key
+  const keyMap = new Map<
+    string,
+    { item: GroupedNotificationItem; arenaIds: number[] }
+  >();
+  for (const item of items) {
+    const key = `${item.userId}:${item.identityProvider}:${item.refId}`;
+    const existing = keyMap.get(key);
+    if (existing) {
+      if (!existing.arenaIds.includes(item.arenaId)) {
+        existing.arenaIds.push(item.arenaId);
+      }
+    } else {
+      keyMap.set(key, { item, arenaIds: [item.arenaId] });
+    }
+  }
+
+  for (const { item, arenaIds } of keyMap.values()) {
+    const arenaIdsJson = JSON.stringify(arenaIds);
+    await sql`
+      INSERT INTO notification_queue (
+        user_id, identity_provider, type, channel,
+        scheduled_at, payload, ref_id, group_key
+      ) VALUES (
+        ${item.userId}, ${item.identityProvider}, ${item.type}, ${item.channel},
+        ${item.scheduledAt}, jsonb_build_object('arenaIds', ${arenaIdsJson}::jsonb),
+        ${item.refId}, ${item.groupKey}
+      )
+      ON CONFLICT (user_id, identity_provider, type, channel, ref_id)
+        WHERE status IN ('pending', 'processing', 'rate_limited')
+      DO UPDATE SET payload = jsonb_set(
+        notification_queue.payload,
+        '{arenaIds}',
+        (
+          SELECT jsonb_agg(DISTINCT val)
+          FROM jsonb_array_elements(
+            notification_queue.payload->'arenaIds' || ${arenaIdsJson}::jsonb
+          ) AS val
+        )
+      )
+    `.execute(pgDb);
+  }
 }
 
 export async function cleanupOld(days: number): Promise<number> {

@@ -48,6 +48,24 @@ export function isAudienceMember(
   return audienceMember.userId === user.userId;
 }
 
+/** Calculate the number of free (open) slots in an arena */
+export function getFreeSlots(arena: {
+  members: ArenaMember[];
+  config: {
+    audience: ArenaAudienceMember[];
+    audienceSize: number;
+  };
+}): number {
+  const freeSlotMembers = arena.members.filter(
+    (m) => !arena.config.audience.find((a) => isAudienceMember(a, m))
+  );
+  return (
+    arena.config.audienceSize -
+    arena.config.audience.length -
+    freeSlotMembers.length
+  );
+}
+
 interface ArenaMembership {
   success: boolean;
   type?:
@@ -87,13 +105,7 @@ export function checkMembership(
   if (isInAudience) {
     return { success: true, type: "audience" };
   }
-  const freeSlotMembers = arena.members.filter(
-    (m) => !arena.config.audience.find((a) => isAudienceMember(a, m))
-  );
-  const freeSlots =
-    arena.config.audienceSize -
-    arena.config.audience.length -
-    freeSlotMembers.length;
+  const freeSlots = getFreeSlots(arena);
   if (freeSlots > 0) {
     return { success: true, type: "free_slot" };
   }

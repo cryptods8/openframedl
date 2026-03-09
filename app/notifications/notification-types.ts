@@ -1,11 +1,12 @@
 import { pgDb } from "@/app/db/pg/pg-db";
 import { getDailyGameKey } from "@/app/game/game-utils";
-import { isPro } from "@/app/constants";
+import { externalBaseUrl, isPro } from "@/app/constants";
 import { DBNotificationQueue, NotificationType } from "@/app/db/pg/types";
 
 interface NotificationMessage {
   title: string;
   body: string;
+  targetUrl?: string;
 }
 
 interface NotificationTypeConfig {
@@ -61,20 +62,32 @@ const dailyReminderConfig: NotificationTypeConfig = {
   },
 };
 
-const arenaNewConfig: NotificationTypeConfig = {
-  async isStale(item) {
-    const payload = item.payload as { arenaId?: number };
-    if (!payload.arenaId) return true;
+function extractArenaIds(items: DBNotificationQueue[]): number[] {
+  const ids: number[] = [];
+  for (const item of items) {
+    const payload = item.payload as {
+      arenaId?: number;
+      arenaIds?: number[];
+    };
+    if (payload.arenaIds) ids.push(...payload.arenaIds);
+    else if (payload.arenaId) ids.push(payload.arenaId);
+  }
+  return [...new Set(ids)];
+}
 
-    const arena = await pgDb
-      .selectFrom("arena")
-      .select(["id", "startedAt", "config", "deletedAt"])
-      .where("id", "=", payload.arenaId)
-      .executeTakeFirst();
+async function hasActiveArena(arenaIds: number[]): Promise<boolean> {
+  if (arenaIds.length === 0) return false;
 
-    if (!arena || arena.deletedAt) return true;
+  const arenas = await pgDb
+    .selectFrom("arena")
+    .select(["id", "startedAt", "config", "deletedAt"])
+    .where("id", "in", arenaIds)
+    .execute();
 
-    // Check if arena has ended (for timed arenas)
+  const now = new Date();
+  for (const arena of arenas) {
+    if (arena.deletedAt) continue;
+
     const config = arena.config as {
       start: { type: string };
       duration: { type: string; minutes?: number };
@@ -87,22 +100,35 @@ const arenaNewConfig: NotificationTypeConfig = {
       const endTime = new Date(
         arena.startedAt.getTime() + config.duration.minutes * 60 * 1000
       );
-      if (new Date() > endTime) return true;
+      if (now > endTime) continue;
     }
 
-    return false;
+    return true;
+  }
+
+  return false;
+}
+
+const arenaNewConfig: NotificationTypeConfig = {
+  async isStale(item) {
+    const arenaIds = extractArenaIds([item]);
+    return !(await hasActiveArena(arenaIds));
   },
 
   buildMessage(items) {
-    if (items.length === 1) {
+    const arenaIds = extractArenaIds(items);
+
+    if (arenaIds.length === 1) {
       return {
         title: `New ${name} Arena`,
         body: "New Framedl Arena to play!",
+        targetUrl: `${externalBaseUrl}/app/arena/${arenaIds[0]}/join`,
       };
     }
     return {
       title: `New ${name} Arenas`,
-      body: `You have ${items.length} new arenas!`,
+      body: `You have ${arenaIds.length} new arenas!`,
+      targetUrl: `${externalBaseUrl}/app/arena`,
     };
   },
 };

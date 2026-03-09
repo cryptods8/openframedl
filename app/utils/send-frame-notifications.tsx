@@ -24,6 +24,7 @@ interface Notification {
   }[];
   title: string;
   body: string;
+  targetUrl?: string;
 }
 
 async function sendNotification({
@@ -31,11 +32,13 @@ async function sendNotification({
   body,
   url,
   tokens,
+  targetUrl,
 }: {
   title: string;
   body: string;
   url: string;
   tokens: string[];
+  targetUrl?: string;
 }): Promise<SendFrameNotificationResult> {
   const response = await fetch(url, {
     method: "POST",
@@ -46,7 +49,7 @@ async function sendNotification({
       notificationId: crypto.randomUUID(),
       title,
       body,
-      targetUrl: `${externalBaseUrl}/app/v2`,
+      targetUrl: targetUrl ?? `${externalBaseUrl}/app/v2`,
       tokens: tokens,
     } satisfies SendNotificationRequest),
   });
@@ -76,6 +79,7 @@ export async function sendFrameNotifications({
   recipients,
   title,
   body,
+  targetUrl: customTargetUrl,
 }: Notification): Promise<SendFrameNotificationResult[]> {
   const urlMap = recipients.reduce((acc, recipient) => {
     const { token, url } = recipient.notificationDetails;
@@ -89,7 +93,7 @@ export async function sendFrameNotifications({
   }, {} as Record<string, string[]>)
 
   const promises = Object.entries(urlMap).map(([url, tokens]) =>
-    sendNotification({ title, body, url, tokens })
+    sendNotification({ title, body, url, tokens, targetUrl: customTargetUrl })
   );
 
   return Promise.all(promises);
