@@ -740,10 +740,14 @@ export function Game({
   }, [replacedScore, completedCount, isDaily, isCompleted]);
 
   useEffect(() => {
-    if (isFreshGame && currentGame?.arena?.config?.authorNote) {
+    if (
+      isFreshGame &&
+      currentGame?.arena?.config?.authorNote &&
+      (currentGame?.arenaWordIndex ?? 0) === 0
+    ) {
       setIsNoteOpen(true);
     }
-  }, [isFreshGame, currentGame?.arena?.config?.authorNote]);
+  }, [isFreshGame, currentGame?.arena?.config?.authorNote, currentGame?.arenaWordIndex]);
 
   useEffect(() => {
     if (completedCount === 0 && statsLoaded && isFreshGame && isDaily) {
