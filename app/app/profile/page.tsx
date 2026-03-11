@@ -9,6 +9,9 @@ import { ProfileContent } from "./profile-content";
 import { ProfilePageWrapper } from "./profile-page-wrapper";
 import ProfileGameStats from "@/app/profiles/profile-game-stats";
 import { ProfileHeaderFromSession } from "./profile-header-from-session";
+import { getFarcasterSession } from "@/app/lib/auth";
+import { ProfileBadges } from "./profile-badges";
+import { gameService } from "@/app/game/game-service";
 
 export default async function SettingsPage({
   searchParams,
@@ -69,6 +72,20 @@ export default async function SettingsPage({
               </div>
             )}
 
+            {tab === "badges" && (
+              <div className="sm:p-4">
+                <Suspense
+                  fallback={
+                    <div className="text-center text-primary-900/60 p-8">
+                      Loading...
+                    </div>
+                  }
+                >
+                  <ProfileBadgesContent />
+                </Suspense>
+              </div>
+            )}
+
             {tab === "settings" && (
               <div className="sm:p-4">
                 <div className="p-4 sm:p-6 bg-white sm:rounded-lg">
@@ -91,13 +108,53 @@ export default async function SettingsPage({
   );
 }
 
-async function ProfileStatsContent() {
-  const { getFarcasterSession } = await import("@/app/lib/auth");
+async function ProfileBadgesContent() {
   const session = await getFarcasterSession();
   const user = session?.user;
 
   if (!user?.fid) {
-    const { SignIn } = await import("@/app/ui/auth/sign-in");
+    return (
+      <div className="text-center text-primary-900/60 p-8 space-y-4">
+        <p>Sign in to view your badges</p>
+        <div className="flex justify-center">
+          <SignIn />
+        </div>
+      </div>
+    );
+  }
+
+  const stats = await gameService.loadStats({
+    identityProvider: "fc",
+    userId: user.fid,
+  });
+
+  if (!stats) {
+    return (
+      <div className="text-center text-primary-900/60 p-8">
+        Play some games to start earning badges!
+      </div>
+    );
+  }
+
+  // Pass only plain serializable values to the client component
+  const badgeStats = {
+    totalWins: stats.totalWins,
+    maxStreak: stats.maxStreak,
+    winGuessCounts: { ...stats.winGuessCounts },
+  };
+
+  return (
+    <div className="p-4 sm:p-6 bg-white sm:rounded-lg">
+      <ProfileBadges stats={badgeStats} />
+    </div>
+  );
+}
+
+async function ProfileStatsContent() {
+  const session = await getFarcasterSession();
+  const user = session?.user;
+
+  if (!user?.fid) {
     return (
       <div className="text-center text-primary-900/60 p-8 space-y-4">
         <p>Sign in to view your stats</p>
