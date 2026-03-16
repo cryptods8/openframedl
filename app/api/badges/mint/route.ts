@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getFarcasterSession } from "@/app/lib/auth";
+import { signBadgeMint, verifyBadgeMintTx } from "@/app/lib/badge-nft-contract";
+import * as badgeRepo from "@/app/game/badge-pg-repository";
+import { GameIdentityProvider } from "@/app/game/game-repository";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * GET /api/badges/mint?badgeId=<uuid>&walletAddress=<0x...>
+ * Returns the signature needed to mint a badge NFT.
+ * Only the badge owner can request a signature.
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getFarcasterSession();
+    if (!session?.user?.fid) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const params = new URL(req.url).searchParams;
+    const badgeId = params.get("badgeId");
+    const walletAddress = params.get("walletAddress");
+
+    if (!badgeId || !walletAddress) {
+      return NextResponse.json(
+        { error: "Missing badgeId or walletAddress" },
+        { status: 400 },
+      );
+    }
+
+    const userId = session.user.fid;
+    const identityProvider: GameIdentityProvider = "fc";
+
+    // Verify the badge exists and belongs to this user
+    const badge = await badgeRepo.findById(badgeId);
+    if (!badge) {
+      return NextResponse.json({ error: "Badge not found" }, { status: 404 });
+    }
+    if (badge.userId !== userId || badge.identityProvider !== identityProvider) {
+      return NextResponse.json({ error: "Not your badge" }, { status: 403 });
+    }
+    if (badge.minted) {
+      return NextResponse.json(
+        { error: "Badge already minted" },
+        { status: 409 },
+      );
+    }
+
+    const { nonce, signature } = await signBadgeMint(walletAddress, badgeId);
+
+    return NextResponse.json({ badgeId, nonce, signature });
+  } catch (e) {
+    console.error("Error signing badge mint", e);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * POST /api/badges/mint
+ * Called after user successfully submits mintBadge tx on-chain.
+ * Verifies the tx and marks the badge as minted.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getFarcasterSession();
+    if (!session?.user?.fid) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { badgeId, mintTxHash, walletAddress } = await req.json();
+
+    if (!badgeId || !mintTxHash) {
+      return NextResponse.json(
+        { error: "Missing badgeId or mintTxHash" },
+        { status: 400 },
+      );
+    }
+
+    const userId = session.user.fid;
+    const identityProvider: GameIdentityProvider = "fc";
+
+    // Verify badge ownership
+    const badge = await badgeRepo.findById(badgeId);
+    if (!badge) {
+      return NextResponse.json({ error: "Badge not found" }, { status: 404 });
+    }
+    if (badge.userId !== userId || badge.identityProvider !== identityProvider) {
+      return NextResponse.json({ error: "Not your badge" }, { status: 403 });
+    }
+    if (badge.minted) {
+      return NextResponse.json(
+        { error: "Badge already minted" },
+        { status: 409 },
+      );
+    }
+
+    // Verify the on-chain tx
+    const verification = await verifyBadgeMintTx(
+      mintTxHash,
+      walletAddress,
+      badgeId,
+    );
+    if (!verification.valid) {
+      return NextResponse.json(
+        { error: "Could not verify mint transaction" },
+        { status: 400 },
+      );
+    }
+
+    // Record mint in DB
+    await badgeRepo.updateMintInfo(badgeId, {
+      mintTxHash,
+      tokenId: verification.tokenId ?? "",
+    });
+
+    return NextResponse.json({
+      success: true,
+      tokenId: verification.tokenId,
+    });
+  } catch (e) {
+    console.error("Error confirming badge mint", e);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}

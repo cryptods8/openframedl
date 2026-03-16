@@ -21,6 +21,7 @@ export interface Database {
   streakFreezeMint: StreakFreezeMintTable;
   streakFreezeApplied: StreakFreezeAppliedTable;
   notificationQueue: NotificationQueueTable;
+  badge: BadgeTable;
 }
 
 export type StreakFreezeSource = "EARNED" | "PURCHASED";
@@ -279,3 +280,19 @@ export interface NotificationQueueTable extends UserKey {
 export type DBNotificationQueue = Selectable<NotificationQueueTable>;
 export type DBNotificationQueueInsert = Insertable<NotificationQueueTable>;
 export type DBNotificationQueueUpdate = Updateable<NotificationQueueTable>;
+
+export interface BadgeTable extends UserKey {
+  id: Generated<string>;
+  category: string;
+  milestone: number;
+  tier: string;
+  earnedAt: ColumnType<Date, Date | undefined, never>;
+  username: string | null;
+  minted: ColumnType<boolean, boolean | undefined, boolean>;
+  mintTxHash: string | null;
+  tokenId: string | null;
+}
+
+export type DBBadge = Selectable<BadgeTable>;
+export type DBBadgeInsert = Insertable<BadgeTable>;
+export type DBBadgeUpdate = Updateable<BadgeTable>;

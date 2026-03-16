@@ -199,6 +199,11 @@ export function formatBadgeValue(value: number): string {
 export function getBadgeImageUrl(
   category: BadgeCategory,
   value: number,
+  username?: string | null,
 ): string {
-  return `/api/images/badge?cat=${category}&value=${value}`;
+  const base = `/api/images/badge?cat=${category}&value=${value}`;
+  if (username) {
+    return `${base}&username=${encodeURIComponent(username)}`;
+  }
+  return base;
 }

@@ -181,8 +181,11 @@ function getTier(category: CategoryId, value: number): TierName {
 }
 
 // ─── Layout constants ───────────────────────────────────────────────
-const RIBBON_H = Math.round(CARD_SIZE * 0.18);
-const RIBBON_ABS_Y = CARD_MARGIN + Math.round(CARD_SIZE * 0.75);
+const numFontSize = 116;
+const ribbonLabelFontSize = 40;
+const RIBBON_H = Math.round(CARD_SIZE * 0.3);
+const RIBBON_ABS_Y =
+  CARD_MARGIN + CARD_SIZE - RIBBON_H - ribbonLabelFontSize * 2;
 const RIBBON_END_W = 80;
 const RIBBON_END_DROP = 16;
 const FOLD_SIZE = 18;
@@ -234,8 +237,8 @@ function PixelArtGrid({
   const t = TIERS[tier];
   const rows = cat.shape.length;
   const cols = Math.max(...cat.shape.map((r) => r.length));
-  const maxH = Math.floor(CARD_SIZE * 0.65);
-  const maxW = Math.floor(CARD_SIZE * 0.65);
+  const maxH = Math.floor((RIBBON_ABS_Y - CARD_MARGIN) * 0.8);
+  const maxW = Math.floor(CARD_SIZE * 0.8);
   const cellSize = Math.floor(Math.min(maxW / cols, maxH / rows));
   const cellGap = Math.max(Math.round(cellSize * 0.08), 1);
   const innerCell = cellSize - cellGap * 2;
@@ -337,16 +340,17 @@ function BadgeElement({
   category,
   tier,
   numberText,
+  username,
 }: {
   category: CategoryId;
   tier: TierName;
   numberText: string;
+  username?: string | null;
 }) {
   const t = TIERS[tier];
   const cat = CATEGORIES[category];
-  const numFontSize = 80;
   // numberText.length <= 2 ? 72 : numberText.length <= 4 ? 64 : 52;
-  const labelFontSize = 28;
+  const labelFontSize = 40;
   const ribbonCenterY = RIBBON_ABS_Y + RIBBON_H / 2;
 
   return (
@@ -357,6 +361,7 @@ function BadgeElement({
         height: SIZE,
         position: "relative",
         background: "radial-gradient(circle, #5E3FA6 0%, #1D1434 100%)",
+        // background: "radial-gradient(circle, #F3F0F9 0%, #CCC0E7 100%)",
       }}
     >
       {/* Framedl title */}
@@ -372,11 +377,16 @@ function BadgeElement({
           justifyContent: "center",
           fontFamily: "SpaceGrotesk",
           fontWeight: 700,
-          fontSize: 40,
-          color: lightColor(0.2),
+          fontSize: labelFontSize,
+          color: lightColor(0.5),
+          gap: 10,
         }}
       >
-        {isPro ? "Framedl PRO" : "Framedl"}
+        <div tw="flex flex-1 h-4" style={{ background: lightColor(0.5) }} />
+        <div tw="flex w-full justify-center">
+          {isPro ? "Framedl PRO" : "Framedl"}
+        </div>
+        <div tw="flex flex-1 h-4" style={{ background: lightColor(0.5) }} />
       </div>
 
       {/* Ribbon ends — behind card via SVG polygons */}
@@ -473,10 +483,10 @@ function BadgeElement({
           style={{
             position: "absolute",
             display: "flex",
-            top: RIBBON_ABS_Y - CARD_MARGIN + RIBBON_H - 20,
-            padding: "10px 15px",
+            top: RIBBON_ABS_Y - CARD_MARGIN + RIBBON_H - ribbonLabelFontSize,
+            padding: `${ribbonLabelFontSize / 2}px ${(3 * ribbonLabelFontSize) / 4}px`,
             background: "green",
-            borderRadius: 20,
+            borderRadius: ribbonLabelFontSize,
           }}
         >
           <div
@@ -485,8 +495,8 @@ function BadgeElement({
               top: 2,
               left: 7,
               right: 7,
-              height: 20,
-              borderRadius: 15,
+              height: ribbonLabelFontSize,
+              borderRadius: (3 * ribbonLabelFontSize) / 4,
               background:
                 "linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0))",
             }}
@@ -498,7 +508,7 @@ function BadgeElement({
               justifyContent: "center",
               fontFamily: "SpaceGrotesk",
               fontWeight: 700,
-              fontSize: 20,
+              fontSize: ribbonLabelFontSize,
               lineHeight: 1,
               color: "white",
               letterSpacing: "0.08em",
@@ -517,16 +527,36 @@ function BadgeElement({
           right: 0,
           height: CARD_MARGIN,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "SpaceGrotesk",
           fontWeight: 700,
-          fontSize: labelFontSize,
-          color: lightColor(0.7),
-          textTransform: "uppercase",
+          gap: 2,
         }}
       >
-        {tier}
+        {username && (
+          <div
+            style={{
+              fontSize: Math.round(labelFontSize * 0.75),
+              color: lightColor(0.9),
+              lineHeight: 1,
+            }}
+          >
+            {username}
+          </div>
+        )}
+        <div
+          style={{
+            fontSize: labelFontSize,
+            color: lightColor(0.7),
+            textTransform: "uppercase",
+            lineHeight: 1,
+          }}
+        >
+          {tier}
+          {" tier"}
+        </div>
       </div>
     </div>
   );
@@ -537,6 +567,7 @@ export async function GET(req: NextRequest) {
   const params = new URL(req.url).searchParams;
   const category = params.get("cat") as CategoryId | null;
   const valueStr = params.get("value");
+  const username = params.get("username");
 
   if (!category || !valueStr || !CATEGORIES[category]) {
     return NextResponse.json(
@@ -557,12 +588,13 @@ export async function GET(req: NextRequest) {
   const format = params.get("format");
 
   const svg = await satori(
-    <BadgeElement category={category} tier={tier} numberText={numberText} />,
+    <BadgeElement category={category} tier={tier} numberText={numberText} username={username} />,
     { width: SIZE, height: SIZE, fonts },
   );
 
   if (format === "png") {
     const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    //@ts-ignore
     return new Response(png, {
       headers: {
         "Content-Type": "image/png",

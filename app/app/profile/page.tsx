@@ -12,6 +12,7 @@ import { ProfileHeaderFromSession } from "./profile-header-from-session";
 import { getFarcasterSession } from "@/app/lib/auth";
 import { ProfileBadges } from "./profile-badges";
 import { gameService } from "@/app/game/game-service";
+import * as badgeRepo from "@/app/game/badge-pg-repository";
 
 export default async function SettingsPage({
   searchParams,
@@ -123,10 +124,15 @@ async function ProfileBadgesContent() {
     );
   }
 
-  const stats = await gameService.loadStats({
-    identityProvider: "fc",
+  const userKey = {
+    identityProvider: "fc" as const,
     userId: user.fid,
-  });
+  };
+
+  const [dbBadges, stats] = await Promise.all([
+    badgeRepo.findByUserKey(userKey),
+    gameService.loadStats(userKey),
+  ]);
 
   if (!stats) {
     return (
@@ -143,9 +149,20 @@ async function ProfileBadgesContent() {
     winGuessCounts: { ...stats.winGuessCounts },
   };
 
+  // Serialize DB badges for client component
+  const serializedBadges = dbBadges.map((b) => ({
+    id: b.id,
+    category: b.category,
+    milestone: b.milestone,
+    tier: b.tier,
+    earnedAt: b.earnedAt.toISOString(),
+    username: b.username,
+    minted: b.minted,
+  }));
+
   return (
     <div className="p-4 sm:p-6 bg-white sm:rounded-lg">
-      <ProfileBadges stats={badgeStats} />
+      <ProfileBadges stats={badgeStats} dbBadges={serializedBadges} />
     </div>
   );
 }

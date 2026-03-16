@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import {
-  getAllBadges,
   BadgeInfo,
   BadgeCategory,
   BADGE_CATEGORIES,
   formatBadgeValue,
   getBadgeImageUrl,
+  getBadgesForCategory,
 } from "@/app/lib/badges";
 import { PanelTitle } from "@/app/ui/panel-title";
 import { LockClosedIcon } from "@heroicons/react/16/solid";
@@ -19,8 +19,19 @@ interface BadgeStats {
   winGuessCounts: Record<number, number>;
 }
 
+export interface SerializedBadge {
+  id: string;
+  category: string;
+  milestone: number;
+  tier: string;
+  earnedAt: string;
+  username: string | null;
+  minted: boolean;
+}
+
 interface ProfileBadgesProps {
   stats: BadgeStats;
+  dbBadges?: SerializedBadge[];
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -31,7 +42,12 @@ const TIER_COLORS: Record<string, string> = {
   diamond: "text-cyan-400",
 };
 
-function BadgeCard({ badge }: { badge: BadgeInfo }) {
+/** Badge info augmented with optional DB id for shareable links */
+interface DisplayBadge extends BadgeInfo {
+  dbId?: string;
+}
+
+function BadgeCard({ badge }: { badge: DisplayBadge }) {
   const imageUrl = getBadgeImageUrl(badge.category, badge.milestone);
   const displayValue = formatBadgeValue(badge.milestone);
 
@@ -48,7 +64,10 @@ function BadgeCard({ badge }: { badge: BadgeInfo }) {
     );
   }
 
-  const badgePageUrl = `/app/badges/${badge.category}/${badge.milestone}`;
+  // Use badge UUID route if available, fall back to category/value route
+  const badgePageUrl = badge.dbId
+    ? `/app/badges/${badge.dbId}`
+    : `/app/badges/${badge.category}/${badge.milestone}`;
 
   return (
     <a
@@ -78,7 +97,7 @@ function CategorySection({
   currentValue,
 }: {
   category: BadgeCategory;
-  badges: BadgeInfo[];
+  badges: DisplayBadge[];
   currentValue: number;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -126,14 +145,58 @@ function CategorySection({
   );
 }
 
-export function ProfileBadges({ stats }: ProfileBadgesProps) {
-  const allBadges = getAllBadges(stats);
+export function ProfileBadges({ stats, dbBadges }: ProfileBadgesProps) {
+  // Build a lookup of DB badges by category+milestone
+  const dbBadgeMap = new Map<string, SerializedBadge>();
+  if (dbBadges) {
+    for (const b of dbBadges) {
+      dbBadgeMap.set(`${b.category}:${b.milestone}`, b);
+    }
+  }
+
   const values: Record<BadgeCategory, number> = {
     wins: stats.totalWins,
     streaks: stats.maxStreak,
     fourdle: stats.winGuessCounts[4] ?? 0,
     wordone: stats.winGuessCounts[1] ?? 0,
   };
+
+  // For each category, merge DB badges (earned) with computed teasers (next unearned)
+  const allCategories: BadgeCategory[] = ["wins", "streaks", "fourdle", "wordone"];
+  const allBadges: Record<BadgeCategory, DisplayBadge[]> = {} as any;
+
+  for (const cat of allCategories) {
+    const computed = getBadgesForCategory(cat, values[cat]);
+    allBadges[cat] = computed.map((b) => {
+      const dbBadge = dbBadgeMap.get(`${b.category}:${b.milestone}`);
+      return {
+        ...b,
+        // If in DB, it's earned; otherwise use computed earned status
+        earned: dbBadge ? true : b.earned,
+        dbId: dbBadge?.id,
+      };
+    });
+
+    // Add any DB badges for milestones beyond what computed returns
+    // (shouldn't happen normally, but defensive)
+    if (dbBadges) {
+      const computedMilestones = new Set(computed.map((b) => b.milestone));
+      const extraDb = dbBadges
+        .filter((b) => b.category === cat && !computedMilestones.has(b.milestone))
+        .map((b) => ({
+          category: cat,
+          milestone: b.milestone,
+          earned: true,
+          tier: b.tier as any,
+          dbId: b.id,
+        }));
+      if (extraDb.length > 0) {
+        allBadges[cat] = [...extraDb, ...allBadges[cat]].sort(
+          (a, b) => a.milestone - b.milestone,
+        );
+      }
+    }
+  }
 
   const totalEarned = Object.values(allBadges)
     .flat()
@@ -147,7 +210,7 @@ export function ProfileBadges({ stats }: ProfileBadgesProps) {
         </div>
       </div>
 
-      {(Object.keys(allBadges) as BadgeCategory[]).map((cat) => (
+      {allCategories.map((cat) => (
         <CategorySection
           key={cat}
           category={cat}
