@@ -4,10 +4,10 @@ import * as streakFreezeRepo from "@/app/game/streak-freeze-pg-repository";
 import { getFarcasterSession } from "@/app/lib/auth";
 import {
   getStreakFreezeBalance,
-  verifyBurnTx,
   buildClaimNonce,
   signEarnedFreeze,
 } from "@/app/lib/streak-freeze-contract";
+import { applyStreakFreezes } from "./apply-streak-freezes";
 
 export const dynamic = "force-dynamic";
 
@@ -95,85 +95,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const burnTxHash: string | undefined = body.burnTxHash;
-    const walletAddress: string | undefined = body.walletAddress;
-    if (!walletAddress) {
-      return NextResponse.json(
-        { error: "No wallet found for user" },
-        { status: 400 },
-      );
-    }
-
-    // Support batch mode (gameKeys[]) or single mode (gameKey)
-    const gameKeys: string[] = body.gameKeys ?? [];
-
-    if (gameKeys.length === 0 || !burnTxHash) {
-      return NextResponse.json(
-        { error: "Missing required fields (gameKeys, burnTxHash)" },
-        { status: 400 },
-      );
-    }
-
     const userId = session.user.fid;
     const identityProvider: GameIdentityProvider = "fc";
     const userKey = { userId, identityProvider };
 
-    const burnResult = await verifyBurnTx(burnTxHash, walletAddress);
-    if (!burnResult.valid) {
-      return NextResponse.json(
-        { error: "Invalid burn transaction" },
-        { status: 400 },
-      );
-    }
-
-    // Verify burned enough tokens for the batch, accounting for previous usages
-    const usedCount = await streakFreezeRepo.countFreezesByBurnTx(burnTxHash);
-    if (BigInt(usedCount + gameKeys.length) > burnResult.amount) {
-      return NextResponse.json(
-        {
-          error: `Burn tx (burned ${burnResult.amount} tokens) has already been used for ${usedCount} freezes. Cannot apply ${gameKeys.length} more.`,
-        },
-        { status: 400 },
-      );
-    }
-
-    // Check each gameKey: no duplicates, consecutive limit
-    const LIMIT = 7;
-    const results = [];
-
-    for (const gameKey of gameKeys) {
-      // Check if already covered
-      const existing = await streakFreezeRepo.findByGameKey(userKey, gameKey);
-      if (existing) {
-        return NextResponse.json(
-          { error: `Freeze already applied for ${gameKey}` },
-          { status: 400 },
-        );
-      }
-
-      // Check consecutive limit (including previously applied + ones we're about to apply)
-      const consecutive = await streakFreezeRepo.countConsecutiveUsed(
-        userKey,
-        gameKey,
-      );
-      if (consecutive >= LIMIT) {
-        return NextResponse.json(
-          {
-            error: `Consecutive freeze limit reached (${LIMIT} days) at ${gameKey}`,
-          },
-          { status: 400 },
-        );
-      }
-
-      const result = await streakFreezeRepo.applyFreeze(
-        userKey,
-        gameKey,
-        burnTxHash,
-      );
-      results.push(result);
-    }
-
-    return NextResponse.json({ success: true, freezes: results });
+    return applyStreakFreezes(userKey, body);
   } catch (e) {
     console.error("Error applying freeze", e);
     return NextResponse.json(
@@ -182,3 +108,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

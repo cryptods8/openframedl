@@ -423,17 +423,19 @@ export function BurnMultipleStreakFreezeButton({
   const amount = BigInt(gameKeys.length);
 
   const [isBackendSyncing, setIsBackendSyncing] = React.useState(false);
+  const [failedBurnTxHash, setFailedBurnTxHash] = React.useState<string>();
   const burnHandled = React.useRef(false);
-  React.useEffect(() => {
-    if (isSuccess && hash && !burnHandled.current) {
-      burnHandled.current = true;
+
+  const syncWithBackend = React.useCallback(
+    (txHash: string) => {
       setIsBackendSyncing(true);
+      setFailedBurnTxHash(undefined);
       fetch("/api/streak-freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gameKeys,
-          burnTxHash: hash,
+          burnTxHash: txHash,
           walletAddress: address,
         }),
       })
@@ -444,15 +446,32 @@ export function BurnMultipleStreakFreezeButton({
             });
           onBurn?.();
         })
-        .catch((e) => onError?.(e.message))
+        .catch((e) => {
+          setFailedBurnTxHash(txHash);
+          onError?.(e.message);
+        })
         .finally(() => {
           setIsBackendSyncing(false);
         });
+    },
+    [gameKeys, address, onBurn, onError],
+  );
+
+  React.useEffect(() => {
+    if (isSuccess && hash && !burnHandled.current) {
+      burnHandled.current = true;
+      syncWithBackend(hash);
     }
-  }, [isSuccess, hash, gameKeys, address, onBurn, onError]);
+  }, [isSuccess, hash, syncWithBackend]);
 
   const handleClick = () => {
     try {
+      // If we have a failed burn tx, retry the backend sync
+      if (failedBurnTxHash) {
+        syncWithBackend(failedBurnTxHash);
+        return;
+      }
+
       burnHandled.current = false;
 
       if (!isConnected || !address) {
@@ -497,6 +516,7 @@ export function BurnMultipleStreakFreezeButton({
   const insufficientBalance = !balance || balance < amount;
 
   const getButtonText = () => {
+    if (failedBurnTxHash) return "Retry Streak Protection";
     if (!isConnected) return "Connect Wallet";
     if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
     return (
@@ -509,7 +529,7 @@ export function BurnMultipleStreakFreezeButton({
     <Button
       variant="primary"
       onClick={handleClick}
-      disabled={insufficientBalance || gameKeys.length === 0}
+      disabled={!failedBurnTxHash && (insufficientBalance || gameKeys.length === 0)}
       {...props}
     >
       {getButtonText()}
@@ -553,31 +573,54 @@ export function BurnStreakFreezeButton({
   });
 
   const [isBackendSyncing, setIsBackendSyncing] = React.useState(false);
+  const [failedBurnTxHash, setFailedBurnTxHash] = React.useState<string>();
   const burnHandled = React.useRef(false);
-  React.useEffect(() => {
-    if (isSuccess && hash && !burnHandled.current) {
-      burnHandled.current = true;
+
+  const syncWithBackend = React.useCallback(
+    (txHash: string) => {
       setIsBackendSyncing(true);
-      // Notify backend about the burn
+      setFailedBurnTxHash(undefined);
       fetch("/api/streak-freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gameKeys: [gameKey],
-          burnTxHash: hash,
+          burnTxHash: txHash,
           walletAddress: address,
         }),
       })
-        .then(() => onBurn?.())
-        .catch((e) => onError?.(e.message))
+        .then((res) => {
+          if (!res.ok)
+            return res.json().then((d) => {
+              throw new Error(d.error);
+            });
+          onBurn?.();
+        })
+        .catch((e) => {
+          setFailedBurnTxHash(txHash);
+          onError?.(e.message);
+        })
         .finally(() => {
           setIsBackendSyncing(false);
         });
+    },
+    [gameKey, address, onBurn, onError],
+  );
+
+  React.useEffect(() => {
+    if (isSuccess && hash && !burnHandled.current) {
+      burnHandled.current = true;
+      syncWithBackend(hash);
     }
-  }, [isSuccess, hash, gameKey, address, onBurn, onError]);
+  }, [isSuccess, hash, syncWithBackend]);
 
   const handleClick = () => {
     try {
+      if (failedBurnTxHash) {
+        syncWithBackend(failedBurnTxHash);
+        return;
+      }
+
       burnHandled.current = false;
 
       if (!isConnected || !address) {
@@ -620,6 +663,7 @@ export function BurnStreakFreezeButton({
   }
 
   const getButtonText = () => {
+    if (failedBurnTxHash) return "Retry Streak Freeze";
     if (!isConnected) return "Connect Wallet";
     if (chainId !== CHAIN_CONFIG.id) return `Switch to ${CHAIN_CONFIG.name}`;
     return children || "Use Streak Freeze";
@@ -629,7 +673,7 @@ export function BurnStreakFreezeButton({
     <Button
       variant="primary"
       onClick={handleClick}
-      disabled={!balance || balance === 0n}
+      disabled={!failedBurnTxHash && (!balance || balance === 0n)}
       {...props}
     >
       {getButtonText()}

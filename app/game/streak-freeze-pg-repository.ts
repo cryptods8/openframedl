@@ -224,6 +224,47 @@ export async function applyFreeze(
     .executeTakeFirst();
 }
 
+export async function applyFreezesBatch(
+  userKey: UserKey,
+  gameKeys: string[],
+  burnTxHash: string,
+) {
+  const { userId, identityProvider } = userKey;
+  return await pgDb.transaction().execute(async (trx) => {
+    const results = [];
+    for (const gameKey of gameKeys) {
+      const result = await trx
+        .insertInto("streakFreezeApplied")
+        .values({
+          userId,
+          identityProvider,
+          appliedToGameKey: gameKey,
+          appliedAt: new Date(),
+          burnTxHash,
+          createdAt: new Date(),
+        })
+        .returningAll()
+        .executeTakeFirst();
+      results.push(result);
+    }
+    return results;
+  });
+}
+
+export async function findAppliedByBurnTx(
+  userKey: UserKey,
+  burnTxHash: string,
+) {
+  const { userId, identityProvider } = userKey;
+  return await pgDb
+    .selectFrom("streakFreezeApplied")
+    .selectAll()
+    .where("userId", "=", userId)
+    .where("identityProvider", "=", identityProvider)
+    .where("burnTxHash", "=", burnTxHash)
+    .execute();
+}
+
 export async function findByGameKey(userKey: UserKey, gameKey: string) {
   const { userId, identityProvider } = userKey;
   return await pgDb
