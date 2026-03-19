@@ -145,6 +145,7 @@ async function ProfileBadgesContent() {
   // Pass only plain serializable values to the client component
   const badgeStats = {
     totalWins: stats.totalWins,
+    totalLosses: stats.totalLosses,
     maxStreak: stats.maxStreak,
     winGuessCounts: { ...stats.winGuessCounts },
   };
@@ -162,7 +163,11 @@ async function ProfileBadgesContent() {
 
   return (
     <div className="p-4 sm:p-6 bg-white sm:rounded-lg">
-      <ProfileBadges stats={badgeStats} dbBadges={serializedBadges} />
+      <ProfileBadges
+        stats={badgeStats}
+        dbBadges={serializedBadges}
+        username={user.userData?.username ?? user.name}
+      />
     </div>
   );
 }

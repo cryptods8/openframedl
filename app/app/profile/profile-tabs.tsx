@@ -24,9 +24,11 @@ export function ProfileTabs() {
       <NavLink active={!tab} href={createHref()}>
         Games
       </NavLink>
-      <NavLink active={tab === "badges"} href={createHref("badges")}>
-        Badges
-      </NavLink>
+      {!isPro && (
+        <NavLink active={tab === "badges"} href={createHref("badges")}>
+          Badges
+        </NavLink>
+      )}
       <NavLink active={tab === "stats"} href={createHref("stats")}>
         Stats
       </NavLink>

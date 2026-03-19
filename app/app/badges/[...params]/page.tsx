@@ -182,7 +182,9 @@ export default async function BadgePage({ params }: BadgePageProps) {
         {/* Actions */}
         <BadgePageClient
           shareUrl={shareUrl}
-          badgeId={canMint ? badge.id : undefined}
+          category={badge.category}
+          milestone={badge.milestone}
+          canMint={isOwner && !badge.minted}
           minted={badge.minted}
         />
       </div>

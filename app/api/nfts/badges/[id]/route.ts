@@ -1,4 +1,4 @@
-import { externalBaseUrl } from "@/app/constants";
+import { externalBaseUrl, isPro } from "@/app/constants";
 import { BADGE_CATEGORIES, BadgeCategory, getTier } from "@/app/lib/badges";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { NextResponse } from "next/server";
@@ -34,9 +34,11 @@ export async function GET(
     imageParams.set("username", badge.username);
   }
 
+  const framedlName = isPro ? "Framedl PRO" : "Framedl";
+
   const metadata = {
     name: `${displayValue} ${catInfo.label}${badge.username ? ` — ${badge.username}` : ""}`,
-    description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} tier achievement: ${displayValue} ${catInfo.label.toLowerCase()} in Framedl.${badge.username ? ` Earned by ${badge.username}.` : ""}`,
+    description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} tier achievement: ${displayValue} ${catInfo.label.toLowerCase()} in ${framedlName}.${badge.username ? ` Earned by ${badge.username}.` : ""}`,
     image: `${externalBaseUrl}/api/images/badge?${imageParams}`,
     external_url: `${externalBaseUrl}/app/badges/${badge.id}`,
     attributes: [

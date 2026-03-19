@@ -98,6 +98,7 @@ export async function materializeBadges(
     streaks: stats.maxStreak,
     fourdle: stats.winGuessCounts[4] ?? 0,
     wordone: stats.winGuessCounts[1] ?? 0,
+    losses: stats.totalLosses,
   };
 
   const newBadges: DBBadge[] = [];

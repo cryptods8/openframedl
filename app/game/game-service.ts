@@ -13,7 +13,6 @@ import * as customGameRepo from "./custom-game-pg-repository";
 import { Leaderboard, LeaderboardDataItem } from "./game-pg-repository";
 import * as streakFreezeRepo from "./streak-freeze-pg-repository";
 import * as notificationQueueRepo from "./notification-queue-pg-repository";
-import * as badgeRepo from "./badge-pg-repository";
 import answers from "../words/answer-words";
 import allWords from "../words/all-words";
 import { isPro } from "../constants";
@@ -735,7 +734,6 @@ export class GameServiceImpl implements GameService {
       if (updatedGame.status === "WON") {
         await this.checkAndAwardFreezes(guessedGame);
       }
-      await this.materializeBadges(guessedGame);
     }
     return updatedGame;
   }
@@ -785,16 +783,6 @@ export class GameServiceImpl implements GameService {
     }
   }
 
-  private async materializeBadges(game: GuessedGame) {
-    try {
-      const stats = await statsRepo.loadStatsByUserKey(game);
-      if (!stats) return;
-      const username = game.userData?.username ?? null;
-      await badgeRepo.materializeBadges(game, stats, username);
-    } catch (e) {
-      console.error("Error in materializeBadges", e);
-    }
-  }
 
   private fromGuessedGame(game: GuessedGame): gameRepo.DBGameViewWithArena {
     const { customMaker, arena } = game;

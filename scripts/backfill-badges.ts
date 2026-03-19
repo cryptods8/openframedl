@@ -89,6 +89,7 @@ async function getWinsForUser(
 
 interface StatsRow {
   totalWins: number;
+  totalLosses: number;
   maxStreak: number;
   winGuessCounts: Record<number, number>;
 }
@@ -99,13 +100,24 @@ async function getStatsForUser(
 ): Promise<StatsRow | null> {
   // Simple stats computation
   const wins = await getWinsForUser(userId, identityProvider);
-  if (wins.length === 0) return null;
 
   const totalWins = wins.length;
   const winGuessCounts: Record<number, number> = {};
   for (const w of wins) {
     winGuessCounts[w.guessCount] = (winGuessCounts[w.guessCount] ?? 0) + 1;
   }
+
+  // Count losses
+  const lossResult = await sql<{ totalLosses: number }>`
+    SELECT COUNT(*)::int AS "totalLosses"
+    FROM game
+    WHERE user_id = ${userId}
+      AND identity_provider = ${identityProvider}
+      AND is_daily = true AND status = 'LOST'
+  `.execute(pgDb);
+  const totalLosses = lossResult.rows[0]?.totalLosses ?? 0;
+
+  if (totalWins === 0 && totalLosses === 0) return null;
 
   // Compute max streak using gaps-and-islands on all daily activity
   const streakResult = await sql<{ maxStreak: number }>`
@@ -131,7 +143,40 @@ async function getStatsForUser(
 
   const maxStreak = streakResult.rows[0]?.maxStreak ?? 0;
 
-  return { totalWins, maxStreak, winGuessCounts };
+  return { totalWins, totalLosses, maxStreak, winGuessCounts };
+}
+
+interface LossRow {
+  completedAt: Date;
+  rowNum: number;
+}
+
+async function getLossesForUser(
+  userId: string,
+  identityProvider: string,
+): Promise<LossRow[]> {
+  const result = await sql<LossRow>`
+    SELECT
+      completed_at AS "completedAt",
+      ROW_NUMBER() OVER (ORDER BY game_key) AS "rowNum"
+    FROM game
+    WHERE user_id = ${userId}
+      AND identity_provider = ${identityProvider}
+      AND is_daily = true
+      AND status = 'LOST'
+    ORDER BY game_key
+  `.execute(pgDb);
+  return result.rows;
+}
+
+function findEarnedAtForLossMilestone(
+  losses: LossRow[],
+  milestone: number,
+): Date | undefined {
+  if (milestone <= losses.length) {
+    return losses[milestone - 1]?.completedAt;
+  }
+  return undefined;
 }
 
 function findEarnedAtForWinMilestone(
@@ -176,12 +221,16 @@ async function backfill() {
     if (!stats) continue;
 
     const wins = await getWinsForUser(user.userId, user.identityProvider);
+    const losses = stats.totalLosses > 0
+      ? await getLossesForUser(user.userId, user.identityProvider)
+      : [];
 
     const categoryValues: Record<BadgeCategory, number> = {
       wins: stats.totalWins,
       streaks: stats.maxStreak,
       fourdle: stats.winGuessCounts[4] ?? 0,
       wordone: stats.winGuessCounts[1] ?? 0,
+      losses: stats.totalLosses,
     };
 
     for (const [cat, value] of Object.entries(categoryValues) as [BadgeCategory, number][]) {
@@ -199,6 +248,8 @@ async function backfill() {
           earnedAt = findEarnedAtForGuessMilestone(wins, 4, badge.milestone);
         } else if (cat === "wordone") {
           earnedAt = findEarnedAtForGuessMilestone(wins, 1, badge.milestone);
+        } else if (cat === "losses") {
+          earnedAt = findEarnedAtForLossMilestone(losses, badge.milestone);
         }
         // For streaks, we don't have an easy way to find exact date, use undefined (defaults to now())
 

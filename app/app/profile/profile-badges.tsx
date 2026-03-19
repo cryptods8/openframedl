@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   BadgeInfo,
   BadgeCategory,
@@ -8,13 +9,25 @@ import {
   formatBadgeValue,
   getBadgeImageUrl,
   getBadgesForCategory,
+  BadgeTier,
 } from "@/app/lib/badges";
 import { PanelTitle } from "@/app/ui/panel-title";
-import { LockClosedIcon } from "@heroicons/react/16/solid";
+import {
+  LockClosedIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/16/solid";
 import { Button } from "@/app/ui/button/button";
+import { Dialog } from "@/app/ui/dialog";
+
+const MintBadgeButton = dynamic(
+  () =>
+    import("@/app/ui/mint-badge-button").then((mod) => mod.MintBadgeButton),
+  { ssr: false },
+);
 
 interface BadgeStats {
   totalWins: number;
+  totalLosses: number;
   maxStreak: number;
   winGuessCounts: Record<number, number>;
 }
@@ -32,6 +45,7 @@ export interface SerializedBadge {
 interface ProfileBadgesProps {
   stats: BadgeStats;
   dbBadges?: SerializedBadge[];
+  username?: string | null;
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -45,9 +59,18 @@ const TIER_COLORS: Record<string, string> = {
 /** Badge info augmented with optional DB id for shareable links */
 interface DisplayBadge extends BadgeInfo {
   dbId?: string;
+  username?: string | null;
+  minted?: boolean;
+  earnedAt?: string;
 }
 
-function BadgeCard({ badge }: { badge: DisplayBadge }) {
+function BadgeCard({
+  badge,
+  onClick,
+}: {
+  badge: DisplayBadge;
+  onClick?: () => void;
+}) {
   const imageUrl = getBadgeImageUrl(badge.category, badge.milestone);
   const displayValue = formatBadgeValue(badge.milestone);
 
@@ -64,15 +87,11 @@ function BadgeCard({ badge }: { badge: DisplayBadge }) {
     );
   }
 
-  // Use badge UUID route if available, fall back to category/value route
-  const badgePageUrl = badge.dbId
-    ? `/app/badges/${badge.dbId}`
-    : `/app/badges/${badge.category}/${badge.milestone}`;
-
   return (
-    <a
-      href={badgePageUrl}
-      className="flex flex-col items-center gap-1.5 group"
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-center gap-1.5 group cursor-pointer text-left w-full"
     >
       <div className="relative w-full aspect-square rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -81,13 +100,118 @@ function BadgeCard({ badge }: { badge: DisplayBadge }) {
           alt={`${displayValue} ${BADGE_CATEGORIES[badge.category].label}`}
           className="w-full h-full"
         />
+        <div
+          className="absolute top-1.5 right-1.5"
+          title={badge.minted ? "Collected as NFT" : "Tap to collect as NFT"}
+        >
+          {badge.minted ? (
+            <CheckCircleIcon className="w-6 h-6 text-green-500 drop-shadow" />
+          ) : (
+            <div className="w-6 h-6 rounded-full border-2 border-white/80 bg-black/20 backdrop-blur-sm drop-shadow" />
+          )}
+        </div>
       </div>
       <div
         className={`text-sm font-semibold text-center capitalize ${TIER_COLORS[badge.tier] ?? ""}`}
       >
         {badge.tier}
       </div>
-    </a>
+    </button>
+  );
+}
+
+function BadgeDetailDialog({
+  badge,
+  open,
+  onClose,
+}: {
+  badge: DisplayBadge | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [mintSuccess, setMintSuccess] = useState(false);
+  const [mintError, setMintError] = useState<string | null>(null);
+
+  const imageUrl = badge
+    ? getBadgeImageUrl(badge.category, badge.milestone)
+    : "";
+  const catInfo = badge ? BADGE_CATEGORIES[badge.category] : null;
+  const displayValue = badge ? formatBadgeValue(badge.milestone) : "";
+  const isMinted = badge?.minted || mintSuccess;
+
+  return (
+    <Dialog open={open} onClose={onClose}>
+      {badge && catInfo && (
+        <div className="flex flex-col items-center gap-4 w-72 min-[400px]:w-80">
+          {/* Badge image */}
+          <div className="w-48 aspect-square rounded-2xl overflow-hidden shadow-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={`${displayValue} ${catInfo.label}`}
+              className="w-full h-full"
+            />
+          </div>
+
+          {/* Badge info */}
+          <div className="text-center space-y-1">
+            <h2 className="text-xl font-space font-bold">
+              {displayValue} {catInfo.label}
+            </h2>
+            <p
+              className={`text-sm font-semibold capitalize ${TIER_COLORS[badge.tier] ?? ""}`}
+            >
+              {badge.tier} tier
+            </p>
+            {badge.username && (
+              <p className="text-sm text-primary-900/50">
+                Earned by {badge.username}
+              </p>
+            )}
+            {badge.earnedAt && (
+              <p className="text-xs text-primary-900/40">
+                {new Date(badge.earnedAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            )}
+          </div>
+
+          {/* Minted status / mint action */}
+          <div className="w-full space-y-2">
+            {isMinted ? (
+              <div className="flex items-center justify-center gap-1.5 text-sm text-green-600 py-2">
+                <CheckCircleIcon className="w-4 h-4" />
+                Collected
+              </div>
+            ) : (
+              <MintBadgeButton
+                category={badge.category}
+                milestone={badge.milestone}
+                size="sm"
+                variant="primary"
+                onMint={() => {
+                  setMintSuccess(true);
+                  setMintError(null);
+                }}
+                onError={(err: string) => setMintError(err)}
+              >
+                Collect as NFT
+              </MintBadgeButton>
+            )}
+            {mintError && (
+              <p className="text-xs text-red-500 text-center">{mintError}</p>
+            )}
+          </div>
+
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      )}
+    </Dialog>
   );
 }
 
@@ -95,10 +219,12 @@ function CategorySection({
   category,
   badges,
   currentValue,
+  onBadgeClick,
 }: {
   category: BadgeCategory;
   badges: DisplayBadge[];
   currentValue: number;
+  onBadgeClick: (badge: DisplayBadge) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const cat = BADGE_CATEGORIES[category];
@@ -121,13 +247,17 @@ function CategorySection({
 
       {earned.length === 0 ? (
         <div className="text-sm text-primary-900/40 py-4 text-center">
-          No badges yet — {cat.description.toLowerCase()} to earn your first!
+          No badges yet — keep playing to earn your first!
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             {visibleBadges.map((badge) => (
-              <BadgeCard key={badge.milestone} badge={badge} />
+              <BadgeCard
+                key={badge.milestone}
+                badge={badge}
+                onClick={badge.earned ? () => onBadgeClick(badge) : undefined}
+              />
             ))}
           </div>
           {hasMore && (
@@ -145,7 +275,15 @@ function CategorySection({
   );
 }
 
-export function ProfileBadges({ stats, dbBadges }: ProfileBadgesProps) {
+export function ProfileBadges({
+  stats,
+  dbBadges,
+  username,
+}: ProfileBadgesProps) {
+  const [selectedBadge, setSelectedBadge] = useState<DisplayBadge | null>(
+    null,
+  );
+
   // Build a lookup of DB badges by category+milestone
   const dbBadgeMap = new Map<string, SerializedBadge>();
   if (dbBadges) {
@@ -159,10 +297,17 @@ export function ProfileBadges({ stats, dbBadges }: ProfileBadgesProps) {
     streaks: stats.maxStreak,
     fourdle: stats.winGuessCounts[4] ?? 0,
     wordone: stats.winGuessCounts[1] ?? 0,
+    losses: stats.totalLosses,
   };
 
   // For each category, merge DB badges (earned) with computed teasers (next unearned)
-  const allCategories: BadgeCategory[] = ["wins", "streaks", "fourdle", "wordone"];
+  const allCategories: BadgeCategory[] = [
+    "wins",
+    "streaks",
+    "fourdle",
+    "wordone",
+    "losses",
+  ];
   const allBadges: Record<BadgeCategory, DisplayBadge[]> = {} as any;
 
   for (const cat of allCategories) {
@@ -171,24 +316,30 @@ export function ProfileBadges({ stats, dbBadges }: ProfileBadgesProps) {
       const dbBadge = dbBadgeMap.get(`${b.category}:${b.milestone}`);
       return {
         ...b,
-        // If in DB, it's earned; otherwise use computed earned status
+        username,
         earned: dbBadge ? true : b.earned,
         dbId: dbBadge?.id,
+        minted: dbBadge?.minted ?? false,
+        earnedAt: dbBadge?.earnedAt,
       };
     });
 
     // Add any DB badges for milestones beyond what computed returns
-    // (shouldn't happen normally, but defensive)
     if (dbBadges) {
       const computedMilestones = new Set(computed.map((b) => b.milestone));
       const extraDb = dbBadges
-        .filter((b) => b.category === cat && !computedMilestones.has(b.milestone))
+        .filter(
+          (b) => b.category === cat && !computedMilestones.has(b.milestone),
+        )
         .map((b) => ({
           category: cat,
           milestone: b.milestone,
           earned: true,
-          tier: b.tier as any,
+          tier: b.tier as BadgeTier,
+          username: b.username,
           dbId: b.id,
+          minted: b.minted,
+          earnedAt: b.earnedAt,
         }));
       if (extraDb.length > 0) {
         allBadges[cat] = [...extraDb, ...allBadges[cat]].sort(
@@ -198,16 +349,14 @@ export function ProfileBadges({ stats, dbBadges }: ProfileBadgesProps) {
     }
   }
 
-  const totalEarned = Object.values(allBadges)
-    .flat()
-    .filter((b) => b.earned).length;
+  const allFlat = Object.values(allBadges).flat();
+  const totalEarned = allFlat.filter((b) => b.earned).length;
+  const totalCollected = allFlat.filter((b) => b.minted).length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-primary-900/60">
-          {totalEarned} badge{totalEarned !== 1 ? "s" : ""} earned
-        </div>
+      <div className="text-sm text-primary-900/60">
+        {totalEarned} earned · {totalCollected} collected
       </div>
 
       {allCategories.map((cat) => (
@@ -216,8 +365,15 @@ export function ProfileBadges({ stats, dbBadges }: ProfileBadgesProps) {
           category={cat}
           badges={allBadges[cat]}
           currentValue={values[cat]}
+          onBadgeClick={setSelectedBadge}
         />
       ))}
+
+      <BadgeDetailDialog
+        badge={selectedBadge}
+        open={!!selectedBadge}
+        onClose={() => setSelectedBadge(null)}
+      />
     </div>
   );
 }

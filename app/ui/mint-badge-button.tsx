@@ -30,7 +30,8 @@ const CHAIN_CONFIG = CHAIN_CONFIGS[String(CHAIN_ID)] || {
 };
 
 interface MintBadgeButtonProps {
-  badgeId: string;
+  category: string;
+  milestone: number;
   onMint?: (tokenId: string) => void;
   onError?: (error: string) => void;
   size?: "sm" | "md" | "lg";
@@ -39,7 +40,8 @@ interface MintBadgeButtonProps {
 }
 
 export function MintBadgeButton({
-  badgeId,
+  category,
+  milestone,
   onMint,
   onError,
   variant = "primary",
@@ -67,6 +69,7 @@ export function MintBadgeButton({
   const [isSigning, setIsSigning] = React.useState(false);
   const [isBackendSyncing, setIsBackendSyncing] = React.useState(false);
   const mintHandled = React.useRef(false);
+  const resolvedBadgeId = React.useRef<string | null>(null);
 
   // After on-chain tx succeeds, notify backend
   React.useEffect(() => {
@@ -77,7 +80,7 @@ export function MintBadgeButton({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          badgeId,
+          badgeId: resolvedBadgeId.current,
           mintTxHash: hash,
           walletAddress: address,
         }),
@@ -90,7 +93,7 @@ export function MintBadgeButton({
         .catch((e) => onError?.(e.message))
         .finally(() => setIsBackendSyncing(false));
     }
-  }, [isSuccess, hash, badgeId, address, onMint, onError]);
+  }, [isSuccess, hash, address, onMint, onError]);
 
   const handleClick = async () => {
     try {
@@ -106,16 +109,17 @@ export function MintBadgeButton({
         return;
       }
 
-      // 1. Get signature from server
+      // 1. Get signature from server (materializes badge if needed)
       setIsSigning(true);
       const sigRes = await fetch(
-        `/api/badges/mint?badgeId=${badgeId}&walletAddress=${address}`,
+        `/api/badges/mint?category=${category}&milestone=${milestone}&walletAddress=${address}`,
       );
       if (!sigRes.ok) {
         const err = await sigRes.json();
         throw new Error(err.error || "Failed to get mint signature");
       }
-      const { nonce, signature } = await sigRes.json();
+      const { badgeId, nonce, signature } = await sigRes.json();
+      resolvedBadgeId.current = badgeId;
       setIsSigning(false);
 
       // 2. Submit on-chain tx

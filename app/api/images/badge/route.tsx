@@ -64,11 +64,15 @@ const TIERS: Record<
 };
 
 // ─── Category definitions ───────────────────────────────────────────
-type CategoryId = "wins" | "streaks" | "fourdle" | "wordone";
+type CategoryId = "wins" | "streaks" | "fourdle" | "wordone" | "losses";
 
-const CATEGORIES: Record<CategoryId, { label: string; shape: string[] }> = {
+const CATEGORIES: Record<
+  CategoryId,
+  { label: string; singularLabel: string; shape: string[] }
+> = {
   wins: {
     label: "VICTORIES",
+    singularLabel: "VICTORY",
     shape: [
       "___GGGGGGGGG___",
       "_GGGGGGGGGGGGG_",
@@ -87,7 +91,8 @@ const CATEGORIES: Record<CategoryId, { label: string; shape: string[] }> = {
     ],
   },
   streaks: {
-    label: "DAY STREAK",
+    label: "DAY STREAKS",
+    singularLabel: "DAY STREAK",
     shape: [
       "______G______",
       "_____GGG_____",
@@ -109,6 +114,7 @@ const CATEGORIES: Record<CategoryId, { label: string; shape: string[] }> = {
   },
   fourdle: {
     label: "FOURDLE CLUB",
+    singularLabel: "FOURDLE CLUB",
     shape: [
       "_____GGGG__",
       "_____GGGG__",
@@ -129,6 +135,7 @@ const CATEGORIES: Record<CategoryId, { label: string; shape: string[] }> = {
   },
   wordone: {
     label: "WORD-IN-ONE",
+    singularLabel: "WORD-IN-ONE",
     shape: [
       "_______GGGG",
       "______GGGG_",
@@ -146,6 +153,26 @@ const CATEGORIES: Record<CategoryId, { label: string; shape: string[] }> = {
       "__GGGG_____",
       "_GGGG______",
       "GGGG_______",
+    ],
+  },
+  losses: {
+    label: "BATTLE SCARS",
+    singularLabel: "BATTLE SCAR",
+    shape: [
+      "GG__________GG",
+      "DGG________GGD",
+      "_DGG______GGD_",
+      "__DGG____GGD__",
+      "___DGG__GGD___",
+      "____DGGGGD____",
+      "_____GDDG_____",
+      "_____GDDG_____",
+      "____DGGGGD____",
+      "___DGG__GGD___",
+      "__DGG____GGD__",
+      "_DGG______GGD_",
+      "DGG________GGD",
+      "GG__________GG",
     ],
   },
 };
@@ -176,6 +203,12 @@ function getTier(category: CategoryId, value: number): TierName {
       if (value >= 25) return "platinum";
       if (value >= 10) return "gold";
       if (value >= 5) return "silver";
+      return "bronze";
+    case "losses":
+      if (value >= 100) return "diamond";
+      if (value >= 50) return "platinum";
+      if (value >= 25) return "gold";
+      if (value >= 10) return "silver";
       return "bronze";
   }
 }
@@ -360,7 +393,8 @@ function BadgeElement({
         width: SIZE,
         height: SIZE,
         position: "relative",
-        background: "radial-gradient(circle, #5E3FA6 0%, #1D1434 100%)",
+        background: "radial-gradient(circle, #008000 0%, #002b00 100%)",
+        // background: "radial-gradient(circle, #5E3FA6 0%, #1D1434 100%)",
         // background: "radial-gradient(circle, #F3F0F9 0%, #CCC0E7 100%)",
       }}
     >
@@ -485,7 +519,8 @@ function BadgeElement({
             display: "flex",
             top: RIBBON_ABS_Y - CARD_MARGIN + RIBBON_H - ribbonLabelFontSize,
             padding: `${ribbonLabelFontSize / 2}px ${(3 * ribbonLabelFontSize) / 4}px`,
-            background: "green",
+            // background: "green",
+            background: "linear-gradient(to top, #008000, #002b00)",
             borderRadius: ribbonLabelFontSize,
           }}
         >
@@ -493,8 +528,8 @@ function BadgeElement({
             style={{
               position: "absolute",
               top: 2,
-              left: 7,
-              right: 7,
+              left: 15,
+              right: 15,
               height: ribbonLabelFontSize,
               borderRadius: (3 * ribbonLabelFontSize) / 4,
               background:
@@ -514,7 +549,7 @@ function BadgeElement({
               letterSpacing: "0.08em",
             }}
           >
-            {cat.label}
+            {numberText === "1" ? cat.singularLabel : cat.label}
           </div>
         </div>
       </div>
@@ -538,25 +573,27 @@ function BadgeElement({
         {username && (
           <div
             style={{
-              fontSize: Math.round(labelFontSize * 0.75),
+              fontSize: Math.round(labelFontSize),
               color: lightColor(0.9),
               lineHeight: 1,
+              display: "flex",
             }}
           >
             {username}
           </div>
         )}
-        <div
+        {/* <div
           style={{
             fontSize: labelFontSize,
             color: lightColor(0.7),
             textTransform: "uppercase",
             lineHeight: 1,
+            display: "flex",
           }}
         >
           {tier}
           {" tier"}
-        </div>
+        </div> */}
       </div>
     </div>
   );
@@ -571,7 +608,7 @@ export async function GET(req: NextRequest) {
 
   if (!category || !valueStr || !CATEGORIES[category]) {
     return NextResponse.json(
-      { error: "Use ?cat=wins|streaks|fourdle|wordone&value=100" },
+      { error: "Use ?cat=wins|streaks|fourdle|wordone|losses&value=100" },
       { status: 400 },
     );
   }
@@ -588,7 +625,12 @@ export async function GET(req: NextRequest) {
   const format = params.get("format");
 
   const svg = await satori(
-    <BadgeElement category={category} tier={tier} numberText={numberText} username={username} />,
+    <BadgeElement
+      category={category}
+      tier={tier}
+      numberText={numberText}
+      username={username}
+    />,
     { width: SIZE, height: SIZE, fonts },
   );
 

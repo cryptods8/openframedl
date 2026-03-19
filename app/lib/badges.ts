@@ -1,7 +1,7 @@
 // ─── Badge milestone generation ─────────────────────────────────────
 // Milestones are generated dynamically — no fixed arrays.
 
-export type BadgeCategory = "wins" | "streaks" | "fourdle" | "wordone";
+export type BadgeCategory = "wins" | "streaks" | "fourdle" | "wordone" | "losses";
 
 export const BADGE_CATEGORIES: Record<
   BadgeCategory,
@@ -14,6 +14,7 @@ export const BADGE_CATEGORIES: Record<
     description: "Games won in exactly 4 guesses",
   },
   wordone: { label: "Word-in-One", description: "Games won in 1 guess" },
+  losses: { label: "Battle Scars", description: "Total games lost" },
 };
 
 // ─── Milestone generators ───────────────────────────────────────────
@@ -28,6 +29,9 @@ const FOURDLE_EARLY = [4, 14, 24, 44];
 // After 44, every 20 (ending in 4): 64, 84, 104, ...
 
 const WORDONE_EARLY = [1, 5, 10, 25];
+// After 25, every 25: 50, 75, 100, ...
+
+const LOSSES_EARLY = [1, 5, 10, 25];
 // After 25, every 25: 50, 75, 100, ...
 
 function generateWinsMilestones(upTo: number): number[] {
@@ -75,11 +79,22 @@ function generateWordoneMilestones(upTo: number): number[] {
   return ms;
 }
 
+function generateLossesMilestones(upTo: number): number[] {
+  const ms = [...LOSSES_EARLY];
+  let v = 50;
+  while (v <= upTo) {
+    ms.push(v);
+    v += 25;
+  }
+  return ms;
+}
+
 const generators: Record<BadgeCategory, (upTo: number) => number[]> = {
   wins: generateWinsMilestones,
   streaks: generateStreaksMilestones,
   fourdle: generateFourdleMilestones,
   wordone: generateWordoneMilestones,
+  losses: generateLossesMilestones,
 };
 
 // ─── Public API ─────────────────────────────────────────────────────
@@ -119,6 +134,12 @@ export function getTier(category: BadgeCategory, value: number): BadgeTier {
       if (value >= 10) return "gold";
       if (value >= 5) return "silver";
       return "bronze";
+    case "losses":
+      if (value >= 100) return "diamond";
+      if (value >= 50) return "platinum";
+      if (value >= 25) return "gold";
+      if (value >= 10) return "silver";
+      return "bronze";
   }
 }
 
@@ -131,7 +152,7 @@ export function getBadgesForCategory(
 ): BadgeInfo[] {
   // Generate milestones up to currentValue + generous headroom for the "next" teaser
   const headroom =
-    category === "fourdle" ? 20 : category === "streaks" ? 365 : 25;
+    category === "fourdle" ? 20 : category === "streaks" ? 365 : 25; // losses uses 25 (default)
   const milestones = generators[category](currentValue + headroom);
 
   const badges: BadgeInfo[] = [];
@@ -175,6 +196,7 @@ export function getBadgesForCategory(
  */
 export function getAllBadges(stats: {
   totalWins: number;
+  totalLosses: number;
   maxStreak: number;
   winGuessCounts: Record<number, number>;
 }): Record<BadgeCategory, BadgeInfo[]> {
@@ -183,6 +205,7 @@ export function getAllBadges(stats: {
     streaks: getBadgesForCategory("streaks", stats.maxStreak),
     fourdle: getBadgesForCategory("fourdle", stats.winGuessCounts[4] ?? 0),
     wordone: getBadgesForCategory("wordone", stats.winGuessCounts[1] ?? 0),
+    losses: getBadgesForCategory("losses", stats.totalLosses),
   };
 }
 

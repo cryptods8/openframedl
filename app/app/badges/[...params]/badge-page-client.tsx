@@ -6,13 +6,17 @@ import { MintBadgeButton } from "@/app/ui/mint-badge-button";
 
 interface BadgePageClientProps {
   shareUrl: string;
-  badgeId?: string;
+  category?: string;
+  milestone?: number;
+  canMint?: boolean;
   minted?: boolean;
 }
 
 export function BadgePageClient({
   shareUrl,
-  badgeId,
+  category,
+  milestone,
+  canMint,
   minted,
 }: BadgePageClientProps) {
   const [copied, setCopied] = useState(false);
@@ -50,9 +54,10 @@ export function BadgePageClient({
           )}
         </button>
 
-        {badgeId && !minted && !mintSuccess && (
+        {canMint && category && milestone && !minted && !mintSuccess && (
           <MintBadgeButton
-            badgeId={badgeId}
+            category={category}
+            milestone={milestone}
             size="sm"
             variant="outline"
             onMint={() => setMintSuccess(true)}

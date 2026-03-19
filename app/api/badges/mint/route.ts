@@ -2,14 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFarcasterSession } from "@/app/lib/auth";
 import { signBadgeMint, verifyBadgeMintTx } from "@/app/lib/badge-nft-contract";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
+import { gameService } from "@/app/game/game-service";
 import { GameIdentityProvider } from "@/app/game/game-repository";
+import { BadgeCategory, getTier } from "@/app/lib/badges";
 
 export const dynamic = "force-dynamic";
 
+const VALID_CATEGORIES = new Set<string>([
+  "wins",
+  "streaks",
+  "fourdle",
+  "wordone",
+  "losses",
+]);
+
 /**
- * GET /api/badges/mint?badgeId=<uuid>&walletAddress=<0x...>
- * Returns the signature needed to mint a badge NFT.
- * Only the badge owner can request a signature.
+ * GET /api/badges/mint?category=<cat>&milestone=<n>&walletAddress=<0x...>
+ * Materializes the badge if needed, then returns the signature for minting.
+ * Only works for badges the user has actually earned.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -19,27 +29,70 @@ export async function GET(req: NextRequest) {
     }
 
     const params = new URL(req.url).searchParams;
-    const badgeId = params.get("badgeId");
+    const category = params.get("category");
+    const milestoneStr = params.get("milestone");
     const walletAddress = params.get("walletAddress");
 
-    if (!badgeId || !walletAddress) {
+    if (!category || !VALID_CATEGORIES.has(category) || !milestoneStr || !walletAddress) {
       return NextResponse.json(
-        { error: "Missing badgeId or walletAddress" },
+        { error: "Missing or invalid category, milestone, or walletAddress" },
         { status: 400 },
       );
     }
 
+    const milestone = parseInt(milestoneStr, 10);
+    if (isNaN(milestone) || milestone < 1) {
+      return NextResponse.json({ error: "Invalid milestone" }, { status: 400 });
+    }
+
     const userId = session.user.fid;
     const identityProvider: GameIdentityProvider = "fc";
+    const userKey = { userId, identityProvider };
 
-    // Verify the badge exists and belongs to this user
-    const badge = await badgeRepo.findById(badgeId);
+    // Verify the user has actually earned this milestone
+    const stats = await gameService.loadStats(userKey);
+    if (!stats) {
+      return NextResponse.json({ error: "No stats found" }, { status: 400 });
+    }
+
+    const categoryValues: Record<BadgeCategory, number> = {
+      wins: stats.totalWins,
+      streaks: stats.maxStreak,
+      fourdle: stats.winGuessCounts[4] ?? 0,
+      wordone: stats.winGuessCounts[1] ?? 0,
+      losses: stats.totalLosses,
+    };
+
+    const currentValue = categoryValues[category as BadgeCategory];
+    if (currentValue < milestone) {
+      return NextResponse.json({ error: "Badge not yet earned" }, { status: 403 });
+    }
+
+    // Materialize (insert if not exists)
+    const tier = getTier(category as BadgeCategory, milestone);
+    const username = session.user.userData?.username ?? session.user.name ?? null;
+
+    let badge = await badgeRepo.insertIfNotExists({
+      userId,
+      identityProvider,
+      category,
+      milestone,
+      tier,
+      username,
+    });
+
+    // insertIfNotExists returns undefined on conflict — fetch existing
     if (!badge) {
-      return NextResponse.json({ error: "Badge not found" }, { status: 404 });
+      const existing = await badgeRepo.findByUserKey(userKey);
+      badge = existing.find(
+        (b) => b.category === category && b.milestone === milestone,
+      );
     }
-    if (badge.userId !== userId || badge.identityProvider !== identityProvider) {
-      return NextResponse.json({ error: "Not your badge" }, { status: 403 });
+
+    if (!badge) {
+      return NextResponse.json({ error: "Failed to materialize badge" }, { status: 500 });
     }
+
     if (badge.minted) {
       return NextResponse.json(
         { error: "Badge already minted" },
@@ -47,9 +100,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { nonce, signature } = await signBadgeMint(walletAddress, badgeId);
+    const { nonce, signature } = await signBadgeMint(walletAddress, badge.id);
 
-    return NextResponse.json({ badgeId, nonce, signature });
+    return NextResponse.json({ badgeId: badge.id, nonce, signature });
   } catch (e) {
     console.error("Error signing badge mint", e);
     return NextResponse.json(
