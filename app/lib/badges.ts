@@ -8,7 +8,7 @@ export const BADGE_CATEGORIES: Record<
   { label: string; description: string }
 > = {
   wins: { label: "Victories", description: "Total games won" },
-  streaks: { label: "Day Streak", description: "Consecutive days played" },
+  streaks: { label: "Day Streak", description: "Consecutive days won" },
   fourdle: {
     label: "Fourdle Club",
     description: "Games won in exactly 4 guesses",

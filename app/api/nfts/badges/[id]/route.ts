@@ -9,7 +9,13 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const badge = await badgeRepo.findById(id);
+  // Parse token ID — may be decimal ("1") or ERC1155 hex-padded
+  // ("0000000000000000000000000000000000000000000000000000000000000001")
+  const tokenId = /^[0-9a-fA-F]{64}$/.test(id)
+    ? String(parseInt(id, 16))
+    : id;
+
+  const badge = await badgeRepo.findByTokenId(tokenId);
   if (!badge) {
     return NextResponse.json({ error: "Badge not found" }, { status: 404 });
   }

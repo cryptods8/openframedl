@@ -42,6 +42,16 @@ export async function findById(id: string): Promise<DBBadge | undefined> {
     .executeTakeFirst();
 }
 
+export async function findByTokenId(
+  tokenId: string,
+): Promise<DBBadge | undefined> {
+  return pgDb
+    .selectFrom("badge")
+    .selectAll()
+    .where("tokenId", "=", tokenId)
+    .executeTakeFirst();
+}
+
 export async function insertIfNotExists(badge: {
   userId: string;
   identityProvider: string;

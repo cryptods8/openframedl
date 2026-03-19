@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import dynamic from "next/dynamic";
+import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BadgeInfo,
   BadgeCategory,
@@ -15,15 +15,12 @@ import { PanelTitle } from "@/app/ui/panel-title";
 import {
   LockClosedIcon,
   CheckCircleIcon,
+  PlusCircleIcon,
 } from "@heroicons/react/16/solid";
 import { Button } from "@/app/ui/button/button";
 import { Dialog } from "@/app/ui/dialog";
-
-const MintBadgeButton = dynamic(
-  () =>
-    import("@/app/ui/mint-badge-button").then((mod) => mod.MintBadgeButton),
-  { ssr: false },
-);
+import { MintBadgeButton } from "@/app/ui/mint-badge-button";
+import { cn } from "@/app/utils";
 
 interface BadgeStats {
   totalWins: number;
@@ -71,18 +68,25 @@ function BadgeCard({
   badge: DisplayBadge;
   onClick?: () => void;
 }) {
-  const imageUrl = getBadgeImageUrl(badge.category, badge.milestone);
+  const imageUrl = getBadgeImageUrl(
+    badge.category,
+    badge.milestone,
+    badge.username,
+  );
   const displayValue = formatBadgeValue(badge.milestone);
 
   if (!badge.earned) {
     return (
       <div className="flex flex-col items-center gap-1.5 opacity-40">
-        <div className="relative w-full aspect-square rounded-xl bg-primary-900/5 border-2 border-dashed border-primary-900/15 flex items-center justify-center">
+        <div className="relative w-full aspect-square rounded-lg bg-primary-900/5 border-2 border-dashed border-primary-900/15 flex flex-col items-center justify-center gap-2">
           <LockClosedIcon className="w-8 h-8 text-primary-900/25" />
+          <div className="text-sm font-medium text-primary-900/50 text-center">
+            {displayValue}
+          </div>
         </div>
-        <div className="text-sm font-medium text-primary-900/40 text-center">
-          {displayValue}
-        </div>
+        {/* <div className="text-sm font-medium text-primary-900/50 capitalize text-center">
+          {badge.tier}
+        </div> */}
       </div>
     );
   }
@@ -93,7 +97,7 @@ function BadgeCard({
       onClick={onClick}
       className="flex flex-col items-center gap-1.5 group cursor-pointer text-left w-full"
     >
-      <div className="relative w-full aspect-square rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+      <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageUrl}
@@ -101,21 +105,29 @@ function BadgeCard({
           className="w-full h-full"
         />
         <div
-          className="absolute top-1.5 right-1.5"
+          className={cn(
+            "absolute right-0 left-0 flex",
+            badge.minted
+              ? "top-0 p-1.5 justify-end"
+              : "bottom-0 p-0.5 justify-center items-center",
+          )}
           title={badge.minted ? "Collected as NFT" : "Tap to collect as NFT"}
         >
           {badge.minted ? (
-            <CheckCircleIcon className="w-6 h-6 text-green-500 drop-shadow" />
+            <CheckCircleIcon className="w-6 h-6 text-green-500 drop-shadow bg-green-900 rounded-full" />
           ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-white/80 bg-black/20 backdrop-blur-sm drop-shadow" />
+            <Button variant="secondary" size="sm">
+              <PlusCircleIcon className="w-5 h-5" />
+              <span>Collect</span>
+            </Button>
           )}
         </div>
       </div>
-      <div
+      {/* <div
         className={`text-sm font-semibold text-center capitalize ${TIER_COLORS[badge.tier] ?? ""}`}
       >
         {badge.tier}
-      </div>
+      </div> */}
     </button>
   );
 }
@@ -124,27 +136,35 @@ function BadgeDetailDialog({
   badge,
   open,
   onClose,
+  onCollected,
 }: {
   badge: DisplayBadge | null;
   open: boolean;
   onClose: () => void;
+  onCollected: () => void;
 }) {
   const [mintSuccess, setMintSuccess] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
 
   const imageUrl = badge
-    ? getBadgeImageUrl(badge.category, badge.milestone)
+    ? getBadgeImageUrl(badge.category, badge.milestone, badge.username)
     : "";
   const catInfo = badge ? BADGE_CATEGORIES[badge.category] : null;
   const displayValue = badge ? formatBadgeValue(badge.milestone) : "";
   const isMinted = badge?.minted || mintSuccess;
 
+  const handleClose = useCallback(() => {
+    setMintSuccess(false);
+    setMintError(null);
+    onClose();
+  }, [onClose]);
+
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={handleClose}>
       {badge && catInfo && (
-        <div className="flex flex-col items-center gap-4 w-72 min-[400px]:w-80">
+        <div className="flex flex-col items-center gap-4 w-64 min-[400px]:w-80">
           {/* Badge image */}
-          <div className="w-48 aspect-square rounded-2xl overflow-hidden shadow-lg">
+          <div className="w-full aspect-square rounded-lg overflow-hidden shadow-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imageUrl}
@@ -154,7 +174,7 @@ function BadgeDetailDialog({
           </div>
 
           {/* Badge info */}
-          <div className="text-center space-y-1">
+          <div className="text-center">
             <h2 className="text-xl font-space font-bold">
               {displayValue} {catInfo.label}
             </h2>
@@ -163,13 +183,8 @@ function BadgeDetailDialog({
             >
               {badge.tier} tier
             </p>
-            {badge.username && (
-              <p className="text-sm text-primary-900/50">
-                Earned by {badge.username}
-              </p>
-            )}
             {badge.earnedAt && (
-              <p className="text-xs text-primary-900/40">
+              <p className="text-xs text-primary-900/50 mt-2">
                 {new Date(badge.earnedAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -181,34 +196,37 @@ function BadgeDetailDialog({
 
           {/* Minted status / mint action */}
           <div className="w-full space-y-2">
-            {isMinted ? (
-              <div className="flex items-center justify-center gap-1.5 text-sm text-green-600 py-2">
-                <CheckCircleIcon className="w-4 h-4" />
-                Collected
-              </div>
-            ) : (
-              <MintBadgeButton
-                category={badge.category}
-                milestone={badge.milestone}
-                size="sm"
-                variant="primary"
-                onMint={() => {
-                  setMintSuccess(true);
-                  setMintError(null);
-                }}
-                onError={(err: string) => setMintError(err)}
-              >
-                Collect as NFT
-              </MintBadgeButton>
-            )}
-            {mintError && (
-              <p className="text-xs text-red-500 text-center">{mintError}</p>
-            )}
-          </div>
+            <div className="w-full space-y-2">
+              {isMinted ? (
+                <div className="flex items-center justify-center gap-1.5 text-sm text-green-600 py-2">
+                  <CheckCircleIcon className="w-4 h-4" />
+                  Collected
+                </div>
+              ) : (
+                <MintBadgeButton
+                  category={badge.category}
+                  milestone={badge.milestone}
+                  variant="primary"
+                  size="md"
+                  onMint={() => {
+                    setMintSuccess(true);
+                    setMintError(null);
+                    onCollected();
+                  }}
+                  onError={(err: string) => setMintError(err)}
+                >
+                  Collect as NFT
+                </MintBadgeButton>
+              )}
+              {mintError && (
+                <p className="text-xs text-red-500 text-center">{mintError}</p>
+              )}
+            </div>
 
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Close
-          </Button>
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Close
+            </Button>
+          </div>
         </div>
       )}
     </Dialog>
@@ -251,7 +269,7 @@ function CategorySection({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {visibleBadges.map((badge) => (
               <BadgeCard
                 key={badge.milestone}
@@ -280,9 +298,12 @@ export function ProfileBadges({
   dbBadges,
   username,
 }: ProfileBadgesProps) {
-  const [selectedBadge, setSelectedBadge] = useState<DisplayBadge | null>(
-    null,
-  );
+  const router = useRouter();
+  const [selectedBadge, setSelectedBadge] = useState<DisplayBadge | null>(null);
+
+  const handleCollected = useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   // Build a lookup of DB badges by category+milestone
   const dbBadgeMap = new Map<string, SerializedBadge>();
@@ -373,6 +394,7 @@ export function ProfileBadges({
         badge={selectedBadge}
         open={!!selectedBadge}
         onClose={() => setSelectedBadge(null)}
+        onCollected={handleCollected}
       />
     </div>
   );
