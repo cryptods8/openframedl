@@ -1,12 +1,23 @@
+import React from "react";
 import { ClientGame } from "@/app/game/game-service";
 import { useQuery } from "@tanstack/react-query";
 
-import type { UserStats } from "@/app/game/game-repository";
+import type { UserStats as UserStatsType } from "@/app/game/game-repository";
 import { getDailyGameKey } from "@/app/game/game-utils";
 import { SnowFlakeIcon } from "@/app/image-ui/icons/SnowFlakeIcon";
+import {
+  BadgeCategory,
+  BadgeInfo,
+  BADGE_CATEGORIES,
+  detectNewBadgesFromGame,
+  getBadgeImageUrl,
+} from "@/app/lib/badges";
+import { PanelTitle } from "../panel-title";
+import { BadgeDetailDialog, DisplayBadge } from "../badge-detail-dialog";
+import { useAppConfig } from "@/app/contexts/app-config-context";
 
 interface UserStatsResponse {
-  data: UserStats;
+  data: UserStatsType;
 }
 
 function StatsItem({
@@ -31,10 +42,24 @@ const mockData = {
     maxStreak: 0,
     totalGames: 0,
     currentStreak: 0,
+    previousMaxStreak: 0,
   },
 };
 
+function badgeInfoToDisplayBadge(
+  badge: BadgeInfo,
+  username?: string | null,
+): DisplayBadge {
+  return { ...badge, username };
+}
+
 function UserStats({ game }: { game: ClientGame }) {
+  const [selectedBadge, setSelectedBadge] = React.useState<DisplayBadge | null>(
+    null,
+  );
+
+  const { isPro } = useAppConfig();
+
   const { data, isLoading } = useQuery<UserStatsResponse>({
     queryKey: ["user-stats", game.identityProvider, game.userId],
     queryFn: () =>
@@ -42,6 +67,14 @@ function UserStats({ game }: { game: ClientGame }) {
         `/api/games/stats?ip=${game.identityProvider}&uid=${game.userId}`,
       ).then((res) => res.json()),
   });
+
+  const newBadges = React.useMemo(() => {
+    if (!data?.data) return [];
+    return detectNewBadgesFromGame(
+      { won: game.status === "WON", guessCount: game.guesses.length },
+      data.data,
+    );
+  }, [data?.data, game.status, game.guesses.length]);
 
   const { totalWins, last30, maxStreak, totalGames, currentStreak } =
     data?.data || mockData.data;
@@ -67,6 +100,45 @@ function UserStats({ game }: { game: ClientGame }) {
 
   return (
     <div className={isLoading ? "animate-pulse" : ""}>
+      {newBadges.length > 0 && !isPro && (
+        <>
+          <div className="flex flex-col gap-2 bg-primary-950/5 items-center border-primary-950/5 shadow-inner rounded-md p-5 mb-4 mt-2">
+            <PanelTitle>
+              New badge{newBadges.length > 1 ? "s" : ""} earned
+            </PanelTitle>
+            <div className="flex gap-3 max-w-sm justify-center">
+              {newBadges.map((badge) => (
+                <button
+                  type="button"
+                  key={`${badge.category}-${badge.milestone}`}
+                  className="flex flex-col items-center gap-1 cursor-pointer"
+                  onClick={() =>
+                    setSelectedBadge(
+                      badgeInfoToDisplayBadge(badge, game.userData?.username),
+                    )
+                  }
+                >
+                  <img
+                    src={getBadgeImageUrl(
+                      badge.category as BadgeCategory,
+                      badge.milestone,
+                      game.userData?.username,
+                    )}
+                    alt={`${BADGE_CATEGORIES[badge.category as BadgeCategory]?.label} ${badge.milestone}`}
+                    className="w-full aspect-square rounded max-w-56 drop-shadow"
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-primary-900/40">Tap to collect</p>
+          </div>
+          <BadgeDetailDialog
+            badge={selectedBadge}
+            open={!!selectedBadge}
+            onClose={() => setSelectedBadge(null)}
+          />
+        </>
+      )}
       <div className="flex gap-2 justify-between gap-2">
         <StatsItem label="Played" value={isLoading ? "\u00A0" : totalGames} />
         <StatsItem

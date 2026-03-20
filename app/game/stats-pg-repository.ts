@@ -204,6 +204,11 @@ export async function loadStatsByUserKey(
         .limit(1)
         .as("currentStreak"),
       s
+        .selectFrom("streak_agg")
+        .select(sql<number>`COALESCE(MAX(len), 0)`.as("val"))
+        .where(sql<SqlBool>`end_key::date < CURRENT_DATE - 1`)
+        .as("previousMaxStreak"),
+      s
         .selectFrom("guess_dist")
         .select(
           sql<Record<number, number>>`jsonb_object_agg(guess_count, cnt)`.as(
@@ -237,6 +242,7 @@ export async function loadStatsByUserKey(
     totalLosses: result.totalLosses ?? 0,
     maxStreak: result.maxStreak ?? 0,
     currentStreak: result.currentStreak ?? 0,
+    previousMaxStreak: (result as any).previousMaxStreak ?? 0,
     lastGameWonDate: result.lastGameWonDate ?? undefined,
     winGuessCounts: result.winGuessCounts ?? {},
     last30: result.last30 ?? [],

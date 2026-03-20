@@ -1,7 +1,12 @@
 // ─── Badge milestone generation ─────────────────────────────────────
 // Milestones are generated dynamically — no fixed arrays.
 
-export type BadgeCategory = "wins" | "streaks" | "fourdle" | "wordone" | "losses";
+export type BadgeCategory =
+  | "wins"
+  | "streaks"
+  | "fourdle"
+  | "wordone"
+  | "losses";
 
 export const BADGE_CATEGORIES: Record<
   BadgeCategory,
@@ -174,9 +179,7 @@ export function getBadgesForCategory(
 
   // If all milestones earned, generate the next one
   if (!addedTeaser && milestones.length > 0) {
-    const nextMilestones = generators[category](
-      currentValue + headroom * 10,
-    );
+    const nextMilestones = generators[category](currentValue + headroom * 10);
     const next = nextMilestones.find((m) => m > currentValue);
     if (next) {
       badges.push({
@@ -207,6 +210,56 @@ export function getAllBadges(stats: {
     wordone: getBadgesForCategory("wordone", stats.winGuessCounts[1] ?? 0),
     losses: getBadgesForCategory("losses", stats.totalLosses),
   };
+}
+
+/**
+ * Detect badges earned from a specific game result.
+ * Checks if the current stat value exactly matches a milestone,
+ * meaning this game was the one that tipped it over.
+ */
+export function detectNewBadgesFromGame(
+  gameResult: { won: boolean; guessCount: number },
+  stats: {
+    totalWins: number;
+    totalLosses: number;
+    currentStreak: number;
+    previousMaxStreak: number;
+    winGuessCounts: Record<number, number>;
+  },
+): BadgeInfo[] {
+  const newBadges: BadgeInfo[] = [];
+
+  function checkMilestone(category: BadgeCategory, value: number) {
+    const milestones = generators[category](value);
+    if (milestones.includes(value)) {
+      newBadges.push({
+        category,
+        milestone: value,
+        earned: true,
+        tier: getTier(category, value),
+      });
+    }
+  }
+
+  if (gameResult.won) {
+    checkMilestone("wins", stats.totalWins);
+    // Show streak badge only if currentStreak surpasses the previous max streak
+    // (i.e. the best streak from all non-active streaks). This avoids showing
+    // badges when the user re-reaches a milestone from a previous streak.
+    if (stats.currentStreak > stats.previousMaxStreak) {
+      checkMilestone("streaks", stats.currentStreak);
+    }
+    if (gameResult.guessCount === 4) {
+      checkMilestone("fourdle", stats.winGuessCounts[4] ?? 0);
+    }
+    if (gameResult.guessCount === 1) {
+      checkMilestone("wordone", stats.winGuessCounts[1] ?? 0);
+    }
+  } else {
+    checkMilestone("losses", stats.totalLosses);
+  }
+
+  return newBadges;
 }
 
 /**

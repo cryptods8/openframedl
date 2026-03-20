@@ -39,6 +39,7 @@ export interface UserStats extends UserKey {
   totalLosses: number;
   maxStreak: number;
   currentStreak: number;
+  previousMaxStreak: number;
   lastGameWonDate?: string;
   winGuessCounts: Record<number, number>;
   last30: GameResult[];
