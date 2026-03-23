@@ -4,7 +4,7 @@ import { signBadgeMint, verifyBadgeMintTx } from "@/app/lib/badge-nft-contract";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { gameService } from "@/app/game/game-service";
 import { GameIdentityProvider } from "@/app/game/game-repository";
-import { BadgeCategory, getTier } from "@/app/lib/badges";
+import { BadgeCategory, getTier, TIER_MINT_PRICES } from "@/app/lib/badges";
 
 export const dynamic = "force-dynamic";
 
@@ -100,9 +100,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { nonce, signature } = await signBadgeMint(walletAddress, badge.id);
+    const mintPrice = TIER_MINT_PRICES[tier];
+    const { nonce, signature, price } = await signBadgeMint(walletAddress, badge.id, mintPrice);
 
-    return NextResponse.json({ badgeId: badge.id, nonce, signature });
+    return NextResponse.json({ badgeId: badge.id, nonce, signature, price });
   } catch (e) {
     console.error("Error signing badge mint", e);
     return NextResponse.json(

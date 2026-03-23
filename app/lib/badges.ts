@@ -113,6 +113,15 @@ export interface BadgeInfo {
 
 export type BadgeTier = "bronze" | "silver" | "gold" | "platinum" | "diamond";
 
+/** Mint price per tier in wei (on Base, priced in ETH). */
+export const TIER_MINT_PRICES: Record<BadgeTier, bigint> = {
+  bronze: 0n,
+  silver: 100000000000000n, // 0.0001 ETH
+  gold: 500000000000000n, // 0.0005 ETH
+  platinum: 1000000000000000n, // 0.001 ETH
+  diamond: 5000000000000000n, // 0.005 ETH
+};
+
 export function getTier(category: BadgeCategory, value: number): BadgeTier {
   switch (category) {
     case "wins":

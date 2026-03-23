@@ -6,7 +6,6 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
   useSwitchChain,
-  useReadContract,
 } from "wagmi";
 import { useWalletConnector } from "@/app/hooks/use-wallet-connector";
 import { AnimatedBorder } from "./animated-border";
@@ -57,13 +56,6 @@ export function MintBadgeButton({
     hash,
     chainId,
     query: { enabled: !!hash },
-  });
-
-  const { data: mintPrice } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: BADGE_NFT_ABI,
-    functionName: "mintPrice",
-    query: { enabled: !!CONTRACT_ADDRESS },
   });
 
   const [isSigning, setIsSigning] = React.useState(false);
@@ -118,7 +110,7 @@ export function MintBadgeButton({
         const err = await sigRes.json();
         throw new Error(err.error || "Failed to get mint signature");
       }
-      const { badgeId, nonce, signature } = await sigRes.json();
+      const { badgeId, nonce, signature, price } = await sigRes.json();
       resolvedBadgeId.current = badgeId;
       setIsSigning(false);
 
@@ -128,8 +120,8 @@ export function MintBadgeButton({
         address: CONTRACT_ADDRESS,
         abi: BADGE_NFT_ABI,
         functionName: "mintBadge",
-        args: [address, badgeId, nonce, signature],
-        value: mintPrice ?? 0n,
+        args: [address, badgeId, nonce, BigInt(price), signature],
+        value: BigInt(price),
       });
     } catch (error) {
       setIsSigning(false);

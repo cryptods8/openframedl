@@ -13,15 +13,14 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
  *         (tokenId = auto-increment) that can only be minted with a valid
  *         server signature. Minting costs ETH to prevent spam.
  *
- *         Signature scheme: the server signs (recipient, badgeId, nonce, contractAddress)
+ *         Signature scheme: the server signs (recipient, badgeId, nonce, price, contractAddress)
  *         where badgeId is the DB UUID and nonce is derived deterministically from it.
- *         This ensures each badge can only be minted once.
+ *         The price is set per-badge by the server (tier-based) and enforced on-chain.
  */
 contract BadgeNFT is ERC1155, Ownable, IERC2981 {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    uint256 public mintPrice;
     address public signer;
 
     address public royaltyReceiver;
@@ -43,10 +42,8 @@ contract BadgeNFT is ERC1155, Ownable, IERC2981 {
 
     constructor(
         string memory uri_,
-        uint256 mintPrice_,
         address signer_
     ) ERC1155(uri_) Ownable(msg.sender) {
-        mintPrice = mintPrice_;
         signer = signer_;
         royaltyReceiver = msg.sender;
         royaltyBps = 500; // 5%
@@ -58,10 +55,6 @@ contract BadgeNFT is ERC1155, Ownable, IERC2981 {
     function setSigner(address signer_) external onlyOwner {
         require(signer_ != address(0), "Invalid signer");
         signer = signer_;
-    }
-
-    function setMintPrice(uint256 price) external onlyOwner {
-        mintPrice = price;
     }
 
     function setRoyalty(address receiver, uint96 bps) external onlyOwner {
@@ -87,19 +80,21 @@ contract BadgeNFT is ERC1155, Ownable, IERC2981 {
      * @param to         Recipient address
      * @param badgeId    Badge UUID from the database
      * @param nonce      Unique nonce (derived from badgeId)
-     * @param signature  Server signature over (to, badgeId, nonce, address(this))
+     * @param price      Mint price set by the server (included in signature)
+     * @param signature  Server signature over (to, badgeId, nonce, price, address(this))
      */
     function mintBadge(
         address to,
         string calldata badgeId,
         bytes32 nonce,
+        uint256 price,
         bytes calldata signature
     ) external payable {
-        require(msg.value == mintPrice, "Incorrect ETH amount");
+        require(msg.value == price, "Incorrect ETH amount");
         require(!usedNonces[nonce], "Nonce already used");
 
         bytes32 messageHash = keccak256(
-            abi.encodePacked(to, badgeId, nonce, address(this))
+            abi.encodePacked(to, badgeId, nonce, price, address(this))
         );
         bytes32 ethSignedHash = messageHash.toEthSignedMessageHash();
         address recovered = ethSignedHash.recover(signature);

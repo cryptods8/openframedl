@@ -31,16 +31,10 @@ export const BADGE_NFT_ABI = [
       { name: "to", type: "address" },
       { name: "badgeId", type: "string" },
       { name: "nonce", type: "bytes32" },
+      { name: "price", type: "uint256" },
       { name: "signature", type: "bytes" },
     ],
     outputs: [],
-  },
-  {
-    name: "mintPrice",
-    type: "function",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
   },
   {
     name: "nextTokenId",
@@ -113,22 +107,24 @@ export function buildBadgeMintNonce(badgeId: string): `0x${string}` {
 }
 
 /**
- * Sign a badge mint. Returns { nonce, signature } that the user
- * passes to mintBadge() on the contract.
+ * Sign a badge mint. Returns { nonce, signature, price } that the user
+ * passes to mintBadge() on the contract. Price is set by the server
+ * and included in the signature so the contract can enforce it.
  */
 export async function signBadgeMint(
   toAddress: string,
   badgeId: string,
-): Promise<{ nonce: `0x${string}`; signature: `0x${string}` }> {
+  price: bigint,
+): Promise<{ nonce: `0x${string}`; signature: `0x${string}`; price: string }> {
   const account = getSignerAccount();
   const ca = getContractAddress();
   const nonce = buildBadgeMintNonce(badgeId);
 
-  // Must match the contract: keccak256(abi.encodePacked(to, badgeId, nonce, address(this)))
+  // Must match the contract: keccak256(abi.encodePacked(to, badgeId, nonce, price, address(this)))
   const messageHash = keccak256(
     encodePacked(
-      ["address", "string", "bytes32", "address"],
-      [toAddress as Address, badgeId, nonce, ca],
+      ["address", "string", "bytes32", "uint256", "address"],
+      [toAddress as Address, badgeId, nonce, price, ca],
     ),
   );
 
@@ -136,7 +132,7 @@ export async function signBadgeMint(
     message: { raw: messageHash },
   });
 
-  return { nonce, signature };
+  return { nonce, signature, price: price.toString() };
 }
 
 /**
