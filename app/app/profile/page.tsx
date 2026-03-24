@@ -13,6 +13,7 @@ import { getFarcasterSession } from "@/app/lib/auth";
 import { ProfileBadges } from "./profile-badges";
 import { gameService } from "@/app/game/game-service";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
+import { getCurrentTab } from "./profile-utils";
 
 export default async function SettingsPage({
   searchParams,
@@ -24,6 +25,11 @@ export default async function SettingsPage({
   // TODO: remove gate once badges are released to all users
   const session = await getFarcasterSession();
   const isBadgeUser = session?.user?.fid === "11124";
+  const currentTab = getCurrentTab(
+    (tab as string | undefined) ?? null,
+    isBadgeUser,
+    isPro,
+  );
 
   return (
     <div className="w-full h-dvh min-h-full">
@@ -45,11 +51,11 @@ export default async function SettingsPage({
           </div>
 
           <Suspense>
-            <ProfileTabs showBadges={isBadgeUser} />
+            <ProfileTabs showBadges={isBadgeUser} isPro={isPro} />
           </Suspense>
 
           <ProfilePageWrapper>
-            {!tab && (
+            {currentTab === "games" && (
               <div className="pt-2">
                 <Suspense
                   fallback={
@@ -63,7 +69,7 @@ export default async function SettingsPage({
               </div>
             )}
 
-            {tab === "stats" && (
+            {currentTab === "stats" && (
               <div className="sm:pt-2">
                 <Suspense
                   fallback={
@@ -77,7 +83,7 @@ export default async function SettingsPage({
               </div>
             )}
 
-            {tab === "badges" && isBadgeUser && (
+            {currentTab === "badges" && isBadgeUser && !isPro && (
               <div className="sm:p-4">
                 <Suspense
                   fallback={
@@ -91,7 +97,7 @@ export default async function SettingsPage({
               </div>
             )}
 
-            {tab === "settings" && (
+            {currentTab === "settings" && (
               <div className="sm:p-4">
                 <div className="p-4 sm:p-6 bg-white sm:rounded-lg">
                   <SettingsPanel />
@@ -99,7 +105,7 @@ export default async function SettingsPage({
               </div>
             )}
 
-            {tab === "freezes" && !isPro && (
+            {currentTab === "freezes" && !isPro && (
               <div className="sm:p-4">
                 <div className="p-4 sm:p-6 bg-white sm:rounded-lg">
                   <StreakFreezePanel />

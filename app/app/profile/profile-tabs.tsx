@@ -2,9 +2,15 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { NavLink } from "@/app/ui/nav-link";
-import { isPro } from "@/app/constants";
+import { getCurrentTab } from "./profile-utils";
 
-export function ProfileTabs({ showBadges }: { showBadges?: boolean }) {
+export function ProfileTabs({
+  showBadges = false,
+  isPro,
+}: {
+  showBadges?: boolean;
+  isPro: boolean;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -19,27 +25,29 @@ export function ProfileTabs({ showBadges }: { showBadges?: boolean }) {
     return qs ? `${pathname}?${qs}` : pathname;
   }
 
+  const currentTab = getCurrentTab(tab, showBadges, isPro);
+
   return (
     <div className="flex items-center gap-1 bg-primary-200/50 sm:rounded-full px-4 py-2 overflow-x-auto">
-      <NavLink active={!tab} href={createHref()}>
-        Games
-      </NavLink>
       {!isPro && showBadges && (
-        <NavLink active={tab === "badges"} href={createHref("badges")}>
+        <NavLink active={currentTab === "badges"} href={createHref("badges")}>
           Badges
         </NavLink>
       )}
-      <NavLink active={tab === "stats"} href={createHref("stats")}>
-        Stats
-      </NavLink>
-      <NavLink active={tab === "settings"} href={createHref("settings")}>
-        Settings
-      </NavLink>
       {!isPro && (
-        <NavLink active={tab === "freezes"} href={createHref("freezes")}>
-          <div className="whitespace-nowrap">Streak Freezes</div>
+        <NavLink active={currentTab === "freezes"} href={createHref("freezes")}>
+          <div className="whitespace-nowrap">Freezes</div>
         </NavLink>
       )}
+      <NavLink active={currentTab === "games"} href={createHref("games")}>
+        Games
+      </NavLink>
+      <NavLink active={currentTab === "stats"} href={createHref("stats")}>
+        Stats
+      </NavLink>
+      <NavLink active={currentTab === "settings"} href={createHref("settings")}>
+        Settings
+      </NavLink>
     </div>
   );
 }
