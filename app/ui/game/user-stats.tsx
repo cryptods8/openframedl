@@ -60,8 +60,8 @@ function UserStats({ game }: { game: ClientGame }) {
 
   const { isPro } = useAppConfig();
 
-  // TODO: remove gate once badge collecting is released to all users
-  const canCollect =
+  // TODO: remove gate once badges are released to all users
+  const isBadgeUser =
     game.identityProvider === "fc" && game.userId === "11124";
 
   const { data, isLoading } = useQuery<UserStatsResponse>({
@@ -104,7 +104,7 @@ function UserStats({ game }: { game: ClientGame }) {
 
   return (
     <div className={isLoading ? "animate-pulse" : ""}>
-      {newBadges.length > 0 && !isPro && (
+      {newBadges.length > 0 && !isPro && isBadgeUser && (
         <>
           <div className="flex flex-col gap-2 bg-primary-950/5 items-center border-primary-950/5 shadow-inner rounded-md p-5 mb-4 mt-2">
             <PanelTitle>
@@ -134,7 +134,7 @@ function UserStats({ game }: { game: ClientGame }) {
                 </button>
               ))}
             </div>
-            {canCollect && (
+            {isBadgeUser && (
               <p className="text-xs text-primary-900/40">Tap to collect</p>
             )}
           </div>
@@ -142,7 +142,7 @@ function UserStats({ game }: { game: ClientGame }) {
             badge={selectedBadge}
             open={!!selectedBadge}
             onClose={() => setSelectedBadge(null)}
-            canCollect={canCollect}
+            canCollect={isBadgeUser}
           />
         </>
       )}

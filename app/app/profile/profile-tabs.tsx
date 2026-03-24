@@ -4,7 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { NavLink } from "@/app/ui/nav-link";
 import { isPro } from "@/app/constants";
 
-export function ProfileTabs() {
+export function ProfileTabs({ showBadges }: { showBadges?: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -24,7 +24,7 @@ export function ProfileTabs() {
       <NavLink active={!tab} href={createHref()}>
         Games
       </NavLink>
-      {!isPro && (
+      {!isPro && showBadges && (
         <NavLink active={tab === "badges"} href={createHref("badges")}>
           Badges
         </NavLink>

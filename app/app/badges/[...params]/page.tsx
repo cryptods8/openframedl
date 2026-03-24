@@ -117,6 +117,11 @@ export async function generateMetadata({
 
 export default async function BadgePage({ params }: BadgePageProps) {
   const { params: segments } = await params;
+
+  // TODO: remove gate once badges are released to all users
+  const session = await getFarcasterSession();
+  if (session?.user?.fid !== "11124") notFound();
+
   const badge = await resolveBadge(segments);
   if (!badge) notFound();
 
@@ -132,7 +137,6 @@ export default async function BadgePage({ params }: BadgePageProps) {
   // Check if current user owns this badge (for mint button)
   let isOwner = false;
   if (badge.id && badge.userId) {
-    const session = await getFarcasterSession();
     if (
       session?.user?.fid &&
       session.user.fid === badge.userId &&
@@ -142,13 +146,7 @@ export default async function BadgePage({ params }: BadgePageProps) {
     }
   }
 
-  // TODO: remove gate once badge collecting is released to all users
-  const canMint =
-    isOwner &&
-    badge.id &&
-    !badge.minted &&
-    badge.userId === "11124" &&
-    badge.identityProvider === "fc";
+  const canMint = isOwner && badge.id && !badge.minted;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh p-4 sm:p-8">

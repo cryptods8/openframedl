@@ -21,6 +21,10 @@ export default async function SettingsPage({
 }) {
   const { tab, gt } = await searchParams;
 
+  // TODO: remove gate once badges are released to all users
+  const session = await getFarcasterSession();
+  const isBadgeUser = session?.user?.fid === "11124";
+
   return (
     <div className="w-full h-dvh min-h-full">
       <ProfileApp headerless>
@@ -41,7 +45,7 @@ export default async function SettingsPage({
           </div>
 
           <Suspense>
-            <ProfileTabs />
+            <ProfileTabs showBadges={isBadgeUser} />
           </Suspense>
 
           <ProfilePageWrapper>
@@ -73,7 +77,7 @@ export default async function SettingsPage({
               </div>
             )}
 
-            {tab === "badges" && (
+            {tab === "badges" && isBadgeUser && (
               <div className="sm:p-4">
                 <Suspense
                   fallback={
