@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import {
   BadgeInfo,
   BADGE_CATEGORIES,
+  TIER_MINT_PRICES,
   formatBadgeValue,
   getBadgeImageUrl,
 } from "@/app/lib/badges";
@@ -32,11 +33,13 @@ export function BadgeDetailDialog({
   open,
   onClose,
   onCollected,
+  canCollect,
 }: {
   badge: DisplayBadge | null;
   open: boolean;
   onClose: () => void;
   onCollected?: () => void;
+  canCollect?: boolean;
 }) {
   const [mintSuccess, setMintSuccess] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
@@ -91,36 +94,45 @@ export function BadgeDetailDialog({
 
           {/* Minted status / mint action */}
           <div className="w-full space-y-2">
-            <div className="w-full space-y-2">
-              {isMinted ? (
-                <div className="flex items-center justify-center gap-1.5 text-sm text-green-600 py-2">
-                  <CheckCircleIcon className="w-4 h-4" />
-                  Collected
-                </div>
-              ) : (
-                <MintBadgeButton
-                  category={badge.category}
-                  milestone={badge.milestone}
-                  variant="primary"
-                  size="md"
-                  onMint={() => {
-                    setMintSuccess(true);
-                    setMintError(null);
-                    onCollected?.();
-                  }}
-                  onError={(err: string) => setMintError(err)}
-                >
-                  Collect as NFT
-                </MintBadgeButton>
-              )}
-              {mintError && (
-                <p className="text-xs text-red-500 text-center">{mintError}</p>
-              )}
-            </div>
+            {canCollect && (
+              <div className="w-full space-y-2">
+                {isMinted ? (
+                  <div className="flex items-center justify-center gap-1.5 text-sm text-green-600 py-2">
+                    <CheckCircleIcon className="w-4 h-4" />
+                    Collected
+                  </div>
+                ) : (
+                  <MintBadgeButton
+                    category={badge.category}
+                    milestone={badge.milestone}
+                    variant="primary"
+                    size="md"
+                    onMint={() => {
+                      setMintSuccess(true);
+                      setMintError(null);
+                      onCollected?.();
+                    }}
+                    onError={(err: string) => setMintError(err)}
+                  >
+                    Collect as NFT
+                  </MintBadgeButton>
+                )}
+                {mintError && (
+                  <p className="text-xs text-red-500 text-center">{mintError}</p>
+                )}
+              </div>
+            )}
 
             <Button variant="outline" size="sm" onClick={onClose}>
               Close
             </Button>
+            {canCollect && !isMinted && (
+              <p className="text-xs text-primary-900/50 text-center">
+                {TIER_MINT_PRICES[badge.tier] === 0n
+                  ? `Free to collect for ${badge.tier} tier`
+                  : `Collecting costs ${Number(TIER_MINT_PRICES[badge.tier]) / 1e18}Ξ`}
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -41,14 +41,17 @@ interface ProfileBadgesProps {
   stats: BadgeStats;
   dbBadges?: SerializedBadge[];
   username?: string | null;
+  canCollect?: boolean;
 }
 
 function BadgeCard({
   badge,
   onClick,
+  canCollect,
 }: {
   badge: DisplayBadge;
   onClick?: () => void;
+  canCollect?: boolean;
 }) {
   const imageUrl = getBadgeImageUrl(
     badge.category,
@@ -86,24 +89,26 @@ function BadgeCard({
           alt={`${displayValue} ${BADGE_CATEGORIES[badge.category].label}`}
           className="w-full h-full"
         />
-        <div
-          className={cn(
-            "absolute right-0 left-0 flex",
-            badge.minted
-              ? "top-0 p-1.5 justify-end"
-              : "bottom-0 p-0.5 justify-center items-center",
-          )}
-          title={badge.minted ? "Collected as NFT" : "Tap to collect as NFT"}
-        >
-          {badge.minted ? (
-            <CheckCircleIcon className="w-6 h-6 text-green-500 drop-shadow bg-green-900 rounded-full" />
-          ) : (
-            <Button variant="secondary" size="sm">
-              <PlusCircleIcon className="w-5 h-5" />
-              <span>Collect</span>
-            </Button>
-          )}
-        </div>
+        {canCollect && (
+          <div
+            className={cn(
+              "absolute right-0 left-0 flex",
+              badge.minted
+                ? "top-0 p-1.5 justify-end"
+                : "bottom-0 p-0.5 justify-center items-center",
+            )}
+            title={badge.minted ? "Collected as NFT" : "Tap to collect as NFT"}
+          >
+            {badge.minted ? (
+              <CheckCircleIcon className="w-6 h-6 text-green-500 drop-shadow bg-green-900 rounded-full" />
+            ) : (
+              <Button variant="secondary" size="sm">
+                <PlusCircleIcon className="w-5 h-5" />
+                <span>Collect</span>
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       {/* <div
         className={`text-sm font-semibold text-center capitalize ${TIER_COLORS[badge.tier] ?? ""}`}
@@ -119,11 +124,13 @@ function CategorySection({
   badges,
   currentValue,
   onBadgeClick,
+  canCollect,
 }: {
   category: BadgeCategory;
   badges: DisplayBadge[];
   currentValue: number;
   onBadgeClick: (badge: DisplayBadge) => void;
+  canCollect?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const cat = BADGE_CATEGORIES[category];
@@ -156,6 +163,7 @@ function CategorySection({
                 key={badge.milestone}
                 badge={badge}
                 onClick={badge.earned ? () => onBadgeClick(badge) : undefined}
+                canCollect={canCollect}
               />
             ))}
           </div>
@@ -178,6 +186,7 @@ export function ProfileBadges({
   stats,
   dbBadges,
   username,
+  canCollect,
 }: ProfileBadgesProps) {
   const router = useRouter();
   const [selectedBadge, setSelectedBadge] = useState<DisplayBadge | null>(null);
@@ -268,6 +277,7 @@ export function ProfileBadges({
           badges={allBadges[cat]}
           currentValue={values[cat]}
           onBadgeClick={setSelectedBadge}
+          canCollect={canCollect}
         />
       ))}
 
@@ -276,6 +286,7 @@ export function ProfileBadges({
         open={!!selectedBadge}
         onClose={() => setSelectedBadge(null)}
         onCollected={handleCollected}
+        canCollect={canCollect}
       />
     </div>
   );

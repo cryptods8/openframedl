@@ -167,6 +167,7 @@ async function ProfileBadgesContent() {
         stats={badgeStats}
         dbBadges={serializedBadges}
         username={user.userData?.username ?? user.name}
+        canCollect={user.fid === "11124"}
       />
     </div>
   );

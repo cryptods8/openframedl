@@ -142,7 +142,13 @@ export default async function BadgePage({ params }: BadgePageProps) {
     }
   }
 
-  const canMint = isOwner && badge.id && !badge.minted;
+  // TODO: remove gate once badge collecting is released to all users
+  const canMint =
+    isOwner &&
+    badge.id &&
+    !badge.minted &&
+    badge.userId === "11124" &&
+    badge.identityProvider === "fc";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh p-4 sm:p-8">

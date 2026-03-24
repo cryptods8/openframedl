@@ -60,6 +60,10 @@ function UserStats({ game }: { game: ClientGame }) {
 
   const { isPro } = useAppConfig();
 
+  // TODO: remove gate once badge collecting is released to all users
+  const canCollect =
+    game.identityProvider === "fc" && game.userId === "11124";
+
   const { data, isLoading } = useQuery<UserStatsResponse>({
     queryKey: ["user-stats", game.identityProvider, game.userId],
     queryFn: () =>
@@ -130,12 +134,15 @@ function UserStats({ game }: { game: ClientGame }) {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-primary-900/40">Tap to collect</p>
+            {canCollect && (
+              <p className="text-xs text-primary-900/40">Tap to collect</p>
+            )}
           </div>
           <BadgeDetailDialog
             badge={selectedBadge}
             open={!!selectedBadge}
             onClose={() => setSelectedBadge(null)}
+            canCollect={canCollect}
           />
         </>
       )}
