@@ -118,12 +118,14 @@ export function BadgeDetailDialog({
                   </MintBadgeButton>
                 )}
                 {mintError && (
-                  <p className="text-xs text-red-500 text-center">{mintError}</p>
+                  <p className="text-xs text-red-500 text-center">
+                    {mintError}
+                  </p>
                 )}
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={onClose}>
+            <Button variant="outline" size="sm" onClick={handleClose}>
               Close
             </Button>
             {canCollect && !isMinted && (
