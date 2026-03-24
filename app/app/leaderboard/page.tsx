@@ -2,13 +2,18 @@ import { getDailyGameKey } from "@/app/game/game-utils";
 import { gameService } from "@/app/game/game-service";
 import { LeaderboardDataItem } from "@/app/game/game-pg-repository";
 import { GameIdentityProvider } from "@/app/game/game-repository";
-import { LeaderboardEntry, LeaderboardEntryRow } from "./leaderboard-entry";
+import {
+  LeaderboardEntries,
+  LeaderboardEntryRow,
+  LeaderboardEntryWithTotalScore,
+} from "./leaderboard-entry";
 import { pgDb } from "@/app/db/pg/pg-db";
 import { sql, SqlBool } from "kysely";
 import { LeaderboardNav } from "./leaderboard-nav";
 import { LeaderboardDateNav } from "./leaderboard-date-nav";
 import { isPro } from "@/app/constants";
 import { LeaderboardBackBar } from "./leaderboard-back-bar";
+import { LeaderboardList } from "./leaderboard-list";
 
 // interface LeaderboardEntry {
 //   id: string;
@@ -21,10 +26,6 @@ import { LeaderboardBackBar } from "./leaderboard-back-bar";
 //   pos: string;
 //   highlighted: boolean;
 // }
-
-interface LeaderboardEntryWithTotalScore extends LeaderboardEntry {
-  totalScore: number;
-}
 
 function entryToLeaderboardEntry(
   e: LeaderboardDataItem,
@@ -48,8 +49,6 @@ function entryToLeaderboardEntry(
 }
 
 type LeaderboardType = "SCORE" | "GAMES_WON" | "STREAK";
-
-type LeaderboardEntries = (LeaderboardEntryWithTotalScore | null)[];
 
 async function getStreakLeaderboardEntries({
   date,
@@ -302,18 +301,7 @@ export default async function LeaderboardPage({
       <div className="mb-4 -mx-4 sm:-mx-2">
         <LeaderboardNav activeType={typeParam ?? "SCORE"} />
       </div>
-      <div className="space-y-1">
-        {entries.map((entry, idx) => {
-          if (!entry) {
-            return (
-              <div key={idx} className="pt-1 pb-3">
-                <div className="h-1 bg-primary-900/10 rounded-full w-full" />
-              </div>
-            );
-          }
-          return <LeaderboardEntryRow key={entry.id} entry={entry} />;
-        })}
-      </div>
+      <LeaderboardList entries={entries} />
       {gameHref && <LeaderboardBackBar gameHref={gameHref} />}
     </div>
   );

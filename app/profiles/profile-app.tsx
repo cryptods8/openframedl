@@ -3,53 +3,13 @@
 import { AuthKitProvider } from "@farcaster/auth-kit";
 import { domain } from "@/app/lib/auth";
 import { SignIn } from "@/app/ui/auth/sign-in";
-import { SessionProvider, signIn, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { SessionProvider } from "next-auth/react";
 
 const config = {
   relay: "https://relay.farcaster.xyz",
   rpcUrl: "https://mainnet.optimism.io",
   domain: domain,
 };
-
-function AuthChildrenContainer({ children }: { children: React.ReactNode }) {
-  // const searchParams = useSearchParams();
-  // const pathname = usePathname();
-  // const router = useRouter();
-  // const jwt = searchParams.get("jwt");
-
-  // const [isSigningIn, setIsSigningIn] = useState(false);
-
-  // useEffect(() => {
-  //   if (!jwt) {
-  //     return;
-  //   }
-  //   setIsSigningIn(true);
-  //   signIn("credentials", { jwt, redirect: false })
-  //     .then((r) => {
-  //       console.log("SIGN IN RESPONSE", r);
-  //     })
-  //     .catch((e) => {
-  //       console.error("E", e);
-  //     })
-  //     .finally(() => {
-  //       setIsSigningIn(false);
-
-  //       // const newSearchParams = new URLSearchParams(searchParams.toString());
-  //       // newSearchParams.delete("jwt");
-  //       // const query = newSearchParams.toString();
-  //       // const newPathname = pathname + (query ? `?${query}` : "");
-  //       // router.replace(newPathname);
-  //     });
-  // }, [jwt, router, searchParams, pathname, setIsSigningIn]);
-
-  // if (isSigningIn) {
-  //   return null;
-  // }
-
-  return <>{children}</>;
-}
 
 export function ProfileApp({
   children,
@@ -74,7 +34,7 @@ export function ProfileApp({
             <div className="border-b border-primary-200 w-full" />
           </div>
         )}
-        <AuthChildrenContainer>{children}</AuthChildrenContainer>
+        {children}
       </AuthKitProvider>
     </SessionProvider>
   );

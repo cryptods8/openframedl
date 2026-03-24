@@ -15,6 +15,12 @@ export interface LeaderboardEntry {
   score?: number;
 }
 
+export interface LeaderboardEntryWithTotalScore extends LeaderboardEntry {
+  totalScore: number;
+}
+
+export type LeaderboardEntries = (LeaderboardEntryWithTotalScore | null)[];
+
 function Score({ score }: { score: number }) {
   const parts = score.toFixed(2).split(".");
   return (
@@ -45,10 +51,10 @@ export function LeaderboardEntryRow({ entry }: { entry: LeaderboardEntry }) {
           entry.pos === "1"
             ? "bg-primary-900/80 text-white"
             : entry.pos === "2"
-            ? "bg-primary-900/60 text-white"
-            : entry.pos === "3"
-            ? "bg-primary-900/40 text-white"
-            : "bg-primary-900/10"
+              ? "bg-primary-900/60 text-white"
+              : entry.pos === "3"
+                ? "bg-primary-900/40 text-white"
+                : "bg-primary-900/10"
         }`}
       >
         {entry.pos}

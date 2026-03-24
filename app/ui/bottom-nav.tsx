@@ -18,6 +18,8 @@ import {
   PencilSquareIcon as PencilSolid,
   UserCircleIcon as UserSolid,
 } from "@heroicons/react/24/solid";
+import { UserKey } from "../game/game-repository";
+import { useFarcasterSession } from "../hooks/use-farcaster-session";
 
 export const BOTTOM_NAV_HEIGHT = 56;
 
@@ -37,6 +39,10 @@ const NAV_ITEMS = [
   },
   {
     href: "/app/leaderboard",
+    createHref: (userKey?: UserKey) =>
+      userKey
+        ? `/app/leaderboard?uid=${userKey.userId}&ip=${userKey.identityProvider}`
+        : "/app/leaderboard",
     label: "Scores",
     OutlineIcon: TrophyOutline,
     SolidIcon: TrophySolid,
@@ -70,6 +76,11 @@ export function BottomNav() {
   const pathname = usePathname();
   const { isNavVisible } = useNavVisibility();
   const { insets } = useSafeAreaInsets();
+  const { session } = useFarcasterSession();
+  const userKey =
+    session?.user?.fid != null
+      ? ({ userId: session.user.fid, identityProvider: "fc" } as const)
+      : undefined;
 
   return (
     <nav
@@ -79,28 +90,31 @@ export function BottomNav() {
       style={{ paddingBottom: insets.bottom }}
     >
       <div className="flex items-stretch h-14 max-w-lg mx-auto">
-        {NAV_ITEMS.map(({ href, label, OutlineIcon, SolidIcon, match }) => {
-          const active = match(pathname);
-          const Icon = active ? SolidIcon : OutlineIcon;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${
-                active
-                  ? "text-primary-800"
-                  : "text-primary-900/40 hover:text-primary-900/60"
-              }`}
-            >
-              <Icon className="size-6 shrink-0" />
-              <span
-                className={`text-[10px] font-medium leading-none ${active ? "font-semibold" : ""}`}
+        {NAV_ITEMS.map(
+          ({ href, createHref, label, OutlineIcon, SolidIcon, match }) => {
+            const active = match(pathname);
+            const Icon = active ? SolidIcon : OutlineIcon;
+            const actualHref = createHref ? createHref(userKey) : href;
+            return (
+              <Link
+                key={actualHref}
+                href={actualHref}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${
+                  active
+                    ? "text-primary-800"
+                    : "text-primary-900/40 hover:text-primary-900/60"
+                }`}
               >
-                {label}
-              </span>
-            </Link>
-          );
-        })}
+                <Icon className="size-6 shrink-0" />
+                <span
+                  className={`text-[10px] font-medium leading-none ${active ? "font-semibold" : ""}`}
+                >
+                  {label}
+                </span>
+              </Link>
+            );
+          },
+        )}
       </div>
     </nav>
   );
