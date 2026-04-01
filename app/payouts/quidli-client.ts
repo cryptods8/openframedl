@@ -29,7 +29,7 @@ export async function executeDrop(
   };
 
   const res = await fetch(
-    `${QUIDLI_API_URL}/drop?ignoreFailedRecipients=true`,
+    `${QUIDLI_API_URL}/drop`,
     {
       method: "POST",
       headers: {

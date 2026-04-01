@@ -9,15 +9,16 @@ import {
 } from "./payout-repository";
 import { DBPayout, PayoutDropResult, PayoutRecipientData } from "@/app/db/pg/types";
 
-// Stable UUID namespace for generating deterministic idempotency keys
+// Stable UUID namespace for deterministic idempotency keys
 const PAYOUT_UUID_NAMESPACE = "f7a1b2c3-d4e5-4f6a-8b9c-0d1e2f3a4b5c";
 
 function makeIdempotencyKey(
   date: string,
   ip: GameIdentityProvider,
-  amount: number
+  amount: number,
+  attempt: number
 ): string {
-  return uuidv5(`${date}-${ip}-${amount}`, PAYOUT_UUID_NAMESPACE);
+  return uuidv5(`${date}-${ip}-${amount}-${attempt}`, PAYOUT_UUID_NAMESPACE);
 }
 
 export interface PayoutResult {
@@ -94,12 +95,22 @@ export async function executePayout(options: {
   }
 
   // 5. Execute drops per group
+  // Keep full history so we can count failed attempts per amount group.
+  // Quidli consumes idempotency keys even on failure, so each retry needs
+  // a new key. We derive it deterministically from (date, ip, amount, attempt#)
+  // to prevent concurrent duplicate calls while allowing retries.
   const existingDrops: PayoutDropResult[] = payout.drops ?? [];
   const succeededAmounts = new Set(
     existingDrops
       .filter((d) => d.status === "success" || d.status === "already_sent")
       .map((d) => d.amount)
   );
+
+  // Count previous attempts (all statuses) per amount for key derivation
+  const attemptCounts = new Map<number, number>();
+  for (const d of existingDrops) {
+    attemptCounts.set(d.amount, (attemptCounts.get(d.amount) ?? 0) + 1);
+  }
 
   const allDrops: PayoutDropResult[] = [...existingDrops];
   let hasFailure = false;
@@ -111,7 +122,8 @@ export async function executePayout(options: {
     }
 
     const amountInWei = degenToWei(amount);
-    const idempotencyKey = makeIdempotencyKey(date, identityProvider, amount);
+    const attempt = attemptCounts.get(amount) ?? 0;
+    const idempotencyKey = makeIdempotencyKey(date, identityProvider, amount, attempt);
 
     let dropResult: PayoutDropResult;
     try {
