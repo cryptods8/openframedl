@@ -1,4 +1,4 @@
-const QUIDLI_API_URL = "https://api.quidli.com";
+const QUIDLI_API_URL = "https://api.connect.quid.li";
 const DEGEN_CONTRACT = "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed";
 const BASE_CHAIN_ID = 8453;
 const DEGEN_DECIMALS = 18;
