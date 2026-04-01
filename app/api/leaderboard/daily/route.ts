@@ -6,6 +6,10 @@ import { externalBaseUrl, isPro } from "@/app/constants";
 import { gameService } from "@/app/game/game-service";
 import { GameIdentityProvider } from "@/app/game/game-repository";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getTotalRungValue,
+  getPiBonusMultiplier,
+} from "@/app/payouts/payout-calculator";
 
 const urlWithParams = (url: string, params: URLSearchParams) => {
   const queryString = params.toString();
@@ -16,30 +20,6 @@ const constructImageUrl = (url: string, searchParams: URLSearchParams) => {
   const imageUrl = urlWithParams(url, searchParams);
   return signUrl(imageUrl);
 };
-
-function getTotalRungValue(i: number, peopleCount: number): number {
-  if (peopleCount <= 0 || i >= 3) {
-    return 0;
-  }
-  if (i === 0) {
-    return 4 + getTotalRungValue(i + 1, peopleCount - 1);
-  }
-  if (i === 1) {
-    return 2 + getTotalRungValue(i + 1, peopleCount - 1);
-  }
-  if (i === 2) {
-    return 1 + getTotalRungValue(i + 1, peopleCount - 1);
-  }
-  return 0;
-}
-
-function getPiBonusMultiplier(score: number): number {
-  const diff = 3.14 - Math.floor(score * 100) / 100;
-  if (diff < 0) {
-    return 0;
-  }
-  return 1 + Math.floor(diff / 0.07);
-}
 
 export async function GET(request: NextRequest) {
   const searchParams = Object.fromEntries(request.nextUrl.searchParams);

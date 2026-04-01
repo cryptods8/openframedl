@@ -22,6 +22,7 @@ export interface Database {
   streakFreezeApplied: StreakFreezeAppliedTable;
   notificationQueue: NotificationQueueTable;
   badge: BadgeTable;
+  payout: PayoutTable;
 }
 
 export type StreakFreezeSource = "EARNED" | "PURCHASED";
@@ -296,3 +297,39 @@ export interface BadgeTable extends UserKey {
 export type DBBadge = Selectable<BadgeTable>;
 export type DBBadgeInsert = Insertable<BadgeTable>;
 export type DBBadgeUpdate = Updateable<BadgeTable>;
+
+export type PayoutStatus = "pending" | "processing" | "completed" | "failed";
+
+export interface PayoutDropResult {
+  amount: number;
+  amountInWei: string;
+  fids: string[];
+  status: "success" | "processing" | "already_sent" | "failed";
+  transferHash?: string;
+  error?: string;
+}
+
+export interface PayoutRecipientData {
+  fid: string;
+  username: string;
+  amount: number;
+}
+
+export interface PayoutTable {
+  id: Generated<number>;
+  createdAt: ColumnType<Date, Date | undefined, never>;
+  updatedAt: Date;
+  date: string;
+  identityProvider: GameIdentityProvider;
+  status: PayoutStatus;
+  prize: number;
+  piBonus: number;
+  days: number | null;
+  recipients: JSONColumnType<PayoutRecipientData[]>;
+  drops: JSONColumnType<PayoutDropResult[]>;
+  error: string | null;
+}
+
+export type DBPayout = Selectable<PayoutTable>;
+export type DBPayoutInsert = Insertable<PayoutTable>;
+export type DBPayoutUpdate = Updateable<PayoutTable>;
