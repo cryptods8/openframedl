@@ -69,6 +69,17 @@ function buildGameImageUrl(game: GuessedGame, message?: string): string {
   return signUrl(`${baseUrl}/api/images?${params.toString()}`);
 }
 
+// Public/shared variant — `shr=1` makes the image generator hide the
+// actual letters and only show the colored cells, so a shared cast does
+// not spoil the day's word for viewers who haven't played yet.
+function buildSharedGameImageUrl(gid: string): string {
+  const params = new URLSearchParams();
+  params.append("gid", gid);
+  params.append("shr", "1");
+  params.append("ar", FRAP_ASPECT_RATIO);
+  return signUrl(`${baseUrl}/api/images?${params.toString()}`);
+}
+
 // Static welcome image — no game id yet. We point at the same image
 // endpoint with no game; if your generator handles `gid` absence with a
 // branded splash that's perfect, otherwise swap this for a static asset.
@@ -94,6 +105,50 @@ function buildShareText(game: GuessedGame): string {
     )
     .join("\n");
   return `Framedl ${game.gameKey} ${guessCount}/6${hardMark}\n\n${board}`;
+}
+
+function viewFrap(gid: string): SnapResponse {
+  return {
+    version: "1.0",
+    theme: { accent: "purple" },
+    ui: {
+      root: "page",
+      elements: {
+        page: {
+          type: "stack",
+          props: { direction: "vertical", gap: "md" },
+          children: ["board", "playBtn", "openAppBtn"],
+        },
+        board: {
+          type: "image",
+          props: {
+            url: buildSharedGameImageUrl(gid),
+            aspect: FRAP_ASPECT_RATIO,
+            alt: "Framedl result",
+          },
+        },
+        playBtn: {
+          type: "button",
+          props: { label: "Play your own", variant: "primary" },
+          on: { press: { action: "submit", params: { op: "play" } } },
+        },
+        openAppBtn: {
+          type: "button",
+          props: {
+            label: "Open Framedl",
+            variant: "secondary",
+            icon: "arrow-right",
+          },
+          on: {
+            press: {
+              action: "open_mini_app",
+              params: { target: `${baseUrl}/app/v2` },
+            },
+          },
+        },
+      },
+    },
+  };
 }
 
 function welcomeFrap(message?: string): SnapResponse {
@@ -184,7 +239,7 @@ function gameFrap(game: GuessedGame, message?: string): SnapResponse {
           action: "compose_cast",
           params: {
             text: buildShareText(game),
-            embeds: [`${baseUrl}/frap`],
+            embeds: [`${baseUrl}/frap?gid=${game.id}`],
           },
         },
       },
@@ -233,7 +288,14 @@ function validationMessage(status: GuessValidationStatus): string {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gid = new URL(req.url).searchParams.get("gid");
+  if (gid) {
+    const game = await gameService.load(gid);
+    if (game) {
+      return snapJson(viewFrap(gid));
+    }
+  }
   return snapJson(welcomeFrap());
 }
 
