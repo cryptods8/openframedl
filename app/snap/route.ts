@@ -432,9 +432,9 @@ function nonSnapFallback() {
 }
 
 export async function GET(req: NextRequest) {
-  if (!wantsSnap(req)) {
-    return nonSnapFallback();
-  }
+  //if (!wantsSnap(req)) {
+  //  return nonSnapFallback();
+  //}
   return snapJson(welcomeSnap());
 }
 
