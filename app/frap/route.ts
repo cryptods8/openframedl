@@ -59,15 +59,6 @@ export async function OPTIONS() {
 // board, keyboard, messages (via `msg`), and end-screen stats.
 const FRAP_ASPECT_RATIO = "16:9";
 
-function buildGameImageUrlById(gid: string): string {
-  const params = new URLSearchParams();
-  params.append("gid", gid);
-  params.append("ar", FRAP_ASPECT_RATIO);
-  // For shared/view links the game is already finished, so the URL is
-  // stable — no cache-buster needed.
-  return signUrl(`${baseUrl}/api/images?${params.toString()}`);
-}
-
 function buildGameImageUrl(game: GuessedGame, message?: string): string {
   const params = new URLSearchParams();
   params.append("gid", game.id);
@@ -103,50 +94,6 @@ function buildShareText(game: GuessedGame): string {
     )
     .join("\n");
   return `Framedl ${game.gameKey} ${guessCount}/6${hardMark}\n\n${board}`;
-}
-
-function viewFrap(gid: string): SnapResponse {
-  return {
-    version: "1.0",
-    theme: { accent: "purple" },
-    ui: {
-      root: "page",
-      elements: {
-        page: {
-          type: "stack",
-          props: { direction: "vertical", gap: "md" },
-          children: ["board", "playBtn", "openAppBtn"],
-        },
-        board: {
-          type: "image",
-          props: {
-            url: buildGameImageUrlById(gid),
-            aspect: FRAP_ASPECT_RATIO,
-            alt: "Framedl result",
-          },
-        },
-        playBtn: {
-          type: "button",
-          props: { label: "Play your own", variant: "primary" },
-          on: { press: { action: "submit", params: { op: "play" } } },
-        },
-        openAppBtn: {
-          type: "button",
-          props: {
-            label: "Open Framedl",
-            variant: "secondary",
-            icon: "arrow-right",
-          },
-          on: {
-            press: {
-              action: "open_mini_app",
-              params: { target: `${baseUrl}/app/v2` },
-            },
-          },
-        },
-      },
-    },
-  };
 }
 
 function welcomeFrap(message?: string): SnapResponse {
@@ -237,7 +184,7 @@ function gameFrap(game: GuessedGame, message?: string): SnapResponse {
           action: "compose_cast",
           params: {
             text: buildShareText(game),
-            embeds: [`${baseUrl}/frap?gid=${game.id}`],
+            embeds: [`${baseUrl}/frap`],
           },
         },
       },
@@ -286,14 +233,7 @@ function validationMessage(status: GuessValidationStatus): string {
   }
 }
 
-export async function GET(req: NextRequest) {
-  const gid = new URL(req.url).searchParams.get("gid");
-  if (gid) {
-    const game = await gameService.load(gid);
-    if (game) {
-      return snapJson(viewFrap(gid));
-    }
-  }
+export async function GET() {
   return snapJson(welcomeFrap());
 }
 
