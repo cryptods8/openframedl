@@ -74,6 +74,32 @@ export const options: SatoriOptions = {
   fonts,
 };
 
+export type AspectRatio = "1:1" | "4:3" | "16:9" | "9:16";
+
+const ASPECT_DIMENSIONS: Record<
+  AspectRatio,
+  { width: number; height: number }
+> = {
+  "1:1": { width: 1080, height: 1080 },
+  "4:3": { width: 1200, height: 900 },
+  "16:9": { width: 1200, height: 675 },
+  "9:16": { width: 720, height: 1280 },
+};
+
+export function getAspectDimensions(
+  aspectRatio?: AspectRatio | null
+): { width: number; height: number } {
+  if (aspectRatio && ASPECT_DIMENSIONS[aspectRatio]) {
+    return ASPECT_DIMENSIONS[aspectRatio];
+  }
+  // Default: legacy frames dimensions
+  return { width: 1200, height: 630 };
+}
+
+export function isPortrait(aspectRatio?: AspectRatio | null): boolean {
+  return aspectRatio === "9:16";
+}
+
 async function toImage(
   node: ReactNode,
   satoriOptions?: Partial<SatoriOptions>
@@ -311,6 +337,7 @@ export interface GenerateImageOptions {
   customMaker?: CustomGameMaker | null;
   userStats?: UserStats | null;
   replacedScore?: number | null;
+  aspectRatio?: AspectRatio | null;
 }
 
 function getGuessCharacterColorStyle(
@@ -349,24 +376,41 @@ export async function generateImage(
   game: GuessedGame | undefined | null,
   options?: GenerateImageOptions
 ) {
-  const { overlayMessage, share, userStats } = options || {};
+  const { overlayMessage, share, userStats, aspectRatio } = options || {};
   const isCustom = game?.isCustom || options?.custom;
   const customMaker = game?.customMaker || options?.customMaker;
   const isArt = customMaker?.isArt;
   const artWord = customMaker?.word;
 
   const gameMessage = determineGameMessage(game, options);
+  const dims = getAspectDimensions(aspectRatio);
+  const portrait = isPortrait(aspectRatio);
+
+  // Padding scales with the available height so taller canvases breathe
+  // instead of stranding the board near the top.
+  const verticalPad = Math.round(Math.max(48, dims.height * 0.08));
+  const horizontalPad = Math.round(Math.max(32, dims.width * 0.04));
 
   return toImage(
     <div tw="flex w-full h-full items-center justify-center relative">
-      <div tw="flex w-full h-full items-stretch justify-between">
+      <div
+        tw="flex w-full h-full items-stretch justify-between"
+        style={{ flexDirection: portrait ? "column" : "row" }}
+      >
         <GameBoard game={game} isPublic={share} />
         <div
-          tw={"flex flex-col flex-1 px-8 border-l pt-16"}
+          tw={"flex flex-col flex-1"}
           style={{
             gap: "3rem",
             borderColor: primaryColor(0.2),
             backgroundColor: primaryColor(0.04),
+            paddingTop: verticalPad,
+            paddingBottom: Math.round(verticalPad * 0.75),
+            paddingLeft: horizontalPad,
+            paddingRight: horizontalPad,
+            borderLeftWidth: portrait ? 0 : 1,
+            borderTopWidth: portrait ? 1 : 0,
+            borderStyle: "solid",
           }}
         >
           <div
@@ -453,7 +497,8 @@ export async function generateImage(
           {isArt ? "🎨 ART" : "CUSTOM"}
         </div>
       )}
-    </div>
+    </div>,
+    dims
   );
 }
 

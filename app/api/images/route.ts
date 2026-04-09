@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { generateImage } from "../../generate-image";
+import { generateImage, AspectRatio } from "../../generate-image";
 import {
   CustomGameMaker,
   gameService,
@@ -10,7 +10,16 @@ import { timeCall } from "../../utils";
 import { UserStats } from "../../game/game-repository";
 import { verifyUrl } from "../api-utils";
 
-const allowedQueryParams = ["gid", "msg", "shr", "custom", "cid"];
+const allowedQueryParams = ["gid", "msg", "shr", "custom", "cid", "ar", "gc"];
+
+const ALLOWED_ASPECT_RATIOS: AspectRatio[] = ["1:1", "4:3", "16:9", "9:16"];
+
+function parseAspectRatio(value: string | null): AspectRatio | undefined {
+  if (!value) return undefined;
+  return (ALLOWED_ASPECT_RATIOS as string[]).includes(value)
+    ? (value as AspectRatio)
+    : undefined;
+}
 
 function isGameFinished(game: GuessedGame) {
   return game.status === "LOST" || game.status === "WON";
@@ -68,6 +77,7 @@ export async function GET(req: NextRequest) {
     const shr = params.get("shr");
     const custom = params.get("custom");
     const cid = params.get("cid");
+    const ar = parseAspectRatio(params.get("ar"));
     const game = gid ? await loadGame(gid) : null;
     const options = {
       overlayMessage: msg,
@@ -76,6 +86,7 @@ export async function GET(req: NextRequest) {
       customMaker: await loadCustomGameMaker(cid),
       userStats: await loadUserStats(game),
       replacedScore: await loadReplacedScore(game),
+      aspectRatio: ar,
     };
     return timeCall("generateImage", () => generateImage(game, options));
   } catch (e) {
