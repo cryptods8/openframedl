@@ -20,6 +20,7 @@ export interface DisplayBadge extends BadgeInfo {
   username?: string | null;
   minted?: boolean;
   earnedAt?: string;
+  seen?: boolean;
 }
 
 const TIER_COLORS: Record<string, string> = {

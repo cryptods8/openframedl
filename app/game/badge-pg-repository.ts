@@ -94,6 +94,17 @@ export async function updateMintInfo(
     .execute();
 }
 
+export async function markSeen(userKey: UserKey, badgeIds: string[]): Promise<void> {
+  if (badgeIds.length === 0) return;
+  await pgDb
+    .updateTable("badge")
+    .set({ seen: true })
+    .where("id", "in", badgeIds)
+    .where("userId", "=", userKey.userId)
+    .where("identityProvider", "=", userKey.identityProvider)
+    .execute();
+}
+
 /**
  * Compute milestones from stats, bulk-insert any newly earned ones.
  * Returns only the newly inserted badges.

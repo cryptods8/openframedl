@@ -290,6 +290,7 @@ export interface BadgeTable extends UserKey {
   tier: string;
   earnedAt: ColumnType<Date, Date | undefined, never>;
   username: string | null;
+  seen: ColumnType<boolean, boolean | undefined, boolean>;
   minted: ColumnType<boolean, boolean | undefined, boolean>;
   mintTxHash: string | null;
   tokenId: string | null;

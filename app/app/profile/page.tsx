@@ -169,6 +169,7 @@ async function ProfileBadgesContent() {
     earnedAt: b.earnedAt.toISOString(),
     username: b.username,
     minted: b.minted,
+    seen: b.seen,
   }));
 
   return (

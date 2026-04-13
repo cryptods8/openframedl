@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCategory,
@@ -35,6 +35,7 @@ export interface SerializedBadge {
   earnedAt: string;
   username: string | null;
   minted: boolean;
+  seen: boolean;
 }
 
 interface ProfileBadgesProps {
@@ -105,6 +106,13 @@ function BadgeCard({
           alt={`${displayValue} ${BADGE_CATEGORIES[badge.category].label}`}
           className="w-full h-full"
         />
+        {badge.seen === false && (
+          <div className="absolute top-0 left-0 p-1.5">
+            <span className="inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase bg-amber-400 text-amber-900 rounded-full leading-none">
+              New
+            </span>
+          </div>
+        )}
         {canCollect && (
           <div
             className={cn(
@@ -249,6 +257,7 @@ export function ProfileBadges({
         dbId: dbBadge?.id,
         minted: dbBadge?.minted ?? false,
         earnedAt: dbBadge?.earnedAt,
+        seen: dbBadge?.seen,
       };
     });
 
@@ -268,6 +277,7 @@ export function ProfileBadges({
           dbId: b.id,
           minted: b.minted,
           earnedAt: b.earnedAt,
+          seen: b.seen,
         }));
       if (extraDb.length > 0) {
         allBadges[cat] = [...extraDb, ...allBadges[cat]].sort(
@@ -280,6 +290,21 @@ export function ProfileBadges({
   const allFlat = Object.values(allBadges).flat();
   const totalEarned = allFlat.filter((b) => b.earned).length;
   const totalCollected = allFlat.filter((b) => b.minted).length;
+
+  // Mark unseen badges as seen on mount
+  const unseenIds = allFlat
+    .filter((b) => b.earned && b.seen === false && b.dbId)
+    .map((b) => b.dbId!);
+
+  useEffect(() => {
+    if (unseenIds.length === 0) return;
+    fetch("/api/badges/mark-seen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ badgeIds: unseenIds }),
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unseenIds.join(",")]);
 
   return (
     <div className="space-y-6">
