@@ -19,6 +19,7 @@ import {
 import { Button } from "@/app/ui/button/button";
 import { cn } from "@/app/utils";
 import { BadgeDetailDialog, DisplayBadge } from "@/app/ui/badge-detail-dialog";
+import { CollectAllButton } from "@/app/ui/collect-all-button";
 
 interface BadgeStats {
   totalWins: number;
@@ -290,6 +291,7 @@ export function ProfileBadges({
   const allFlat = Object.values(allBadges).flat();
   const totalEarned = allFlat.filter((b) => b.earned).length;
   const totalCollected = allFlat.filter((b) => b.minted).length;
+  const uncollected = allFlat.filter((b) => b.earned && !b.minted);
 
   // Mark unseen badges as seen on mount
   const unseenIds = allFlat
@@ -308,8 +310,19 @@ export function ProfileBadges({
 
   return (
     <div className="space-y-6">
-      <div className="text-sm text-primary-900/60">
-        {totalEarned} earned · {totalCollected} collected
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm text-primary-900/60">
+          {totalEarned} earned · {totalCollected} collected
+        </div>
+        {canCollect && uncollected.length > 1 && (
+          <CollectAllButton
+            badges={uncollected.map((b) => ({
+              category: b.category,
+              milestone: b.milestone,
+            }))}
+            onComplete={handleCollected}
+          />
+        )}
       </div>
 
       {allCategories.map((cat) => (
