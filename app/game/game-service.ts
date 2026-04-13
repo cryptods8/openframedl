@@ -734,6 +734,7 @@ export class GameServiceImpl implements GameService {
       if (updatedGame.status === "WON") {
         await this.checkAndAwardFreezes(guessedGame);
       }
+      await this.enqueueBadgeMaterialization(guessedGame);
     }
     return updatedGame;
   }
@@ -783,6 +784,25 @@ export class GameServiceImpl implements GameService {
     }
   }
 
+  private async enqueueBadgeMaterialization(game: GuessedGame) {
+    try {
+      await notificationQueueRepo.enqueue([
+        {
+          userId: game.userId,
+          identityProvider: game.identityProvider,
+          type: "badge_earned",
+          channel: "frame",
+          scheduledAt: new Date(),
+          payload: JSON.stringify({
+            username: game.userData?.username ?? null,
+          }),
+          refId: `badges-${game.gameKey}`,
+        },
+      ]);
+    } catch (e) {
+      console.error("Error enqueueing badge materialization", e);
+    }
+  }
 
   private fromGuessedGame(game: GuessedGame): gameRepo.DBGameViewWithArena {
     const { customMaker, arena } = game;

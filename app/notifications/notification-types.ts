@@ -2,6 +2,8 @@ import { pgDb } from "@/app/db/pg/pg-db";
 import { getDailyGameKey } from "@/app/game/game-utils";
 import { externalBaseUrl, isPro } from "@/app/constants";
 import { DBNotificationQueue, NotificationType } from "@/app/db/pg/types";
+import * as statsRepo from "@/app/game/stats-pg-repository";
+import * as badgeRepo from "@/app/game/badge-pg-repository";
 
 interface NotificationMessage {
   title: string;
@@ -9,7 +11,9 @@ interface NotificationMessage {
   targetUrl?: string;
 }
 
-interface NotificationTypeConfig {
+export interface NotificationTypeConfig {
+  /** Optional async hook called before isStale. Return false to skip (mark stale). */
+  prepare?: (item: DBNotificationQueue) => Promise<boolean>;
   isStale: (item: DBNotificationQueue) => Promise<boolean>;
   buildMessage: (items: DBNotificationQueue[]) => NotificationMessage;
 }
@@ -149,6 +153,49 @@ const streakFreezeEarnedConfig: NotificationTypeConfig = {
   },
 };
 
+const badgeEarnedConfig: NotificationTypeConfig = {
+  async prepare(item) {
+    const userKey = {
+      userId: item.userId,
+      identityProvider: item.identityProvider,
+    };
+    const stats = await statsRepo.loadStatsByUserKey(userKey);
+    if (!stats) return false;
+    const payload = item.payload as { username?: string; badges?: { category: string; milestone: number }[] };
+    const newBadges = await badgeRepo.materializeBadges(userKey, stats, payload.username);
+    if (newBadges.length === 0) return false;
+    // Enrich in-memory payload for buildMessage
+    payload.badges = newBadges.map((b) => ({
+      category: b.category,
+      milestone: b.milestone,
+    }));
+    return true;
+  },
+
+  async isStale() {
+    return false;
+  },
+
+  buildMessage(items) {
+    const item = items[0]!;
+    const payload = item.payload as { badges?: { category: string; milestone: number }[] };
+    const badges = payload.badges ?? [];
+    if (badges.length === 1) {
+      const b = badges[0]!;
+      return {
+        title: "New Badge Earned!",
+        body: `You earned the ${b.milestone} ${b.category} badge!`,
+        targetUrl: `${externalBaseUrl}/app/profile?tab=badges`,
+      };
+    }
+    return {
+      title: "New Badges Earned!",
+      body: `You earned ${badges.length} new badges!`,
+      targetUrl: `${externalBaseUrl}/app/profile?tab=badges`,
+    };
+  },
+};
+
 export const notificationTypeRegistry: Record<
   NotificationType,
   NotificationTypeConfig
@@ -156,4 +203,5 @@ export const notificationTypeRegistry: Record<
   daily_reminder: dailyReminderConfig,
   arena_new: arenaNewConfig,
   streak_freeze_earned: streakFreezeEarnedConfig,
+  badge_earned: badgeEarnedConfig,
 };

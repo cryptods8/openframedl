@@ -19,7 +19,7 @@ Creates the `badge` table:
 | `id` | uuid | PK, auto-generated |
 | `user_id` | text | |
 | `identity_provider` | enum | |
-| `category` | text | wins, streaks, fourdle, wordone |
+| `category` | text | wins, streaks, fourdle, wordone, losses |
 | `milestone` | integer | e.g. 100 |
 | `tier` | text | bronze, silver, gold, platinum, diamond |
 | `earned_at` | timestamptz | defaults to now() |
@@ -66,9 +66,8 @@ ERC1155 where each badge is a unique token (auto-incrementing `tokenId`).
 
 | Function | Description |
 |----------|-------------|
-| `mintBadge(to, badgeId, nonce, signature)` | Signature-gated mint, costs `mintPrice` ETH |
+| `mintBadge(to, badgeId, nonce, price, signature)` | Signature-gated mint, price per tier included in signature |
 | `setSigner(address)` | Owner sets the authorized signer |
-| `setMintPrice(uint256)` | Owner sets mint price |
 | `setRoyalty(address, uint96)` | Owner sets ERC-2981 royalty (max 10%) |
 | `withdraw()` | Owner withdraws collected ETH |
 
@@ -103,9 +102,9 @@ Server-side signing + shared ABI/config:
 
 ## API Endpoints
 
-### `GET /api/badges/mint?badgeId=<uuid>&walletAddress=<0x...>`
+### `GET /api/badges/mint?category=<cat>&milestone=<n>&walletAddress=<0x...>`
 
-Returns `{ badgeId, nonce, signature }` for minting. Verifies:
+Returns `{ badgeId, nonce, signature, price }` for minting. Materializes the badge if needed. Verifies:
 - User is authenticated
 - Badge exists and belongs to user
 - Badge not already minted

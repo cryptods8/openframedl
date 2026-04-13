@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardIcon, CheckIcon } from "@heroicons/react/16/solid";
+import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/16/solid";
 import { MintBadgeButton } from "@/app/ui/mint-badge-button";
+import { useSharing } from "@/app/hooks/use-sharing";
+import {
+  BadgeCategory,
+  BADGE_CATEGORIES,
+  formatBadgeValue,
+} from "@/app/lib/badges";
 
 interface BadgePageClientProps {
   shareUrl: string;
@@ -22,6 +28,7 @@ export function BadgePageClient({
   const [copied, setCopied] = useState(false);
   const [mintSuccess, setMintSuccess] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
+  const { composeCast } = useSharing();
 
   async function handleCopy() {
     try {
@@ -53,6 +60,24 @@ export function BadgePageClient({
             </>
           )}
         </button>
+
+        {category && milestone && (
+          <button
+            type="button"
+            onClick={() => {
+              const cat = BADGE_CATEGORIES[category as BadgeCategory];
+              const displayVal = formatBadgeValue(milestone);
+              composeCast({
+                text: `I earned my ${displayVal} ${cat?.label ?? category} badge in Framedl!`,
+                embeds: [shareUrl],
+              });
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary-900/10 hover:bg-primary-900/15 transition-colors cursor-pointer"
+          >
+            <ShareIcon className="w-4 h-4" />
+            Share
+          </button>
+        )}
 
         {canMint && category && milestone && !minted && !mintSuccess && (
           <MintBadgeButton

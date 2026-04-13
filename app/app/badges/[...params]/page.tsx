@@ -12,7 +12,7 @@ import { BadgePageClient } from "./badge-page-client";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { getFarcasterSession } from "@/app/lib/auth";
 
-const VALID_CATEGORIES = new Set<string>(["wins", "streaks", "fourdle", "wordone"]);
+const VALID_CATEGORIES = new Set<string>(["wins", "streaks", "fourdle", "wordone", "losses"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface BadgePageProps {

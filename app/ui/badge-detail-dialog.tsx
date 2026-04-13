@@ -8,10 +8,12 @@ import {
   formatBadgeValue,
   getBadgeImageUrl,
 } from "@/app/lib/badges";
-import { CheckCircleIcon } from "@heroicons/react/16/solid";
+import { CheckCircleIcon, ShareIcon } from "@heroicons/react/16/solid";
 import { Button } from "./button/button";
 import { Dialog } from "./dialog";
 import { MintBadgeButton } from "./mint-badge-button";
+import { useSharing } from "@/app/hooks/use-sharing";
+import { externalBaseUrl } from "@/app/constants";
 
 export interface DisplayBadge extends BadgeInfo {
   dbId?: string;
@@ -43,6 +45,7 @@ export function BadgeDetailDialog({
 }) {
   const [mintSuccess, setMintSuccess] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
+  const { composeCast } = useSharing();
 
   const imageUrl = badge
     ? getBadgeImageUrl(badge.category, badge.milestone, badge.username)
@@ -125,9 +128,29 @@ export function BadgeDetailDialog({
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={handleClose}>
-              Close
-            </Button>
+            <div className="flex gap-2 w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!badge || !catInfo) return;
+                  const shareUrl = badge.dbId
+                    ? `${externalBaseUrl}/app/badges/${badge.dbId}`
+                    : `${externalBaseUrl}/app/badges/${badge.category}/${badge.milestone}`;
+                  const displayVal = formatBadgeValue(badge.milestone);
+                  composeCast({
+                    text: `I earned my ${displayVal} ${catInfo.label} badge in Framedl!`,
+                    embeds: [shareUrl],
+                  });
+                }}
+              >
+                <ShareIcon className="w-4 h-4" />
+                Share
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleClose}>
+                Close
+              </Button>
+            </div>
             {canCollect && !isMinted && (
               <p className="text-xs text-primary-900/50 text-center">
                 {TIER_MINT_PRICES[badge.tier] === 0n

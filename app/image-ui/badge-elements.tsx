@@ -1,9 +1,3 @@
-import { NextRequest, NextResponse } from "next/server";
-import satori from "satori";
-import sharp from "sharp";
-import { lightColor } from "@/app/image-ui/image-utils";
-import { isPro } from "@/app/constants";
-import { fonts } from "@/app/generate-image";
 import React from "react";
 import {
   BadgeTier as TierName,
@@ -11,16 +5,11 @@ import {
   getTier,
 } from "@/app/lib/badges";
 
-export const dynamic = "force-dynamic";
-
-const SIZE = 1024;
-const CARD_MARGIN = 122;
-const CARD_SIZE = SIZE - CARD_MARGIN * 2; // 820
-const CARD_R = 24;
+export type { TierName, CategoryId };
 
 // ─── Tier definitions ───────────────────────────────────────────────
 
-const TIERS: Record<
+export const TIERS: Record<
   TierName,
   {
     fill: string;
@@ -69,7 +58,7 @@ const TIERS: Record<
 
 // ─── Category definitions ───────────────────────────────────────────
 
-const CATEGORIES: Record<
+export const CATEGORIES: Record<
   CategoryId,
   { label: string; singularLabel: string; shape: string[] }
 > = {
@@ -132,40 +121,6 @@ const CATEGORIES: Record<
       "_____DD____",
       "_____DD____",
     ],
-    // shape: [
-    //   "____GGDDDDDD",
-    //   "____GGDDDDDD",
-    //   "___GG_DD____",
-    //   "___GG_DD____",
-    //   "__GG__DD____",
-    //   "__GG__DD____",
-    //   "_GG___DD____",
-    //   "_GG___DD____",
-    //   "GGGGGGDDDDD_",
-    //   "GGGGGGDDDDD_",
-    //   "______DD____",
-    //   "______DD____",
-    //   "______DD____",
-    //   "______DD____",
-    //   "______DD____",
-    // ],
-    // shape: [
-    //   "_____GGDDDDDD",
-    //   "_____GGDDDDDD",
-    //   "____GG_DD____",
-    //   "____GG_DD____",
-    //   "___GG__DD____",
-    //   "___GG__DD____",
-    //   "__GG___DD____",
-    //   "__GG___DD____",
-    //   "_GG____DD____",
-    //   "_GG____DD____",
-    //   "GGGGGGGDDDD__",
-    //   "GGGGGGGDDDD__",
-    //   "_______DD____",
-    //   "_______DD____",
-    //   "_______DD____",
-    // ],
   },
   wordone: {
     label: "WORD-IN-ONE",
@@ -211,7 +166,15 @@ const CATEGORIES: Record<
   },
 };
 
+// Re-export getTier from canonical source
+export { getTier };
+
 // ─── Layout constants ───────────────────────────────────────────────
+export const BADGE_SIZE = 1024;
+export const CARD_MARGIN = 122;
+export const CARD_SIZE = BADGE_SIZE - CARD_MARGIN * 2; // 820
+export const CARD_R = 24;
+
 const numFontSize = 116;
 const ribbonLabelFontSize = 40;
 const RIBBON_H = Math.round(CARD_SIZE * 0.3);
@@ -219,7 +182,6 @@ const RIBBON_ABS_Y =
   CARD_MARGIN + CARD_SIZE - RIBBON_H - ribbonLabelFontSize * 2;
 const RIBBON_END_W = 80;
 const RIBBON_END_DROP = 16;
-const FOLD_SIZE = 18;
 const NOTCH_INSET = Math.round(RIBBON_END_W * 0.55);
 
 // ─── Ribbon end polygon helpers ─────────────────────────────────────
@@ -243,7 +205,6 @@ function makeEndPointsOverlay(
 ): string {
   const coef = left ? 1 : -1;
   const p1 = `${x + NOTCH_INSET * coef},${y + h / 2}`;
-  // const p2 = `${x},${y}`;
   const p2 = `${x + RIBBON_END_W * coef},${y + h / 2}`;
   const p3 = `${x + RIBBON_END_W * coef},${y + h}`;
   const p4 = `${x},${y + h}`;
@@ -252,12 +213,8 @@ function makeEndPointsOverlay(
   return arr.join(" ");
 }
 
-function makeFoldPoints(fx: number, left: boolean): string {
-  return `${fx},${RIBBON_ABS_Y} ${fx},${RIBBON_ABS_Y + RIBBON_END_DROP} ${fx + (left ? -1 : 1) * FOLD_SIZE},${RIBBON_ABS_Y + RIBBON_END_DROP}`;
-}
-
 // ─── Pixel art grid ─────────────────────────────────────────────────
-function PixelArtGrid({
+export function PixelArtGrid({
   category,
   tier,
 }: {
@@ -276,8 +233,8 @@ function PixelArtGrid({
 
   const shapeW = cols * cellSize;
   const shapeH = rows * cellSize;
-  const shapeX = (SIZE - shapeW) / 2;
-  const shapeY = RIBBON_ABS_Y - shapeH - 8; // (SIZE - shapeH) / 2;
+  const shapeX = (BADGE_SIZE - shapeW) / 2;
+  const shapeY = RIBBON_ABS_Y - shapeH - 8;
 
   const cells: React.ReactNode[] = [];
   for (let ri = 0; ri < rows; ri++) {
@@ -306,7 +263,7 @@ function PixelArtGrid({
 }
 
 // ─── Ribbon ends (inline SVG) ───────────────────────────────────────
-function RibbonEnds({ tier }: { tier: TierName }) {
+export function RibbonEnds({ tier }: { tier: TierName }) {
   const t = TIERS[tier];
 
   const offset = 4;
@@ -315,25 +272,23 @@ function RibbonEnds({ tier }: { tier: TierName }) {
   const leH = RIBBON_H - 4;
   const leftEnd = makeEndPoints(leX, leY, leH, true);
   const leftEndOverlay = makeEndPointsOverlay(leX, leY, leH, true);
-  const reX = SIZE - CARD_MARGIN + RIBBON_END_W - offset;
+  const reX = BADGE_SIZE - CARD_MARGIN + RIBBON_END_W - offset;
   const rightEnd = makeEndPoints(reX, leY, leH, false);
   const rightEndOverlay = makeEndPointsOverlay(reX, leY, leH, false);
 
   const lfX = CARD_MARGIN + offset;
-  // const leftFold = makeFoldPoints(lfX, true);
-  const rfX = SIZE - CARD_MARGIN - offset;
-  // const rightFold = makeFoldPoints(rfX, false);
+  const rfX = BADGE_SIZE - CARD_MARGIN - offset;
   const rotateDeg = 5;
 
   return (
     <svg
-      viewBox={`0 0 ${SIZE} ${SIZE}`}
+      viewBox={`0 0 ${BADGE_SIZE} ${BADGE_SIZE}`}
       style={{
         position: "absolute",
         top: 0,
         left: 0,
-        width: SIZE,
-        height: SIZE,
+        width: BADGE_SIZE,
+        height: BADGE_SIZE,
       }}
     >
       <polygon
@@ -358,69 +313,34 @@ function RibbonEnds({ tier }: { tier: TierName }) {
         fillOpacity={0.15}
         transform={`rotate(${rotateDeg}, ${rfX}, ${leY})`}
       />
-      {/* <polygon points={leftFold} fill={t.fold} /> */}
-      {/* <polygon points={rightFold} fill={t.fold} /> */}
     </svg>
   );
 }
 
-// ─────────────────────
-// ─── Badge element ───
-// ─────────────────────
-function BadgeElement({
+// ─── Badge card (without outer background) ──────────────────────────
+export function BadgeCard({
   category,
   tier,
   numberText,
-  username,
+  cardShadow,
 }: {
   category: CategoryId;
   tier: TierName;
   numberText: string;
-  username?: string | null;
+  cardShadow?: string;
 }) {
   const t = TIERS[tier];
   const cat = CATEGORIES[category];
-  // numberText.length <= 2 ? 72 : numberText.length <= 4 ? 64 : 52;
-  const labelFontSize = 40;
-  const ribbonCenterY = RIBBON_ABS_Y + RIBBON_H / 2;
 
   return (
     <div
       style={{
         display: "flex",
-        width: SIZE,
-        height: SIZE,
+        width: BADGE_SIZE,
+        height: BADGE_SIZE,
         position: "relative",
-        background: "radial-gradient(circle, #008000 0%, #002b00 100%)",
-        // background: "radial-gradient(circle, #5E3FA6 0%, #1D1434 100%)",
-        // background: "radial-gradient(circle, #F3F0F9 0%, #CCC0E7 100%)",
       }}
     >
-      {/* Framedl title */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: CARD_MARGIN,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "SpaceGrotesk",
-          fontWeight: 700,
-          fontSize: labelFontSize,
-          color: lightColor(0.5),
-          gap: 10,
-        }}
-      >
-        <div tw="flex flex-1 h-4" style={{ background: lightColor(0.5) }} />
-        <div tw="flex w-full justify-center">
-          {isPro ? "Framedl PRO" : "Framedl"}
-        </div>
-        <div tw="flex flex-1 h-4" style={{ background: lightColor(0.5) }} />
-      </div>
-
       {/* Ribbon ends — behind card via SVG polygons */}
       <RibbonEnds tier={tier} />
 
@@ -433,13 +353,12 @@ function BadgeElement({
           width: CARD_SIZE,
           height: CARD_SIZE,
           borderRadius: CARD_R,
-          // background: `radial-gradient(circle, white, ${t.fill}10 100%)`,
           background: `linear-gradient(to bottom, white 33%, ${t.fill})`,
-          // backgroundPosition: "top",
           backgroundColor: "white",
           overflow: "hidden",
           display: "flex",
           justifyContent: "center",
+          ...(cardShadow ? { boxShadow: cardShadow } : {}),
         }}
       >
         {/* Pixel art inside card */}
@@ -448,8 +367,8 @@ function BadgeElement({
             position: "absolute",
             left: -CARD_MARGIN,
             top: -CARD_MARGIN,
-            width: SIZE,
-            height: SIZE - (RIBBON_ABS_Y - CARD_MARGIN),
+            width: BADGE_SIZE,
+            height: BADGE_SIZE - (RIBBON_ABS_Y - CARD_MARGIN),
             display: "flex",
           }}
         >
@@ -465,7 +384,6 @@ function BadgeElement({
             width: CARD_SIZE,
             height: RIBBON_H,
             backgroundColor: t.ribbon,
-            // opacity: 0.85,
             display: "flex",
           }}
         />
@@ -492,10 +410,8 @@ function BadgeElement({
             height: RIBBON_H,
             display: "flex",
             flexDirection: "column",
-            // gap: "1rem",
             justifyContent: "center",
             alignItems: "center",
-            // backgroundColor: "red",
           }}
         >
           <div
@@ -511,15 +427,26 @@ function BadgeElement({
             {numberText}
           </div>
         </div>
+      </div>
+
+      {/* Ribbon label pill — outside card to avoid overflow:hidden clipping */}
+      <div
+        style={{
+          position: "absolute",
+          left: CARD_MARGIN,
+          top: RIBBON_ABS_Y + RIBBON_H - ribbonLabelFontSize,
+          width: CARD_SIZE,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         <div
           style={{
-            position: "absolute",
             display: "flex",
-            top: RIBBON_ABS_Y - CARD_MARGIN + RIBBON_H - ribbonLabelFontSize,
             padding: `${ribbonLabelFontSize / 2}px ${(3 * ribbonLabelFontSize) / 4}px`,
-            // background: "green",
             background: "linear-gradient(to top, #008000, #002b00)",
             borderRadius: ribbonLabelFontSize,
+            position: "relative",
           }}
         >
           <div
@@ -551,102 +478,6 @@ function BadgeElement({
           </div>
         </div>
       </div>
-
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: CARD_MARGIN,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "SpaceGrotesk",
-          fontWeight: 700,
-          gap: 2,
-        }}
-      >
-        {username && (
-          <div
-            style={{
-              fontSize: Math.round(labelFontSize),
-              color: lightColor(0.9),
-              lineHeight: 1,
-              display: "flex",
-            }}
-          >
-            {username}
-          </div>
-        )}
-        {/* <div
-          style={{
-            fontSize: labelFontSize,
-            color: lightColor(0.7),
-            textTransform: "uppercase",
-            lineHeight: 1,
-            display: "flex",
-          }}
-        >
-          {tier}
-          {" tier"}
-        </div> */}
-      </div>
     </div>
   );
-}
-
-// ─── Route handler ──────────────────────────────────────────────────
-export async function GET(req: NextRequest) {
-  const params = new URL(req.url).searchParams;
-  const category = params.get("cat") as CategoryId | null;
-  const valueStr = params.get("value");
-  const username = params.get("username");
-
-  if (!category || !valueStr || !CATEGORIES[category]) {
-    return NextResponse.json(
-      { error: "Use ?cat=wins|streaks|fourdle|wordone|losses&value=100" },
-      { status: 400 },
-    );
-  }
-
-  const value = parseInt(valueStr, 10);
-  if (isNaN(value) || value < 1) {
-    return NextResponse.json({ error: "Invalid value" }, { status: 400 });
-  }
-
-  const tier = getTier(category, value);
-  const numberText =
-    value >= 1000 ? value.toLocaleString("en-US") : String(value);
-
-  const format = params.get("format");
-
-  const svg = await satori(
-    <BadgeElement
-      category={category}
-      tier={tier}
-      numberText={numberText}
-      username={username}
-    />,
-    { width: SIZE, height: SIZE, fonts },
-  );
-
-  if (format === "png") {
-    const png = await sharp(Buffer.from(svg)).png().toBuffer();
-    //@ts-ignore
-    return new Response(png, {
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
-    });
-  }
-
-  return new Response(svg, {
-    headers: {
-      "Content-Type": "image/svg+xml",
-      "Cache-Control": "public, max-age=31536000, immutable",
-    },
-  });
 }

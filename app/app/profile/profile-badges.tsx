@@ -48,10 +48,12 @@ function BadgeCard({
   badge,
   onClick,
   canCollect,
+  currentValue,
 }: {
   badge: DisplayBadge;
   onClick?: () => void;
   canCollect?: boolean;
+  currentValue?: number;
 }) {
   const imageUrl = getBadgeImageUrl(
     badge.category,
@@ -61,17 +63,31 @@ function BadgeCard({
   const displayValue = formatBadgeValue(badge.milestone);
 
   if (!badge.earned) {
+    const progress =
+      currentValue != null ? Math.min(currentValue / badge.milestone, 1) : 0;
+    const remaining =
+      currentValue != null ? badge.milestone - currentValue : badge.milestone;
     return (
       <div className="flex flex-col items-center gap-1.5 opacity-40">
         <div className="relative w-full aspect-square rounded-lg bg-primary-900/5 border-2 border-dashed border-primary-900/15 flex flex-col items-center justify-center gap-2">
-          <LockClosedIcon className="w-8 h-8 text-primary-900/25" />
+          <LockClosedIcon className="w-6 h-6 text-primary-900/25" />
           <div className="text-sm font-medium text-primary-900/50 text-center">
             {displayValue}
           </div>
+          {currentValue != null && (
+            <div className="w-3/4 flex flex-col items-center gap-1">
+              <div className="w-full h-1.5 rounded-full bg-primary-900/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary-900/30 transition-all"
+                  style={{ width: `${progress * 100}%` }}
+                />
+              </div>
+              <div className="text-xs text-primary-900/40">
+                {remaining} to go
+              </div>
+            </div>
+          )}
         </div>
-        {/* <div className="text-sm font-medium text-primary-900/50 capitalize text-center">
-          {badge.tier}
-        </div> */}
       </div>
     );
   }
@@ -164,6 +180,7 @@ function CategorySection({
                 badge={badge}
                 onClick={badge.earned ? () => onBadgeClick(badge) : undefined}
                 canCollect={canCollect}
+                currentValue={!badge.earned ? currentValue : undefined}
               />
             ))}
           </div>

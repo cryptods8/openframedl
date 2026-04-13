@@ -250,7 +250,8 @@ export type DBUserSettingsUpdate = Updateable<UserSettingsTable>;
 export type NotificationType =
   | "daily_reminder"
   | "arena_new"
-  | "streak_freeze_earned";
+  | "streak_freeze_earned"
+  | "badge_earned";
 export type NotificationChannel = "frame" | "direct_cast";
 export type NotificationStatus =
   | "pending"

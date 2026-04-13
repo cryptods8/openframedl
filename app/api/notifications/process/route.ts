@@ -94,6 +94,11 @@ async function processFrameItems(
   for (const item of items) {
     const config = notificationTypeRegistry[item.type];
 
+    if (config.prepare && !(await config.prepare(item))) {
+      staleIds.push(item.id);
+      continue;
+    }
+
     if (await config.isStale(item)) {
       staleIds.push(item.id);
       continue;
@@ -210,6 +215,12 @@ async function processDirectCastItems(
 ) {
   for (const item of items) {
     const config = notificationTypeRegistry[item.type];
+
+    if (config.prepare && !(await config.prepare(item))) {
+      await nqRepo.markStale([item.id]);
+      summary.stale++;
+      continue;
+    }
 
     if (await config.isStale(item)) {
       await nqRepo.markStale([item.id]);
