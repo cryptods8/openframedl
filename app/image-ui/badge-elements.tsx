@@ -299,7 +299,7 @@ export function RibbonEnds({ tier }: { tier: TierName }) {
       <polygon
         points={leftEndOverlay}
         fill={"black"}
-        fillOpacity={0.15}
+        fillOpacity={0.12}
         transform={`rotate(${-rotateDeg}, ${lfX}, ${leY})`}
       />
       <polygon
@@ -310,7 +310,7 @@ export function RibbonEnds({ tier }: { tier: TierName }) {
       <polygon
         points={rightEndOverlay}
         fill={"black"}
-        fillOpacity={0.15}
+        fillOpacity={0.12}
         transform={`rotate(${rotateDeg}, ${rfX}, ${leY})`}
       />
     </svg>
@@ -353,12 +353,18 @@ export function BadgeCard({
           width: CARD_SIZE,
           height: CARD_SIZE,
           borderRadius: CARD_R,
-          background: `linear-gradient(to bottom, white 33%, ${t.fill})`,
+          background: `linear-gradient(to bottom, white 0%, white 25%, ${t.fill} 78%, ${t.dark} 100%)`,
           backgroundColor: "white",
           overflow: "hidden",
           display: "flex",
           justifyContent: "center",
-          ...(cardShadow ? { boxShadow: cardShadow } : {}),
+          boxShadow: [
+            cardShadow,
+            "inset 0 2px 0 rgba(255,255,255,0.9)",
+            "inset 0 -3px 14px rgba(0,0,0,0.14)",
+          ]
+            .filter(Boolean)
+            .join(", "),
         }}
       >
         {/* Pixel art inside card */}
@@ -387,6 +393,20 @@ export function BadgeCard({
             display: "flex",
           }}
         />
+        {/* Ribbon top sheen */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: RIBBON_ABS_Y - CARD_MARGIN,
+            width: CARD_SIZE,
+            height: Math.round(RIBBON_H * 0.18),
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)",
+            display: "flex",
+          }}
+        />
+        {/* Ribbon fold shadow (soft bottom half) */}
         <div
           style={{
             position: "absolute",
@@ -394,8 +414,8 @@ export function BadgeCard({
             top: RIBBON_ABS_Y - CARD_MARGIN + RIBBON_H / 2,
             width: CARD_SIZE,
             height: RIBBON_H / 2,
-            backgroundColor: "black",
-            opacity: 0.15,
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.05) 100%)",
             display: "flex",
           }}
         />
@@ -422,6 +442,9 @@ export function BadgeCard({
               fontWeight: 700,
               fontSize: numFontSize,
               color: "white",
+              letterSpacing: "-0.01em",
+              textShadow:
+                "0 3px 6px rgba(0,0,0,0.35), 0 1px 0 rgba(0,0,0,0.2)",
             }}
           >
             {numberText}
