@@ -11,16 +11,12 @@ import { Game as GameComponent, GameProps } from "@/app/ui/game";
 import { GameGuessGrid } from "@/app/ui/game-guess-grid";
 import { ProgressBarIcon } from "@/app/ui/icons/progress-bar-icon";
 import { composeCast, createComposeUrl } from "@/app/utils";
-import sdk, { SignIn as FrameSignIn, Context } from "@farcaster/miniapp-sdk";
+import sdk, { SignIn as FrameSignIn } from "@farcaster/miniapp-sdk";
 import { getCsrfToken, useSession, signIn, signOut } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HapticsTest } from "./haptics-test";
 import { ClientContext, useClientContext } from "./use-client-context";
 import { useBottomOffset } from "@/app/ui/bottom-nav";
-
-function toUserData(user: Context.MiniAppContext["user"]) {
-  return { ...user, profileImage: user.pfpUrl };
-}
 
 function Loading() {
   return (
@@ -327,7 +323,7 @@ export function AppFrame({
   };
   ts?: string;
 }) {
-  const clientContext = useClientContext({});
+  const clientContext = useClientContext();
 
   if (!clientContext.isReady) {
     return null;

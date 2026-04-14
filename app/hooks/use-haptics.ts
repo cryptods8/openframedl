@@ -1,18 +1,12 @@
 "use client";
 
 import { sdk } from "@farcaster/miniapp-sdk";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+
+import { useAppRuntime } from "../contexts/app-runtime-context";
 
 export function useHaptics() {
-  const [capabilities, setCapabilities] = useState<string[] | null>(null);
-
-  useEffect(() => {
-    const load = async () => {
-      const capabilities = await sdk.getCapabilities();
-      setCapabilities(capabilities);
-    };
-    load();
-  }, []);
+  const { capabilities } = useAppRuntime();
 
   const impact = useCallback(async (type: "light" | "medium" | "heavy" | "soft" | "rigid") => {
     if (!capabilities || capabilities.includes("haptics.impactOccurred")) {

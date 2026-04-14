@@ -245,7 +245,7 @@ function ArenaResultsPanel({
         ref={buttonContainerRef}
       >
         <div className="p-4">
-          <PaddedContainer context={context} sides="rl">
+          <PaddedContainer sides="rl">
             <div className="flex flex-col gap-2">
               {status === "ENDED" ||
               completionStatus === "COMPLETED" ||
@@ -358,7 +358,6 @@ function AuthContainer({
   return (
     <PaddedContainer
       className="w-full h-full flex-1 flex flex-col items-center justify-center"
-      context={context}
       sides="trl"
       extraBottom={bottomOffset}
     >
@@ -378,7 +377,7 @@ export function ArenaResultsMiniApp({
 }: {
   arena?: PublicArenaWithGames;
 }) {
-  const clientContext = useClientContext({});
+  const clientContext = useClientContext();
 
   return (
     <div className="w-full h-full flex-1 flex flex-col items-center justify-center">

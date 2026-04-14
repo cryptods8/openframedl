@@ -1,10 +1,11 @@
 "use client";
 
 import { sdk } from "@farcaster/miniapp-sdk";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 
 import { useJwt } from "./use-jwt";
 import { useAppConfig } from "../contexts/app-config-context";
+import { useAppRuntime } from "../contexts/app-runtime-context";
 import { createCast } from "../lib/cast";
 import { createComposeUrl } from "../utils";
 
@@ -15,17 +16,9 @@ export interface Cast {
 }
 
 export function useSharing() {
-  const [isMiniApp, setIsMiniApp] = useState(false);
+  const { isMiniApp } = useAppRuntime();
   const { jwt } = useJwt();
   const { isPro } = useAppConfig();
-
-  useEffect(() => {
-    const load = async () => {
-      const context = await sdk.context;
-      setIsMiniApp(!!context);
-    };
-    load();
-  }, []);
 
   const composeCast = useCallback(
     async (cast: Cast) => {

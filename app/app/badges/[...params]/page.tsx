@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { externalBaseUrl } from "@/app/constants";
+import { externalBaseUrl, isPro } from "@/app/constants";
 import {
   BadgeCategory,
   BADGE_CATEGORIES,
@@ -11,6 +11,7 @@ import {
 import { BadgePageClient } from "./badge-page-client";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { getFarcasterSession } from "@/app/lib/auth";
+import { MiniAppEmbedNext } from "@farcaster/miniapp-node";
 
 const VALID_CATEGORIES = new Set<string>(["wins", "streaks", "fourdle", "wordone", "losses"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -81,15 +82,35 @@ export async function generateMetadata({
   const title = `${displayValue} ${catInfo.label}${usernameLabel} — Framedl Badge`;
   const description = `${badge.tier.charAt(0).toUpperCase() + badge.tier.slice(1)} tier achievement: ${displayValue} ${catInfo.label.toLowerCase()} in Framedl`;
 
-  const imageParams = new URLSearchParams({
+  const ogParams = new URLSearchParams({
     cat: badge.category,
     value: String(badge.milestone),
-    format: "png",
   });
   if (badge.username) {
-    imageParams.set("username", badge.username);
+    ogParams.set("username", badge.username);
   }
-  const imageUrl = `${externalBaseUrl}/api/images/badge?${imageParams}`;
+  const ogImageUrl = `${externalBaseUrl}/api/images/badge-og?${ogParams}`;
+  const miniAppImageUrl = `${externalBaseUrl}/api/images/badge-og?${ogParams}&aspectRatio=3:2`;
+
+  const badgePath = segments.join("/");
+  const name = isPro ? "Framedl PRO" : "Framedl";
+  const miniAppConfig: MiniAppEmbedNext = {
+    version: "next",
+    imageUrl: miniAppImageUrl,
+    button: {
+      title: "View Badge",
+      action: {
+        type: "launch_miniapp",
+        name,
+        url: `${externalBaseUrl}/app/badges/${badgePath}`,
+        splashImageUrl: isPro
+          ? `${externalBaseUrl}/splash-pro.png`
+          : `${externalBaseUrl}/splash-v2.png`,
+        splashBackgroundColor: "#f3f0f9",
+      },
+    },
+  };
+  const miniAppMetadata = JSON.stringify(miniAppConfig);
 
   return {
     title,
@@ -99,9 +120,9 @@ export async function generateMetadata({
       description,
       images: [
         {
-          url: imageUrl,
-          width: 1024,
-          height: 1024,
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
           type: "image/png",
         },
       ],
@@ -110,7 +131,11 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [imageUrl],
+      images: [ogImageUrl],
+    },
+    other: {
+      "fc:frame": miniAppMetadata,
+      "fc:miniapp": miniAppMetadata,
     },
   };
 }
@@ -118,9 +143,7 @@ export async function generateMetadata({
 export default async function BadgePage({ params }: BadgePageProps) {
   const { params: segments } = await params;
 
-  // TODO: remove gate once badges are released to all users
   const session = await getFarcasterSession();
-  if (session?.user?.fid !== "11124") notFound();
 
   const badge = await resolveBadge(segments);
   if (!badge) notFound();

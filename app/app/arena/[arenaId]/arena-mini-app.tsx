@@ -466,7 +466,7 @@ function JoinArena({
         ref={buttonContainerRef}
       >
         <div className="p-4">
-          <PaddedContainer context={context} sides="rl">
+          <PaddedContainer sides="rl">
             <div className="flex flex-col gap-2">
               {isFinished || isFinishedForMember ? (
                 <div className="text-center text-primary-900/50">
@@ -606,7 +606,6 @@ function AuthContainer({
   return (
     <PaddedContainer
       className="w-full h-full flex-1 flex flex-col items-center justify-center"
-      context={context}
       sides="trl"
       extraBottom={bottomOffset}
     >
@@ -670,7 +669,7 @@ function AuthContainer({
 }
 
 export function ArenaMiniApp({ arena }: { arena?: PublicArenaWithGames }) {
-  const clientContext = useClientContext({});
+  const clientContext = useClientContext();
 
   return (
     <div className="w-full h-full flex-1 flex flex-col">

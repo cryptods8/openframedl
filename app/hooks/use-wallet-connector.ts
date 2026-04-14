@@ -1,9 +1,10 @@
 "use client";
 
-import sdk from "@farcaster/miniapp-sdk";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useConnect, useConnectors } from "wagmi";
+
+import { useAppRuntime } from "../contexts/app-runtime-context";
 
 /**
  * Returns a `connectWallet` function that auto-selects the right connector:
@@ -14,16 +15,7 @@ export function useWalletConnector() {
   const { connect } = useConnect();
   const connectors = useConnectors();
   const { openConnectModal } = useConnectModal();
-
-  const [isMiniApp, setIsMiniApp] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      const inMiniApp = await sdk.isInMiniApp();
-      setIsMiniApp(inMiniApp);
-    };
-    load();
-  }, []);
+  const { isMiniApp } = useAppRuntime();
 
   const connectWallet = useCallback(() => {
     if (isMiniApp) {

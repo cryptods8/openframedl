@@ -15,7 +15,7 @@ import { Button } from "@/app/ui/button/button";
 import { useBottomOffset } from "@/app/ui/bottom-nav";
 
 export function ArenaPlayMiniApp({ arena }: { arena?: PublicArenaWithGames }) {
-  const clientContext = useClientContext({});
+  const clientContext = useClientContext();
   const { status } = useFarcasterSession();
   const bottomOffset = useBottomOffset();
 
@@ -49,7 +49,7 @@ export function ArenaPlayMiniApp({ arena }: { arena?: PublicArenaWithGames }) {
   return (
     <PaddedContainer
       className="w-full h-full flex-1 flex flex-col items-center justify-center"
-      context={clientContext}
+
       sides="trl"
       extraBottom={bottomOffset}
     >

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useNavVisibility } from "@/app/contexts/nav-visibility-context";
@@ -72,11 +73,32 @@ const NAV_ITEMS = [
   },
 ];
 
+function useUnseenBadgeCount() {
+  const [count, setCount] = useState(0);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/badges/unseen-count")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setCount(data.count ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  return count;
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   const { isNavVisible } = useNavVisibility();
   const { insets } = useSafeAreaInsets();
   const { session } = useFarcasterSession();
+  const unseenBadgeCount = useUnseenBadgeCount();
   const userKey =
     session?.user?.fid != null
       ? ({ userId: session.user.fid, identityProvider: "fc" } as const)
@@ -95,6 +117,8 @@ export function BottomNav() {
             const active = match(pathname);
             const Icon = active ? SolidIcon : OutlineIcon;
             const actualHref = createHref ? createHref(userKey) : href;
+            const showBadgeDot =
+              label === "Profile" && unseenBadgeCount > 0;
             return (
               <Link
                 key={actualHref}
@@ -105,7 +129,12 @@ export function BottomNav() {
                     : "text-primary-900/40 hover:text-primary-900/60"
                 }`}
               >
-                <Icon className="size-6 shrink-0" />
+                <div className="relative">
+                  <Icon className="size-6 shrink-0" />
+                  {showBadgeDot && (
+                    <span className="absolute -top-0.5 -right-1 size-2.5 rounded-full bg-amber-400 border border-white" />
+                  )}
+                </div>
                 <span
                   className={`text-[10px] font-medium leading-none ${active ? "font-semibold" : ""}`}
                 >

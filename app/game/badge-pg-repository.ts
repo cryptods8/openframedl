@@ -94,6 +94,18 @@ export async function updateMintInfo(
     .execute();
 }
 
+export async function countUnseen(userKey: UserKey): Promise<number> {
+  const { userId, identityProvider } = userKey;
+  const result = await pgDb
+    .selectFrom("badge")
+    .select((eb) => eb.fn.countAll<number>().as("count"))
+    .where("userId", "=", userId)
+    .where("identityProvider", "=", identityProvider)
+    .where("seen", "=", false)
+    .executeTakeFirstOrThrow();
+  return Number(result.count);
+}
+
 export async function markSeen(userKey: UserKey, badgeIds: string[]): Promise<void> {
   if (badgeIds.length === 0) return;
   await pgDb

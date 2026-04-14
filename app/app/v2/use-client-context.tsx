@@ -1,80 +1,32 @@
 import { useAppConfig } from "@/app/contexts/app-config-context";
-import { useSafeAreaInsets } from "@/app/contexts/safe-area-context";
-import { UserData } from "@/app/game/game-repository";
+import { useAppRuntime } from "@/app/contexts/app-runtime-context";
 import { composeCast, createComposeUrl } from "@/app/utils";
-import { Context } from "@farcaster/miniapp-node";
 import sdk from "@farcaster/miniapp-sdk";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 
 export interface ClientContext {
-  userData?: UserData;
+  userData?: import("@/app/game/game-repository").UserData;
   userFid?: number;
   isReady: boolean;
   isMiniApp: boolean;
-  client?: Context.MiniAppContext["client"];
+  client?: import("@farcaster/miniapp-node").Context.MiniAppContext["client"];
   share: ({ title, url }: { title: string; url: string }) => Promise<void>;
   openUrl: (url: string) => Promise<void>;
   requestAddFrame: () => Promise<boolean>;
 }
 
-function toUserData(user: Context.MiniAppContext["user"]) {
-  return { ...user, profileImage: user.pfpUrl };
-}
-
-export function useClientContext({
-  onLoad,
-}: {
-  onLoad?: (ctx: Context.MiniAppContext) => void;
-}): ClientContext {
+export function useClientContext(): ClientContext {
   const { isPro } = useAppConfig();
-  const [context, setContext] = useState<Context.MiniAppContext | undefined>();
-  const [ready, setReady] = useState(false);
-  const [isMiniApp, setIsMiniApp] = useState(false);
-  const { setInsets } = useSafeAreaInsets();
-
-  useEffect(() => {
-    if (context?.client?.safeAreaInsets) {
-      const sai = context.client.safeAreaInsets;
-      setInsets({
-        top: sai.top ?? 0,
-        bottom: sai.bottom ?? 0,
-        left: sai.left ?? 0,
-        right: sai.right ?? 0,
-      });
-    }
-  }, [context?.client?.safeAreaInsets, setInsets]);
-
-  useEffect(() => {
-    const load = async () => {
-      const ctx = await sdk.context;
-      setContext(ctx);
-      const inMiniApp = await sdk.isInMiniApp();
-      if (inMiniApp) {
-        sdk.actions.ready();
-        setIsMiniApp(true);
-      }
-      window.focus();
-      onLoad?.(ctx);
-    };
-    if (!ready && sdk) {
-      setReady(true);
-      load();
-    }
-  }, [ready, onLoad]);
-
-  const userData = useMemo(() => {
-    return context?.user ? toUserData(context.user) : undefined;
-  }, [context?.user]);
+  const { isReady, isMiniApp, userData, userFid, client, sdkContext } =
+    useAppRuntime();
 
   const share = useCallback(
     async ({ title, url }: { title: string; url: string }) => {
-      // return sdk.actions.openUrl(createComposeUrl(title, url, { isPro }));
       if (isMiniApp) {
         await sdk.actions.composeCast(composeCast(title, url, { isPro }));
       } else {
         window.open(createComposeUrl(title, url, { isPro }), "_blank");
       }
-      return;
     },
     [isPro, isMiniApp],
   );
@@ -92,7 +44,7 @@ export function useClientContext({
   );
 
   const requestAddFrame = useCallback(async () => {
-    if (context?.client?.added || !isMiniApp) {
+    if (sdkContext?.client?.added || !isMiniApp) {
       return true;
     }
     try {
@@ -102,13 +54,13 @@ export function useClientContext({
       console.error(e);
       return false;
     }
-  }, [context, isMiniApp]);
+  }, [sdkContext, isMiniApp]);
 
   return {
     userData,
-    userFid: context?.user?.fid,
-    isReady: ready,
-    client: context?.client,
+    userFid,
+    isReady,
+    client,
     isMiniApp,
     share,
     openUrl,
