@@ -10,6 +10,7 @@ import {
   CategoryId,
   TierName,
   BadgeCard,
+  TIERS,
 } from "@/app/image-ui/badge-elements";
 
 export const dynamic = "force-dynamic";
@@ -50,12 +51,25 @@ const CARD_LAYOUTS: {
   { x: 0, y: -30, rotate: 0, scale: 0.52 },
 ];
 
+// Colors for the tier progression rule under "BADGES"
+const TIER_ORDER: TierName[] = [
+  "bronze",
+  "silver",
+  "gold",
+  "platinum",
+  "diamond",
+];
+
 function CoverImage() {
-  const titleFontSize = 52;
-  const subtitleFontSize = 72;
-  // Center point for the card fan
+  // Fan center (the diamond sits at approx (W/2, H/2 - 10 - 30) = (600, 360))
   const fanCenterX = W / 2;
   const fanCenterY = H / 2 - 10;
+  const diamondCenterY = fanCenterY - 30;
+
+  // Halo anchored at the diamond (front-center) badge
+  const haloX = (fanCenterX / W) * 100;
+  const haloY = (diamondCenterY / H) * 100;
+  const diamondFill = TIERS.diamond.fill;
 
   return (
     <div
@@ -64,11 +78,12 @@ function CoverImage() {
         width: W,
         height: H,
         position: "relative",
-        background: "radial-gradient(circle at 50% 60%, #008000 0%, #002b00 100%)",
+        background:
+          "linear-gradient(135deg, #0a3a0a 0%, #041a08 55%, #010c04 100%)",
         fontFamily: "SpaceGrotesk",
       }}
     >
-      {/* Subtle radial highlight */}
+      {/* Diamond halo behind the focal badge */}
       <div
         style={{
           position: "absolute",
@@ -76,58 +91,57 @@ function CoverImage() {
           left: 0,
           right: 0,
           bottom: 0,
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% 55%, rgba(255,255,255,0.06) 0%, transparent 100%)",
+          background: `radial-gradient(ellipse 50% 55% at ${haloX}% ${haloY}%, ${diamondFill}33 0%, transparent 65%)`,
           display: "flex",
         }}
       />
 
-      {/* Title area */}
+      {/* Top brand eyebrow */}
       <div
         style={{
           position: "absolute",
-          top: 30,
+          top: 48,
           left: 0,
           right: 0,
-          height: 100,
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 4,
+          gap: 16,
         }}
       >
         <div
           style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: diamondFill,
+            opacity: 0.8,
             display: "flex",
-            alignItems: "center",
-            gap: 12,
-            color: lightColor(0.5),
-            fontSize: titleFontSize,
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            fontFamily: "SpaceGrotesk",
+            fontSize: 32,
             fontWeight: 700,
+            color: lightColor(0.65),
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
           }}
         >
-          {/*
-          <div
-            style={{
-              display: "flex",
-              width: 120,
-              height: 4,
-              background: lightColor(0.3),
-            }}
-          />*/}
-          <div style={{ display: "flex" }}>
-            {isPro ? "Framedl PRO" : "Framedl"}
-          </div>
-          {/*<div
-            style={{
-              display: "flex",
-              width: 120,
-              height: 4,
-              background: lightColor(0.3),
-            }}
-          />*/}
+          {isPro ? "Framedl Pro" : "Framedl"}
         </div>
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: diamondFill,
+            opacity: 0.8,
+            display: "flex",
+          }}
+        />
       </div>
 
       {/* Badge fan */}
@@ -155,35 +169,53 @@ function CoverImage() {
               category={badge.category}
               tier={badge.tier}
               numberText={badge.numberText}
-              cardShadow="0 8px 30px rgba(0,0,0,0.5)"
+              cardShadow="0 12px 40px rgba(0,0,0,0.55)"
             />
           </div>
         );
       })}
 
-      {/* Bottom label */}
+      {/* Bottom title — tier legend + BADGES wordmark */}
       <div
         style={{
           position: "absolute",
-          bottom: 65,
+          bottom: 56,
           left: 0,
           right: 0,
-          height: 80,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
+          gap: 18,
         }}
       >
+        {/* Tier progression legend */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {TIER_ORDER.map((name) => (
+            <div
+              key={name}
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: TIERS[name].fill,
+                display: "flex",
+              }}
+            />
+          ))}
+        </div>
         <div
           style={{
             display: "flex",
-            fontSize: subtitleFontSize,
+            fontSize: 72,
             fontWeight: 700,
-            color: lightColor(0.7),
-            letterSpacing: "0.25em",
+            color: lightColor(0.88),
+            letterSpacing: "0.28em",
+            lineHeight: 1,
+            // Offset half the letter-spacing so the optical center matches the canvas center
+            paddingLeft: "0.28em",
           }}
         >
-         BADGES 
+          BADGES
         </div>
       </div>
     </div>

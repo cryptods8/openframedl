@@ -9,7 +9,6 @@ import {
   BadgeCategory,
   BadgeTier,
   getTier,
-  BADGE_CATEGORIES,
 } from "@/app/lib/badges";
 import {
   TIERS,
@@ -32,6 +31,7 @@ function BadgeOGImage({
   username,
   width,
   height,
+  aspectRatio,
 }: {
   category: BadgeCategory;
   tier: BadgeTier;
@@ -39,17 +39,33 @@ function BadgeOGImage({
   username?: string | null;
   width: number;
   height: number;
+  aspectRatio: string;
 }) {
   const t = TIERS[tier];
   const cat = CATEGORIES[category];
 
-  // Scale the badge to fit the height with padding.
-  // Use a wrapper sized to the display dimensions so satori clips correctly
-  // (satori clips on layout bounds, not post-transform visual bounds).
-  const padding = 40;
-  const badgeScale = Math.min(0.52, (height - padding * 2) / BADGE_SIZE);
+  const padding = aspectRatio === "1.91:1" ? 40 : 56;
+  const footerReserve = 72;
+  const usableHeight = height - footerReserve;
+
+  // Scale the badge: height-bound by the canvas minus the footer reservation,
+  // width-bound to 48% of the canvas so the text column keeps ≥ 480px.
+  const maxByHeight = (usableHeight - padding) / BADGE_SIZE;
+  const maxByWidth = (width * 0.48) / BADGE_SIZE;
+  const badgeScale = Math.min(maxByHeight, maxByWidth);
   const badgeDisplaySize = Math.round(BADGE_SIZE * badgeScale);
-  const textLeft = padding + badgeDisplaySize + 48;
+
+  const badgeLeft = padding;
+  const badgeTop = Math.round((usableHeight - badgeDisplaySize) / 2);
+  const textLeft = badgeLeft + badgeDisplaySize + 56;
+
+  // Tier halo anchored at badge center (percent coords for satori stability).
+  const haloX = ((badgeLeft + badgeDisplaySize / 2) / width) * 100;
+  const haloY = ((badgeTop + badgeDisplaySize / 2) / height) * 100;
+
+  // Hero number auto-shrinks so long values ("5,000", "10,000") don't clip.
+  const heroFontSize =
+    numberText.length >= 6 ? 96 : numberText.length >= 5 ? 112 : 140;
 
   return (
     <div
@@ -59,11 +75,11 @@ function BadgeOGImage({
         height: height,
         position: "relative",
         background:
-          "radial-gradient(circle at 30% 50%, #008000 0%, #002b00 100%)",
+          "linear-gradient(135deg, #0a3a0a 0%, #041a08 55%, #010c04 100%)",
         fontFamily: "SpaceGrotesk",
       }}
     >
-      {/* Subtle radial highlight */}
+      {/* Tier-colored halo behind the badge */}
       <div
         style={{
           position: "absolute",
@@ -71,18 +87,17 @@ function BadgeOGImage({
           left: 0,
           right: 0,
           bottom: 0,
-          background:
-            "radial-gradient(ellipse 60% 80% at 30% 50%, rgba(255,255,255,0.06) 0%, transparent 100%)",
+          background: `radial-gradient(ellipse 55% 70% at ${haloX}% ${haloY}%, ${t.fill}33 0%, transparent 65%)`,
           display: "flex",
         }}
       />
 
-      {/* Left: Badge card — wrapper sized to display dimensions */}
+      {/* Badge — wrapper sized to display dimensions so satori clips correctly */}
       <div
         style={{
           position: "absolute",
-          left: padding,
-          top: (height - badgeDisplaySize) / 2,
+          left: badgeLeft,
+          top: badgeTop,
           width: badgeDisplaySize,
           height: badgeDisplaySize,
           display: "flex",
@@ -101,79 +116,43 @@ function BadgeOGImage({
             category={category}
             tier={tier}
             numberText={numberText}
-            cardShadow="0 8px 30px rgba(0,0,0,0.4)"
+            cardShadow="0 12px 40px rgba(0,0,0,0.5)"
           />
         </div>
       </div>
 
-      {/* Right: Text content */}
+      {/* Right: Text column */}
       <div
         style={{
           position: "absolute",
           left: textLeft,
+          right: padding,
           top: 0,
-          right: 60,
-          bottom: 0,
+          bottom: footerReserve,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          gap: 20,
         }}
       >
-        {/* Achievement */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              fontSize: 96,
-              fontWeight: 700,
-              color: "white",
-              lineHeight: 1.1,
-            }}
-          >
-            {numberText}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 52,
-              fontWeight: 700,
-              color: lightColor(0.85),
-              letterSpacing: "0.05em",
-              lineHeight: 1.1,
-            }}
-          >
-            {numberText === "1" ? cat.singularLabel : cat.label}
-          </div>
-        </div>
-
-        {/* Tier pill */}
-        <div
-          style={{
-            display: "flex",
-          }}
-        >
+        {/* Tier pill — eyebrow position */}
+        <div style={{ display: "flex" }}>
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: 10,
-              padding: "8px 20px",
-              borderRadius: 24,
+              padding: "10px 22px",
+              borderRadius: 999,
               backgroundColor: t.ribbon,
+              border: `1px solid ${t.ribbonDark}`,
+              boxShadow: `inset 0 1px 0 ${lightColor(0.3)}`,
             }}
           >
             <div
               style={{
-                width: 14,
-                height: 14,
-                borderRadius: 7,
+                width: 12,
+                height: 12,
+                borderRadius: 6,
                 backgroundColor: t.fill,
                 display: "flex",
               }}
@@ -181,11 +160,11 @@ function BadgeOGImage({
             <div
               style={{
                 display: "flex",
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: 700,
                 color: "white",
                 textTransform: "uppercase",
-                letterSpacing: "0.1em",
+                letterSpacing: "0.12em",
               }}
             >
               {tier} tier
@@ -193,44 +172,135 @@ function BadgeOGImage({
           </div>
         </div>
 
-        {/* Username */}
+        {/* Hero number + category subhead */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            marginTop: 16,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              fontSize: heroFontSize,
+              fontWeight: 700,
+              color: "white",
+              lineHeight: 0.95,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {numberText}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 56,
+              fontWeight: 700,
+              color: lightColor(0.92),
+              lineHeight: 1,
+              letterSpacing: "0.04em",
+              marginTop: 12,
+            }}
+          >
+            {numberText === "1" ? cat.singularLabel : cat.label}
+          </div>
+        </div>
+
+        {/* Attribution */}
         {username && (
           <div
             style={{
               display: "flex",
-              fontSize: 36,
-              fontWeight: 700,
-              color: lightColor(0.7),
-              marginTop: 4,
+              flexDirection: "column",
+              marginTop: 28,
             }}
           >
-            {username}
+            <div
+              style={{
+                width: 60,
+                height: 3,
+                borderRadius: 2,
+                backgroundColor: t.fill,
+                display: "flex",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Inter",
+                fontSize: 20,
+                fontWeight: 500,
+                color: lightColor(0.5),
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                marginTop: 16,
+              }}
+            >
+              Earned by
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Inter",
+                fontSize: 34,
+                fontWeight: 600,
+                color: lightColor(0.92),
+                marginTop: 4,
+              }}
+            >
+              @{username}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Bottom-right branding */}
+      {/* Brand footer — centered */}
       <div
         style={{
           position: "absolute",
-          bottom: 24,
-          right: 40,
+          left: 0,
+          right: 0,
+          bottom: 28,
           display: "flex",
+          justifyContent: "center",
           alignItems: "center",
-          gap: 10,
+          gap: 14,
         }}
       >
         <div
           style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: t.fill,
+            opacity: 0.8,
             display: "flex",
-            fontSize: 28,
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            fontFamily: "SpaceGrotesk",
+            fontSize: 26,
             fontWeight: 700,
-            color: lightColor(0.35),
-            letterSpacing: "0.05em",
+            color: lightColor(0.6),
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
           }}
         >
-          {isPro ? "Framedl PRO" : "Framedl"}
+          {isPro ? "Framedl Pro" : "Framedl"}
         </div>
+        <div
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: t.fill,
+            opacity: 0.8,
+            display: "flex",
+          }}
+        />
       </div>
     </div>
   );
@@ -270,6 +340,7 @@ export async function GET(req: NextRequest) {
       username={username}
       width={w}
       height={h}
+      aspectRatio={aspectRatio}
     />,
     { width: w, height: h, fonts },
   );
