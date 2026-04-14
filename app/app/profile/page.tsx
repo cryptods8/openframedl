@@ -1,9 +1,11 @@
+import { Metadata } from "next";
 import { Suspense } from "react";
 import { ProfileApp } from "@/app/profiles/profile-app";
 import { SignIn } from "@/app/ui/auth/sign-in";
 import { SettingsPanel } from "@/app/ui/settings-panel";
 import { StreakFreezePanel } from "@/app/ui/streak-freeze-panel";
-import { isPro } from "@/app/constants";
+import { externalBaseUrl, isPro } from "@/app/constants";
+import { MiniAppEmbedNext } from "@farcaster/miniapp-node";
 import { ProfileTabs } from "./profile-tabs";
 import { ProfileContent } from "./profile-content";
 import { ProfilePageWrapper } from "./profile-page-wrapper";
@@ -14,6 +16,72 @@ import { ProfileBadges } from "./profile-badges";
 import { gameService } from "@/app/game/game-service";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { getCurrentTab } from "./profile-utils";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const { tab } = await searchParams;
+  const tabValue = Array.isArray(tab) ? tab[0] : tab;
+  const isBadgesTab = tabValue === "badges";
+
+  const name = isPro ? "Framedl PRO" : "Framedl";
+  const title = isBadgesTab ? `${name} Badges` : `${name} Profile`;
+  const description = isBadgesTab
+    ? "Earn badges for your Framedl achievements"
+    : "Your Framedl profile";
+
+  const imageUrl = `${externalBaseUrl}/api/images/badge-cover?format=png`;
+  const launchUrl = isBadgesTab
+    ? `${externalBaseUrl}/app/profile?tab=badges`
+    : `${externalBaseUrl}/app/profile`;
+
+  const miniAppConfig: MiniAppEmbedNext = {
+    version: "next",
+    imageUrl,
+    button: {
+      title: isBadgesTab ? "View Badges" : "Open Profile",
+      action: {
+        type: "launch_miniapp",
+        name,
+        url: launchUrl,
+        splashImageUrl: isPro
+          ? `${externalBaseUrl}/splash-pro.png`
+          : `${externalBaseUrl}/splash-v2.png`,
+        splashBackgroundColor: "#f3f0f9",
+      },
+    },
+  };
+  const miniAppMetadata = JSON.stringify(miniAppConfig);
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 800,
+          type: "image/png",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+    other: {
+      "fc:frame": miniAppMetadata,
+      "fc:miniapp": miniAppMetadata,
+    },
+  };
+}
 
 export default async function SettingsPage({
   searchParams,
