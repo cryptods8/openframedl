@@ -5,6 +5,7 @@ import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { gameService } from "@/app/game/game-service";
 import { GameIdentityProvider } from "@/app/game/game-repository";
 import { BadgeCategory, getTier, TIER_MINT_PRICES } from "@/app/lib/badges";
+import { isBadgeAccessUser } from "@/app/lib/badge-access";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,10 @@ export async function GET(req: NextRequest) {
     const session = await getFarcasterSession();
     if (!session?.user?.fid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!isBadgeAccessUser(session.user.fid, "fc")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const params = new URL(req.url).searchParams;

@@ -15,6 +15,7 @@ import {
 import { PanelTitle } from "../panel-title";
 import { BadgeDetailDialog, DisplayBadge } from "../badge-detail-dialog";
 import { useAppConfig } from "@/app/contexts/app-config-context";
+import { isBadgeAccessUser } from "@/app/lib/badge-access";
 
 interface UserStatsResponse {
   data: UserStatsType;
@@ -61,8 +62,7 @@ function UserStats({ game }: { game: ClientGame }) {
   const { isPro } = useAppConfig();
 
   // TODO: remove gate once badges are released to all users
-  const isBadgeUser =
-    game.identityProvider === "fc" && game.userId === "11124";
+  const isBadgeUser = isBadgeAccessUser(game.userId, game.identityProvider);
 
   const { data, isLoading } = useQuery<UserStatsResponse>({
     queryKey: ["user-stats", game.identityProvider, game.userId],

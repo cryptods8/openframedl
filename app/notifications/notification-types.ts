@@ -4,6 +4,7 @@ import { externalBaseUrl, isPro } from "@/app/constants";
 import { DBNotificationQueue, NotificationType } from "@/app/db/pg/types";
 import * as statsRepo from "@/app/game/stats-pg-repository";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
+import { isBadgeAccessUser } from "@/app/lib/badge-access";
 
 interface NotificationMessage {
   title: string;
@@ -155,6 +156,9 @@ const streakFreezeEarnedConfig: NotificationTypeConfig = {
 
 const badgeEarnedConfig: NotificationTypeConfig = {
   async prepare(item) {
+    if (!isBadgeAccessUser(item.userId, item.identityProvider)) {
+      return false;
+    }
     const userKey = {
       userId: item.userId,
       identityProvider: item.identityProvider,

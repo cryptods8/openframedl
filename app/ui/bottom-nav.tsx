@@ -21,6 +21,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { UserKey } from "../game/game-repository";
 import { useFarcasterSession } from "../hooks/use-farcaster-session";
+import { isBadgeAccessUser } from "../lib/badge-access";
 
 export const BOTTOM_NAV_HEIGHT = 56;
 
@@ -73,11 +74,18 @@ const NAV_ITEMS = [
   },
 ];
 
-function useUnseenBadgeCount() {
+function useUnseenBadgeCount(userKey?: UserKey) {
   const [count, setCount] = useState(0);
   const pathname = usePathname();
+  const enabled = userKey
+    ? isBadgeAccessUser(userKey.userId, userKey.identityProvider)
+    : false;
 
   useEffect(() => {
+    if (!enabled) {
+      setCount(0);
+      return;
+    }
     let cancelled = false;
     fetch("/api/badges/unseen-count")
       .then((r) => r.json())
@@ -88,7 +96,7 @@ function useUnseenBadgeCount() {
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, [pathname, enabled]);
 
   return count;
 }
@@ -98,11 +106,11 @@ export function BottomNav() {
   const { isNavVisible } = useNavVisibility();
   const { insets } = useSafeAreaInsets();
   const { session } = useFarcasterSession();
-  const unseenBadgeCount = useUnseenBadgeCount();
   const userKey =
     session?.user?.fid != null
       ? ({ userId: session.user.fid, identityProvider: "fc" } as const)
       : undefined;
+  const unseenBadgeCount = useUnseenBadgeCount(userKey);
 
   return (
     <nav

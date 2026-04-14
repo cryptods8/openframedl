@@ -16,6 +16,7 @@ import { ProfileBadges } from "./profile-badges";
 import { gameService } from "@/app/game/game-service";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { getCurrentTab } from "./profile-utils";
+import { isBadgeAccessUser } from "@/app/lib/badge-access";
 
 export async function generateMetadata({
   searchParams,
@@ -92,7 +93,7 @@ export default async function SettingsPage({
 
   // TODO: remove gate once badges are released to all users
   const session = await getFarcasterSession();
-  const isBadgeUser = session?.user?.fid === "11124";
+  const isBadgeUser = isBadgeAccessUser(session?.user?.fid, "fc");
   const currentTab = getCurrentTab(
     (tab as string | undefined) ?? null,
     isBadgeUser,
@@ -246,7 +247,7 @@ async function ProfileBadgesContent() {
         stats={badgeStats}
         dbBadges={serializedBadges}
         username={user.userData?.username ?? user.name}
-        canCollect={user.fid === "11124"}
+        canCollect={isBadgeAccessUser(user.fid, "fc")}
       />
     </div>
   );

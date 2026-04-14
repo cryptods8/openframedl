@@ -29,6 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 import { addDaysToDate, getDailyGameKey } from "./game-utils";
 import { DEFAULT_LEADERBOARD_DAYS } from "./game-constants";
 import { PublicArena } from "../games/arena/arena-utils";
+import { isBadgeAccessUser } from "../lib/badge-access";
 
 const startingDate = new Date("2024-02-03");
 
@@ -785,6 +786,9 @@ export class GameServiceImpl implements GameService {
   }
 
   private async enqueueBadgeMaterialization(game: GuessedGame) {
+    if (!isBadgeAccessUser(game.userId, game.identityProvider)) {
+      return;
+    }
     try {
       await notificationQueueRepo.enqueue([
         {
