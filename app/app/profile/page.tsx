@@ -33,7 +33,7 @@ export async function generateMetadata({
     ? "Earn badges for your Framedl achievements"
     : "Your Framedl profile";
 
-  const imageUrl = `${externalBaseUrl}/api/images/badge-cover?format=png`;
+  const imageUrl = `${externalBaseUrl}/badges-cover.png`;
   const launchUrl = isBadgesTab
     ? `${externalBaseUrl}/app/profile?tab=badges`
     : `${externalBaseUrl}/app/profile`;
