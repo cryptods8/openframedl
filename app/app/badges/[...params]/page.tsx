@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProfilePageWrapper } from "@/app/app/profile/profile-page-wrapper";
+import { ProfileApp } from "@/app/profiles/profile-app";
 import { externalBaseUrl, isPro } from "@/app/constants";
 import {
   BadgeCategory,
@@ -209,7 +210,6 @@ export default async function BadgePage({ params }: BadgePageProps) {
 
   const canMint = isOwner && !!badge.id && !badge.minted;
   const tierStyle = TIER_STYLES[badge.tier as BadgeTier] ?? TIER_STYLES.bronze;
-  const isLoggedIn = Boolean(session?.user?.fid);
   const earnedDate = badge.earnedAt
     ? new Intl.DateTimeFormat("en-US", {
         year: "numeric",
@@ -219,6 +219,7 @@ export default async function BadgePage({ params }: BadgePageProps) {
     : null;
 
   return (
+    <ProfileApp headerless>
     <ProfilePageWrapper>
     <main className="relative flex flex-col items-center p-4 sm:p-8 overflow-hidden">
       <div
@@ -289,10 +290,10 @@ export default async function BadgePage({ params }: BadgePageProps) {
           milestone={badge.milestone}
           canMint={canMint}
           minted={badge.minted}
-          isLoggedIn={isLoggedIn}
         />
       </div>
     </main>
     </ProfilePageWrapper>
+    </ProfileApp>
   );
 }

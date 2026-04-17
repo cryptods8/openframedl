@@ -10,6 +10,7 @@ import {
 import { MintBadgeButton } from "@/app/ui/mint-badge-button";
 import { Button } from "@/app/ui/button/button";
 import { useSharing } from "@/app/hooks/use-sharing";
+import { useMiniAppAutoSignIn } from "@/app/hooks/use-miniapp-auto-signin";
 import {
   BadgeCategory,
   BADGE_CATEGORIES,
@@ -22,7 +23,6 @@ interface BadgePageClientProps {
   milestone?: number;
   canMint?: boolean;
   minted?: boolean;
-  isLoggedIn?: boolean;
 }
 
 export function BadgePageClient({
@@ -31,8 +31,8 @@ export function BadgePageClient({
   milestone,
   canMint,
   minted,
-  isLoggedIn,
 }: BadgePageClientProps) {
+  const { isAuthenticated, signingIn } = useMiniAppAutoSignIn();
   const [copied, setCopied] = useState(false);
   const [mintSuccess, setMintSuccess] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export function BadgePageClient({
         </div>
       )}
 
-      {isLoggedIn && (
+      {isAuthenticated && (
         <Button
           href="/app/profile?tab=badges"
           variant={myBadgesVariant}
@@ -86,6 +86,11 @@ export function BadgePageClient({
         >
           View My Badges
         </Button>
+      )}
+      {signingIn && !isAuthenticated && (
+        <p className="text-center text-xs text-primary-900/50">
+          Signing you in…
+        </p>
       )}
 
       <div className="flex gap-2 justify-center pt-1">
