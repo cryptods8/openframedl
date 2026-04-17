@@ -3,6 +3,7 @@ import { getFarcasterSession } from "@/app/lib/auth";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { GameIdentityProvider } from "@/app/game/game-repository";
 import { isBadgeAccessUser } from "@/app/lib/badge-access";
+import { isPro } from '@/app/constants';
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ count: 0 });
     }
 
-    if (!isBadgeAccessUser(session.user.fid, "fc")) {
+    if (isPro || !isBadgeAccessUser(session.user.fid, "fc")) {
       return NextResponse.json({ count: 0 });
     }
 

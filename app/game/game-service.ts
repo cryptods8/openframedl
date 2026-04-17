@@ -786,7 +786,7 @@ export class GameServiceImpl implements GameService {
   }
 
   private async enqueueBadgeMaterialization(game: GuessedGame) {
-    if (!isBadgeAccessUser(game.userId, game.identityProvider)) {
+    if (isPro || !isBadgeAccessUser(game.userId, game.identityProvider)) {
       return;
     }
     try {
