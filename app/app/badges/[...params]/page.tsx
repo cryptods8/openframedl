@@ -207,7 +207,7 @@ export default async function BadgePage({ params }: BadgePageProps) {
     }
   }
 
-  const canMint = isOwner && badge.id && !badge.minted;
+  const canMint = isOwner && !!badge.id && !badge.minted;
   const tierStyle = TIER_STYLES[badge.tier as BadgeTier] ?? TIER_STYLES.bronze;
   const isLoggedIn = Boolean(session?.user?.fid);
   const earnedDate = badge.earnedAt
