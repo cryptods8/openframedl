@@ -1,8 +1,10 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ProfilePageWrapper } from "@/app/app/profile/profile-page-wrapper";
 import { externalBaseUrl, isPro } from "@/app/constants";
 import {
   BadgeCategory,
+  BadgeTier,
   BADGE_CATEGORIES,
   getTier,
   formatBadgeValue,
@@ -12,6 +14,42 @@ import { BadgePageClient } from "./badge-page-client";
 import * as badgeRepo from "@/app/game/badge-pg-repository";
 import { getFarcasterSession } from "@/app/lib/auth";
 import { MiniAppEmbedNext } from "@farcaster/miniapp-node";
+
+const TIER_STYLES: Record<
+  BadgeTier,
+  { ring: string; text: string; dot: string; halo: string }
+> = {
+  bronze: {
+    ring: "from-amber-500/40 via-amber-300/20 to-amber-700/40",
+    text: "text-amber-700",
+    dot: "bg-amber-600",
+    halo: "bg-amber-500/10",
+  },
+  silver: {
+    ring: "from-slate-300/50 via-slate-100/30 to-slate-400/50",
+    text: "text-slate-500",
+    dot: "bg-slate-400",
+    halo: "bg-slate-400/10",
+  },
+  gold: {
+    ring: "from-yellow-400/50 via-yellow-200/30 to-yellow-500/50",
+    text: "text-yellow-600",
+    dot: "bg-yellow-500",
+    halo: "bg-yellow-400/10",
+  },
+  platinum: {
+    ring: "from-blue-300/50 via-sky-200/30 to-blue-400/50",
+    text: "text-blue-500",
+    dot: "bg-blue-400",
+    halo: "bg-blue-300/10",
+  },
+  diamond: {
+    ring: "from-cyan-300/60 via-fuchsia-200/30 to-cyan-400/60",
+    text: "text-cyan-500",
+    dot: "bg-cyan-400",
+    halo: "bg-cyan-300/15",
+  },
+};
 
 const VALID_CATEGORIES = new Set<string>(["wins", "streaks", "fourdle", "wordone", "losses"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -170,51 +208,91 @@ export default async function BadgePage({ params }: BadgePageProps) {
   }
 
   const canMint = isOwner && badge.id && !badge.minted;
+  const tierStyle = TIER_STYLES[badge.tier as BadgeTier] ?? TIER_STYLES.bronze;
+  const isLoggedIn = Boolean(session?.user?.fid);
+  const earnedDate = badge.earnedAt
+    ? new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }).format(new Date(badge.earnedAt))
+    : null;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh p-4 sm:p-8">
-      <div className="w-full max-w-md space-y-6">
-        {/* Badge image */}
-        <div className="w-full aspect-square rounded-2xl overflow-hidden shadow-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={svgUrl}
-            alt={`${displayValue} ${catInfo.label}`}
-            className="w-full h-full"
-          />
+    <ProfilePageWrapper>
+    <main className="relative flex flex-col items-center p-4 sm:p-8 overflow-hidden">
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-x-0 top-0 h-[60vh] blur-3xl opacity-60 ${tierStyle.halo}`}
+      />
+      <div className="relative w-full max-w-md space-y-6">
+        <div
+          className={`relative rounded-[1.75rem] p-[2px] bg-gradient-to-br ${tierStyle.ring} shadow-xl`}
+        >
+          <div className="w-full aspect-square rounded-[1.625rem] overflow-hidden bg-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={svgUrl}
+              alt={`${displayValue} ${catInfo.label} badge`}
+              width={800}
+              height={800}
+              className="w-full h-full"
+            />
+          </div>
         </div>
 
-        {/* Badge info */}
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-space font-bold">
-            {displayValue} {catInfo.label}
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] px-3 py-1 rounded-full bg-white/80 backdrop-blur ring-1 ring-primary-900/10 ${tierStyle.text}`}
+            >
+              <span
+                aria-hidden="true"
+                className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`}
+              />
+              {badge.tier} Tier
+            </span>
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl font-space font-bold text-balance text-primary-900">
+            <span className="tabular-nums">{displayValue}</span>{" "}
+            {catInfo.label}
           </h1>
-          <p className="text-sm text-primary-900/60 capitalize">{badge.tier} tier</p>
-          {badge.username && (
-            <p className="text-sm text-primary-900/50">
-              Earned by {badge.username}
-            </p>
-          )}
-          {badge.earnedAt && (
-            <p className="text-xs text-primary-900/40">
-              {new Date(badge.earnedAt).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
+          <p className="text-sm text-primary-900/60 text-pretty">
+            {catInfo.description}
+          </p>
+
+          {(badge.username || earnedDate) && (
+            <div className="pt-1 text-sm text-primary-900/60 space-y-0.5">
+              {badge.username && (
+                <p>
+                  Earned by{" "}
+                  <span className="font-medium text-primary-900/80" translate="no">
+                    {badge.username}
+                  </span>
+                </p>
+              )}
+              {earnedDate && (
+                <p className="text-xs text-primary-900/45 tabular-nums">
+                  <time dateTime={new Date(badge.earnedAt!).toISOString()}>
+                    {earnedDate}
+                  </time>
+                </p>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Actions */}
         <BadgePageClient
           shareUrl={shareUrl}
           category={badge.category}
           milestone={badge.milestone}
-          canMint={isOwner && !badge.minted}
+          canMint={canMint}
           minted={badge.minted}
+          isLoggedIn={isLoggedIn}
         />
       </div>
-    </div>
+    </main>
+    </ProfilePageWrapper>
   );
 }

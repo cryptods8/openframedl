@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/16/solid";
+import {
+  ClipboardIcon,
+  CheckIcon,
+  ShareIcon,
+  CheckBadgeIcon,
+} from "@heroicons/react/16/solid";
 import { MintBadgeButton } from "@/app/ui/mint-badge-button";
+import { Button } from "@/app/ui/button/button";
 import { useSharing } from "@/app/hooks/use-sharing";
 import {
   BadgeCategory,
@@ -16,6 +22,7 @@ interface BadgePageClientProps {
   milestone?: number;
   canMint?: boolean;
   minted?: boolean;
+  isLoggedIn?: boolean;
 }
 
 export function BadgePageClient({
@@ -24,6 +31,7 @@ export function BadgePageClient({
   milestone,
   canMint,
   minted,
+  isLoggedIn,
 }: BadgePageClientProps) {
   const [copied, setCopied] = useState(false);
   const [mintSuccess, setMintSuccess] = useState(false);
@@ -40,23 +48,63 @@ export function BadgePageClient({
     }
   }
 
+  const showMint =
+    canMint && category && milestone && !minted && !mintSuccess;
+  const showMintedStatus = minted || mintSuccess;
+  const myBadgesVariant = showMint ? "outline" : "primary";
+
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="flex gap-3 justify-center">
+    <div
+      className="flex flex-col items-stretch gap-3"
+      aria-live="polite"
+    >
+      {showMint && (
+        <MintBadgeButton
+          category={category!}
+          milestone={milestone!}
+          size="md"
+          variant="primary"
+          onMint={() => setMintSuccess(true)}
+          onError={(err) => setMintError(err)}
+        >
+          Collect as NFT
+        </MintBadgeButton>
+      )}
+
+      {showMintedStatus && (
+        <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-green-600">
+          <CheckBadgeIcon className="w-4 h-4" aria-hidden="true" />
+          {mintSuccess ? "Successfully collected as NFT" : "Collected as NFT"}
+        </div>
+      )}
+
+      {isLoggedIn && (
+        <Button
+          href="/app/profile?tab=badges"
+          variant={myBadgesVariant}
+          size="md"
+        >
+          View My Badges
+        </Button>
+      )}
+
+      <div className="flex gap-2 justify-center pt-1">
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary-900/10 hover:bg-primary-900/15 transition-colors cursor-pointer"
+          aria-label={copied ? "Link copied" : "Copy link to badge"}
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary-900/5 hover:bg-primary-900/10 active:bg-primary-900/15 text-primary-900/70 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          style={{ touchAction: "manipulation" }}
         >
           {copied ? (
             <>
-              <CheckIcon className="w-4 h-4" />
-              Copied!
+              <CheckIcon className="w-4 h-4" aria-hidden="true" />
+              Copied
             </>
           ) : (
             <>
-              <ClipboardIcon className="w-4 h-4" />
-              Copy link
+              <ClipboardIcon className="w-4 h-4" aria-hidden="true" />
+              Copy Link
             </>
           )}
         </button>
@@ -72,33 +120,17 @@ export function BadgePageClient({
                 embeds: [shareUrl],
               });
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary-900/10 hover:bg-primary-900/15 transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary-900/5 hover:bg-primary-900/10 active:bg-primary-900/15 text-primary-900/70 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            style={{ touchAction: "manipulation" }}
           >
-            <ShareIcon className="w-4 h-4" />
+            <ShareIcon className="w-4 h-4" aria-hidden="true" />
             Share
           </button>
         )}
-
-        {canMint && category && milestone && !minted && !mintSuccess && (
-          <MintBadgeButton
-            category={category}
-            milestone={milestone}
-            size="sm"
-            variant="outline"
-            onMint={() => setMintSuccess(true)}
-            onError={(err) => setMintError(err)}
-          />
-        )}
       </div>
 
-      {minted && (
-        <p className="text-xs text-primary-900/40">Minted as NFT</p>
-      )}
-      {mintSuccess && (
-        <p className="text-xs text-green-600">Successfully minted as NFT!</p>
-      )}
       {mintError && (
-        <p className="text-xs text-red-500">{mintError}</p>
+        <p className="text-xs text-red-500 text-center">{mintError}</p>
       )}
     </div>
   );
