@@ -45,6 +45,7 @@ function Game({
   fid?: number;
   asGuest: boolean;
   customWordId?: string;
+  gameKey?: string;
   ts?: string;
 }) {
   const [loadedGame, setLoadedGame] = useState<ClientGame | undefined>();
