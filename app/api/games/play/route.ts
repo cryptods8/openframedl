@@ -110,6 +110,8 @@ async function loadOrCreateGame(
   return { game: await loadGamePromise };
 }
 
+const ALLOWED_DAILY_REPLAYS = ["2026-04-22"];
+
 export const POST = async (req: NextRequest) => {
   const body: PlayRequest = await req.json();
 
@@ -123,7 +125,7 @@ export const POST = async (req: NextRequest) => {
     } else {
       const isDaily = body.gameType === "daily";
       const gameKey = isDaily
-        ? gameService.getDailyKey()
+        ? (ALLOWED_DAILY_REPLAYS.includes(body.gameKey) ? body.gameKey : gameService.getDailyKey())
         : body.gameKey
         ? body.gameKey
         : Math.random().toString(36).substring(2);

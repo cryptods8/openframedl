@@ -13,6 +13,7 @@ export async function generateMetadata({
   const searchParams = await searchParamsPromise;
   const id = searchParams?.id;
   const cw = searchParams?.cw;
+  const gk = searchParams?.gk;
 
   const params = new URLSearchParams();
   if (id) {
@@ -21,6 +22,10 @@ export async function generateMetadata({
   if (cw) {
     params.set("cw", cw.toString());
   }
+  if (gk) {
+    params.set("gk", gk.toString());
+  }
+
   const paramsString = params.toString();
 
   const imageUrl = paramsString
@@ -67,6 +72,7 @@ export default async function Page({
   const debugUrlParam = searchParams?.dbgUrl as string | undefined;
   const tsParam = searchParams?.ts as string | undefined;
   const gameType = gtParam ? gtParam : cwParam ? "custom" : "daily";
+  const gkParam = searchParams?.gk as string | undefined;
   // if (!debugParam) {
   //   return (
   //     <Test />
@@ -77,6 +83,7 @@ export default async function Page({
       <ProfileApp headerless>
         <AppFrame
           gameType={gameType}
+          gameKey={gkParam}
           debug={debugParam === "1" ? { debugUrl: debugUrlParam } : undefined}
           customWordId={cwParam}
           ts={tsParam}

@@ -37,6 +37,7 @@ function Game({
   asGuest,
   fid,
   gameType,
+  gameKey,
   ts,
   customWordId,
   ...props
@@ -68,7 +69,7 @@ function Game({
                 : "anon"
               : undefined,
             gameType,
-            gameKey: customWordId ? `custom_${customWordId}` : undefined,
+            gameKey: customWordId ? `custom_${customWordId}` : gameKey,
           }),
         });
         if (!resp.ok) {
@@ -86,7 +87,7 @@ function Game({
       }
     };
     load();
-  }, [fid, gameType, asGuest, sessionId, userData, customWordId, ts]);
+  }, [fid, gameType, gameKey, asGuest, sessionId, userData, customWordId, ts]);
 
   if (loading) {
     return <Loading />;
@@ -111,12 +112,14 @@ const placeholderGuesses = ["PLAY ", "YOUR ", "HEART", "OUT! "].map((w) => ({
 function GameContainer({
   context,
   gameType,
+  gameKey,
   debugPanel,
   customWordId,
   ts,
 }: {
   context: ClientContext;
   gameType: string;
+  gameKey?: string;
   debugPanel?: React.ReactNode;
   customWordId?: string;
   ts?: string;
@@ -228,6 +231,7 @@ function GameContainer({
               fid={context.userFid}
               appFrame
               gameType={gameType}
+              gameKey={gameKey}
               customWordId={customWordId}
               onShare={context.share}
               onGameOver={handleGameOver}
@@ -312,11 +316,13 @@ function GameContainer({
 
 export function AppFrame({
   gameType,
+  gameKey,
   debug,
   customWordId,
   ts,
 }: {
   gameType: string;
+  gameKey?: string;
   customWordId?: string;
   debug?: {
     debugUrl?: string;
@@ -348,6 +354,7 @@ export function AppFrame({
     <GameContainer
       context={clientContext}
       gameType={gameType}
+      gameKey={gameKey}
       customWordId={customWordId}
       debugPanel={debugPanel}
       ts={ts}
