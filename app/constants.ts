@@ -20,23 +20,23 @@ export interface HubConfig {
 }
 
 const DEFAULT_HUB_CONFIGS: HubConfig[] = [
-  {
-    httpUrl: "https://hub.merv.fun",
-    requestOptions: undefined,
-  },
-  {
-    httpUrl: "https://hub.pinata.cloud",
-    requestOptions: undefined,
-  },
 //  {
-//    httpUrl: "https://snapchain-api.neynar.com",
-//    requestOptions: {
-//      headers: {
-//        api_key: process.env["NEYNAR_API_KEY"] || "NEYNAR_FRAMES_JS",
-//        "x-api-key": process.env["NEYNAR_API_KEY"] || "NEYNAR_FRAMES_JS",
-//      },
-//    },
+//    httpUrl: "https://hub.merv.fun",
+//    requestOptions: undefined,
 //  },
+//  {
+//    httpUrl: "https://hub.pinata.cloud",
+//    requestOptions: undefined,
+//  },
+  {
+    httpUrl: "https://snapchain-api.neynar.com",
+    requestOptions: {
+      headers: {
+        api_key: process.env["NEYNAR_API_KEY"] || "NEYNAR_FRAMES_JS",
+        "x-api-key": process.env["NEYNAR_API_KEY"] || "NEYNAR_FRAMES_JS",
+      },
+    },
+  },
 ] as const;
 
 const envHubHttpUrl = process.env["FRAME_HUB_HTTP_URL"];
