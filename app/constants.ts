@@ -20,10 +20,10 @@ export interface HubConfig {
 }
 
 const DEFAULT_HUB_CONFIGS: HubConfig[] = [
-//  {
-//    httpUrl: "https://hub.merv.fun",
-//    requestOptions: undefined,
-//  },
+  {
+    httpUrl: "https://haatz.quilibrium.com",
+    requestOptions: undefined,
+  },
 //  {
 //    httpUrl: "https://hub.pinata.cloud",
 //    requestOptions: undefined,
