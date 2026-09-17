@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "npx tsx app/db/pg/migrate.ts",
-    "db:migrate:down": "npx tsx app/db/pg/migrate.ts --down"
+    "db:migrate:down": "npx tsx app/db/pg/migrate.ts --down",
+    "definitions:generate": "node ./scripts/generate-word-definitions.mjs"
   },
   "dependencies": {
     "@farcaster/auth-client": "^0.7.0",

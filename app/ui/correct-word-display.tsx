@@ -8,22 +8,13 @@ interface CorrectWordDisplayProps {
   word: string;
 }
 
-interface DictionaryApiResponse {
+interface WordDefinitionApiResponse {
   word: string;
   phonetic?: string;
-  phonetics?: {
-    text?: string;
-    audio?: string;
-  }[];
-  origin?: string;
-  meanings: {
+  definitions: {
     partOfSpeech: string;
-    definitions: {
-      definition: string;
-      example?: string;
-      synonyms?: string[];
-      antonyms?: string[];
-    }[];
+    definition: string;
+    phonetic?: string;
   }[];
 }
 
@@ -42,7 +33,7 @@ const fetchDefinition = async (
 ): Promise<Definition[] | Error | null> => {
   try {
     const response = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`
+      `/api/words/${encodeURIComponent(word.toLowerCase())}/definition`
     );
     if (!response.ok) {
       if (response.status === 404) {
@@ -50,17 +41,14 @@ const fetchDefinition = async (
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const data: DictionaryApiResponse[] = await response.json();
-    const item = data[0];
-    // Extract the first definition
-    const definitions: Definition[] | undefined = item?.meanings.map(
-      ({ partOfSpeech, definitions }, idx) => ({
-        phonetic: item?.phonetics?.[idx]?.text || item?.phonetic,
-        partOfSpeech,
-        definition: definitions[0]?.definition || "",
-      })
+    const data: WordDefinitionApiResponse = await response.json();
+    return (
+      data.definitions?.map((d) => ({
+        phonetic: d.phonetic || data.phonetic,
+        partOfSpeech: d.partOfSpeech,
+        definition: d.definition,
+      })) || null
     );
-    return definitions || null;
   } catch (error) {
     console.error("Failed to fetch definition:", error);
     return { error: "Could not load definition" };

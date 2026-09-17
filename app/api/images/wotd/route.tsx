@@ -7,6 +7,8 @@ import { getWordForUserGameKey } from "../../../game/game-service";
 import { GameIdentityProvider } from "../../../game/game-repository";
 import { addDaysToDate, getDailyGameKey } from "../../../game/game-utils";
 
+import { getWordDefinition } from "@/app/words/definition-service";
+
 export const dynamic = "force-dynamic";
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -31,20 +33,20 @@ interface WordDetails {
 
 async function getWordDetails(word: string): Promise<WordDetails | null> {
   try {
-    const resp = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
-    ).then((res) => res.json());
-    const data = resp[0];
-    const meaning = data.meanings[0];
+    const def = await getWordDefinition(word);
+    if (!def || !def.definitions || def.definitions.length === 0) {
+      return null;
+    }
+    const first = def.definitions[0]!;
     return {
-      phonetic: data.phonetic,
-      meaning: meaning.definitions[0].definition,
-      partOfSpeech: meaning.partOfSpeech,
+      phonetic: def.phonetic || first.phonetic || `/${word}/`,
+      meaning: first.definition,
+      partOfSpeech: first.partOfSpeech,
     };
   } catch (e) {
-    console.error(e);
+    console.error("Failed to get word details:", e);
+    return null;
   }
-  return null;
 }
 
 interface WotdImageProps extends WordDetails {
