@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { QuestionMarkCircleIcon } from "@heroicons/react/16/solid";
 
@@ -60,23 +60,34 @@ export function CorrectWordDisplay({ word }: CorrectWordDisplayProps) {
     null
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false); // Prevent fetching multiple times on hover
 
-  const handleMouseEnter = useCallback(async () => {
-    if (hasFetched || isLoading) return;
+  const loadDefinition = useCallback(async () => {
+    if (!word) return;
 
     setIsLoading(true);
     const fetchedDefinition = await fetchDefinition(word);
     setDefinition(fetchedDefinition);
     setIsLoading(false);
-    setHasFetched(true);
-  }, [word, hasFetched, isLoading]);
+  }, [word]);
+
+  // Eagerly prefetch when component mounts or word changes
+  useEffect(() => {
+    loadDefinition();
+  }, [loadDefinition]);
 
   return (
     <Popover className="inline-block relative">
       <PopoverButton
         className="font-bold cursor-help underline decoration-dotted"
-        onMouseEnter={handleMouseEnter}
+        onMouseEnter={() => {
+          if (!definition && !isLoading) loadDefinition();
+        }}
+        onClick={() => {
+          if (!definition && !isLoading) loadDefinition();
+        }}
+        onFocus={() => {
+          if (!definition && !isLoading) loadDefinition();
+        }}
       >
         <span>{word.toUpperCase()}</span>
         <sup className="inline-block">
