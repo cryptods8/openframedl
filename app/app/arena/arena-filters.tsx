@@ -48,7 +48,7 @@ export function ArenaFilters({
   }
 
   return (
-    <div className="flex items-center gap-1 bg-primary-200/50 sm:rounded-full px-4 py-2 overflow-x-auto">
+    <div className="flex items-center gap-1 bg-primary-200/50 sm:rounded-full px-4 py-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {status === "authenticated" && (
         <NavLink
           href={createHref("in_progress")}

@@ -398,7 +398,7 @@ export async function GET(req: NextRequest) {
     if (filter === "in_progress") {
       selectQuery = selectQuery
         .orderBy(
-          sql`CASE WHEN am."endsAt" IS NOT NULL THEN 0 ELSE 1 END`,
+          sql`CASE WHEN am.ends_at IS NOT NULL THEN 0 ELSE 1 END`,
           "asc",
         )
         .orderBy("am.endsAt", "asc")

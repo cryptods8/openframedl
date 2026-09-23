@@ -8,7 +8,7 @@ export function NavLink({
   return (
     <Link
       href={href}
-      className={`text-center rounded-full font-semibold px-4 py-2.5 text-sm transition duration-150 ease-in-out ${
+      className={`text-center rounded-full font-semibold px-4 py-2.5 text-sm transition duration-150 ease-in-out whitespace-nowrap shrink-0 ${
         active ? "bg-primary-800 text-white" : "text-primary-800/90 hover:bg-primary-200 hover:text-primary-800/90"
       }`}
     >
