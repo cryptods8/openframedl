@@ -10,7 +10,13 @@ import { getUserInfoFromJwtOrSession } from "@/app/lib/auth";
 import { sql } from "kysely";
 import { NextRequest, NextResponse } from "next/server";
 
-export type ArenaFilter = "mine" | "open" | "past" | "upcoming" | "playable";
+export type ArenaFilter =
+  | "mine"
+  | "open"
+  | "past"
+  | "upcoming"
+  | "playable"
+  | "in_progress";
 
 export interface ArenaListRequest {
   page?: number;
@@ -25,6 +31,9 @@ export interface PublicArenaListItem extends PublicArena {
   firstStartedAt: Date | null;
   endsAt: Date | null;
   userCompletedCount?: number;
+  userGameCount?: number;
+  userIsMember?: boolean;
+  userLastPlayedAt?: Date | null;
 }
 
 export interface ArenaListResponse {
@@ -42,7 +51,12 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const filter = searchParams.get("ft") as ArenaFilter | null;
 
-    if ((filter === "mine" || filter === "playable") && anonymous) {
+    if (
+      (filter === "mine" ||
+        filter === "playable" ||
+        filter === "in_progress") &&
+      anonymous
+    ) {
       return NextResponse.json(
         { error: `Invalid filter: ${filter} - no user present` },
         { status: 400 },
@@ -179,6 +193,7 @@ export async function GET(req: NextRequest) {
           .selectFrom("game")
           .select((db) => [
             "arenaId",
+            db.fn.count<number>("id").as("userGameCount"),
             db.fn
               .sum<number>(
                 db
@@ -189,6 +204,7 @@ export async function GET(req: NextRequest) {
                   .end(),
               )
               .as("userCompletedCount"),
+            db.fn.max<Date>("updatedAt").as("userLastPlayedAt"),
           ])
           .where("arenaId", "is not", null)
           .where("userId", "=", userKey.userId)
@@ -208,9 +224,13 @@ export async function GET(req: NextRequest) {
         "am.endsAt",
       ])
       .leftJoin("user_arena_stats as uas", "arena.id", "uas.arenaId")
-      .select("uas.userCompletedCount");
+      .select([
+        "uas.userCompletedCount",
+        "uas.userGameCount",
+        "uas.userLastPlayedAt",
+      ]);
 
-    const arenas = await selectQuery
+    selectQuery = selectQuery
       .where((db) => {
         const conditions = [];
         if (filter === "mine") {
@@ -315,18 +335,93 @@ export async function GET(req: NextRequest) {
               ]),
             ]),
           );
+        } else if (filter === "in_progress" && needsUserStats) {
+          const isMemberSql = sql<boolean>`(
+            jsonb_typeof(arena.members) = 'array' AND EXISTS (
+              SELECT 1 FROM jsonb_array_elements(arena.members) AS m
+              WHERE m->>'userId' = ${userKey.userId}
+                AND m->>'identityProvider' = ${userKey.identityProvider}
+                AND (m->>'kickedAt' IS NULL OR m->>'kickedAt' = 'null')
+            )
+          )`;
+
+          conditions.push(
+            db.and([
+              // Arena has not completed all games
+              db.eb("am.completedCount", "<", db.ref("am.totalGameCount")),
+              // Arena duration has not expired
+              db.or([
+                db.eb("am.endsAt", "is", null),
+                db.eb("am.endsAt", ">", now),
+              ]),
+              // Arena has already started
+              db.or([
+                db.eb(
+                  db.fn.coalesce(
+                    "am.startAt",
+                    "arena.startedAt",
+                    "am.firstStartedAt",
+                  ),
+                  "is",
+                  null,
+                ),
+                db.eb(
+                  db.fn.coalesce(
+                    "am.startAt",
+                    "arena.startedAt",
+                    "am.firstStartedAt",
+                  ),
+                  "<=",
+                  now,
+                ),
+              ]),
+              // User has started OR is an active member
+              db.or([
+                db.eb("uas.userGameCount", ">", 0),
+                isMemberSql,
+              ]),
+              // User has not completed all words
+              db.or([
+                db.eb("uas.userCompletedCount", "is", null),
+                db.eb(
+                  "uas.userCompletedCount",
+                  "<",
+                  sql<number>`jsonb_array_length(arena.config->'words')::int`,
+                ),
+              ]),
+            ]),
+          );
         }
         return db.and(conditions);
-      })
+      });
+
+    if (filter === "in_progress") {
+      selectQuery = selectQuery
+        .orderBy(
+          sql`CASE WHEN am."endsAt" IS NOT NULL THEN 0 ELSE 1 END`,
+          "asc",
+        )
+        .orderBy("am.endsAt", "asc")
+        .orderBy("arena.createdAt", "desc");
+    } else {
+      selectQuery = selectQuery.orderBy("createdAt", "desc");
+    }
+
+    const arenas = await selectQuery
       .limit(limit)
       .offset(offset)
-      .orderBy("createdAt", "desc")
       .execute();
 
     const publicArenas = arenas
       .map((arena: any) => {
         const publicArena = toPublicArena(arena);
-        // const availability = getArenaAvailabilityProperties(arena, anonymous ? undefined : userKey);
+        const isMember = arena.members?.some(
+          (m: any) =>
+            userKey &&
+            m.userId === userKey.userId &&
+            m.identityProvider === userKey.identityProvider &&
+            !m.kickedAt,
+        );
         return {
           ...publicArena,
           gameCount: arena.gameCount ?? 0,
@@ -336,8 +431,10 @@ export async function GET(req: NextRequest) {
           endsAt: arena.endsAt,
           ...(needsUserStats && {
             userCompletedCount: Number(arena.userCompletedCount ?? 0),
+            userGameCount: Number(arena.userGameCount ?? 0),
+            userIsMember: !!isMember,
+            userLastPlayedAt: arena.userLastPlayedAt ?? null,
           }),
-          // availability
         };
       })
       .filter(Boolean);

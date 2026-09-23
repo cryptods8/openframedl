@@ -5,6 +5,7 @@ import { isPro } from "@/app/constants";
 import { ArenaList } from "./arena-list";
 import { ArenaFilter } from "@/app/api/arenas/list/route";
 import { getFarcasterSession } from "@/app/lib/auth";
+import { countInProgressArenas } from "@/app/game/arena-pg-repository";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -21,7 +22,23 @@ export default async function Page({
   const { ft } = await searchParams;
   const session = await getFarcasterSession();
 
-  const defaultFilterType = session?.user?.fid ? "playable" : "open";
+  let inProgressCount = 0;
+  if (session?.user?.fid) {
+    try {
+      inProgressCount = await countInProgressArenas({
+        userId: session.user.fid.toString(),
+        identityProvider: "fc",
+      });
+    } catch (e) {
+      console.error("Error counting in-progress arenas:", e);
+    }
+  }
+
+  const defaultFilterType = session?.user?.fid
+    ? inProgressCount > 0
+      ? "in_progress"
+      : "playable"
+    : "open";
   const filterType = ft ?? defaultFilterType;
 
   return (
@@ -43,7 +60,10 @@ export default async function Page({
           </div>
         </div>
         <div className="flex-1 flex sm:px-4 pt-6">
-          <ArenaList filterType={filterType} />
+          <ArenaList
+            filterType={filterType}
+            initialInProgressCount={inProgressCount}
+          />
         </div>
       </div>
     </ProfileApp>

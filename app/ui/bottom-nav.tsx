@@ -101,6 +101,32 @@ function useUnseenBadgeCount(userKey?: UserKey) {
   return count;
 }
 
+function useInProgressArenaCount(userKey?: UserKey) {
+  const [count, setCount] = useState(0);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!userKey) {
+      setCount(0);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/arenas/in-progress-count")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && typeof data.count === "number") {
+          setCount(data.count);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, userKey?.userId]);
+
+  return count;
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   const { isNavVisible } = useNavVisibility();
@@ -111,6 +137,7 @@ export function BottomNav() {
       ? ({ userId: session.user.fid, identityProvider: "fc" } as const)
       : undefined;
   const unseenBadgeCount = useUnseenBadgeCount(userKey);
+  const inProgressArenaCount = useInProgressArenaCount(userKey);
 
   return (
     <nav
@@ -126,7 +153,8 @@ export function BottomNav() {
             const Icon = active ? SolidIcon : OutlineIcon;
             const actualHref = createHref ? createHref(userKey) : href;
             const showBadgeDot =
-              label === "Profile" && unseenBadgeCount > 0;
+              (label === "Profile" && unseenBadgeCount > 0) ||
+              (label === "Arenas" && inProgressArenaCount > 0);
             return (
               <Link
                 key={actualHref}

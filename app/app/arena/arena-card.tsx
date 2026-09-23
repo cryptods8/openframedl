@@ -151,8 +151,24 @@ export function ArenaCard({ arena }: ArenaCardProps) {
     arena.completedCount === totalPossibleGames ||
     (arena.endsAt && new Date(arena.endsAt) < new Date());
 
+  const isInProgressForUser =
+    !isCompleted &&
+    !isCompletedForUser &&
+    ((arena.userGameCount ?? 0) > 0 || !!arena.userIsMember);
+
+  const minutesLeft = arena.endsAt
+    ? Math.floor((new Date(arena.endsAt).getTime() - Date.now()) / 1000 / 60)
+    : null;
+
   return (
-    <Card className="bg-white border-primary-200 shadow-none hover:shadow-md hover:shadow-primary-200 transition-all duration-100">
+    <Card
+      className={clsx(
+        "bg-white shadow-none hover:shadow-md transition-all duration-100",
+        isInProgressForUser
+          ? "border-amber-300 ring-1 ring-amber-200 hover:shadow-amber-100"
+          : "border-primary-200 hover:shadow-primary-200",
+      )}
+    >
       <CardHeader className="space-y-4">
         <CardTitle>
           <div className="text-xl">
@@ -171,7 +187,14 @@ export function ArenaCard({ arena }: ArenaCardProps) {
             "-mx-6 flex flex-row items-baseline gap-4 px-6 py-2 text-sm",
             isPending && "bg-gray-100 text-gray-800",
             isCompleted && "bg-green-100 text-green-800",
-            !isPending && !isCompleted && "bg-orange-100 text-orange-800",
+            !isPending &&
+              !isCompleted &&
+              isInProgressForUser &&
+              "bg-amber-100/90 text-amber-900",
+            !isPending &&
+              !isCompleted &&
+              !isInProgressForUser &&
+              "bg-orange-100 text-orange-800",
           )}
         >
           {isPending ? (
@@ -190,26 +213,31 @@ export function ArenaCard({ arena }: ArenaCardProps) {
             <StatusLine status="Completed" />
           ) : (
             <StatusLine
-              status="In Progress"
+              status={isInProgressForUser ? "In Progress" : "Open"}
               timeInfo={
-                arena.endsAt
-                  ? "ends in " +
-                    formatDurationSimple(
-                      Math.floor(
-                        (new Date(arena.endsAt).getTime() - Date.now()) /
-                          1000 /
-                          60,
-                      ),
-                    )
+                minutesLeft !== null
+                  ? (minutesLeft <= 60 ? "⚠️ ends in " : "ends in ") +
+                    formatDurationSimple(Math.max(1, minutesLeft))
                   : undefined
               }
             />
           )}
           {arena.userCompletedCount !== undefined && (
-            <span className="text-xs text-primary-900/60">
-              {arena.userCompletedCount > 0
-                ? `You: ${arena.userCompletedCount}/${arena.config.wordCount} words`
-                : "You: Not started"}
+            <span
+              className={clsx(
+                "text-xs font-medium",
+                isInProgressForUser
+                  ? "text-amber-950 font-semibold"
+                  : "text-primary-900/60",
+              )}
+            >
+              {isCompletedForUser
+                ? `You: Completed (${arena.config.wordCount}/${arena.config.wordCount})`
+                : (arena.userCompletedCount ?? 0) > 0
+                  ? `You: Word ${(arena.userCompletedCount ?? 0) + 1}/${arena.config.wordCount}`
+                  : isInProgressForUser
+                    ? `You: Word 1/${arena.config.wordCount} (Joined)`
+                    : "You: Not started"}
             </span>
           )}
         </div>
@@ -279,13 +307,24 @@ export function ArenaCard({ arena }: ArenaCardProps) {
       </CardContent>
       <CardFooter className="flex items-center justify-between">
         <Button
-          variant="outline"
+          variant={isInProgressForUser ? "primary" : "outline"}
           size="sm"
-          href={`/app/arena/${arena.id}${
-            isCompleted || isCompletedForUser ? "/results" : "/join"
-          }`}
+          href={
+            isCompleted || isCompletedForUser
+              ? `/app/arena/${arena.id}/results`
+              : isInProgressForUser
+                ? `/app/arena/${arena.id}/play`
+                : `/app/arena/${arena.id}/join`
+          }
         >
-          {isCompleted || isCompletedForUser ? "View Results" : "Join"}
+          {isCompleted || isCompletedForUser
+            ? "View Results"
+            : isInProgressForUser
+              ? (arena.userGameCount ?? 0) > 0 ||
+                (arena.userCompletedCount ?? 0) > 0
+                ? "Continue"
+                : "Play"
+              : "Join"}
         </Button>
       </CardFooter>
     </Card>
