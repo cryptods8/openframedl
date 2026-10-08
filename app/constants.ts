@@ -1,4 +1,6 @@
-export const isProduction = process.env["VERCEL_ENV"] === "production";
+export const isProduction =
+  process.env["VERCEL_ENV"] === "production" ||
+  process.env.NODE_ENV === "production";
 const fallbackBaseUrl = isProduction
   ? "https://framedl.vercel.app"
   : "http://localhost:3000";

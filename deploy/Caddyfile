@@ -1,0 +1,42 @@
+{
+    email admin@framedl.com
+}
+
+# Redirect www.framedl.com to framedl.com
+www.framedl.com {
+    redir https://framedl.com{uri} permanent
+}
+
+# Regular daily framedl
+framedl.com {
+    encode gzip zstd
+
+    reverse_proxy framedl-app:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Framedl PRO
+pro.framedl.xyz {
+    encode gzip zstd
+
+    reverse_proxy framedl-pro:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}

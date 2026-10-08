@@ -4,10 +4,10 @@ Framedl is a Wordle game built as a Farcaster Frame (interactive mini-app) using
 
 ## Commands
 
-- `yarn dev` - Start development server
-- `yarn build` - Build for production
-- `yarn lint` - Run ESLint
-- Deploy: `vercel`
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm lint` - Run ESLint
+- Deploy: Push to `main` (automated GitHub Actions build and deploy to Hetzner VPS)
 
 ## Tech Stack
 

@@ -1,0 +1,25 @@
+# /etc/cron.d/framedl or crontab -e on Hetzner VPS
+# Path to script: /opt/framedl/scripts/trigger-cron.sh
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# 1. Daily reminder (variant=new) at 00:10 UTC
+10 0 * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/enqueue/daily-reminder?variant=new" >> /var/log/framedl-crons.log 2>&1
+
+# 2. Daily reminder (variant=mid) at 13:05 UTC
+5 13 * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/enqueue/daily-reminder?variant=mid" >> /var/log/framedl-crons.log 2>&1
+
+# 3. Daily reminder (variant=late) at 19:45 UTC
+45 19 * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/enqueue/daily-reminder?variant=late" >> /var/log/framedl-crons.log 2>&1
+
+# 4. Arena notification enqueue every 10 mins starting at min 5
+5/10 * * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/enqueue/arena" >> /var/log/framedl-crons.log 2>&1
+
+# 5. Process notification queue every 2 minutes
+*/2 * * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/process" >> /var/log/framedl-crons.log 2>&1
+
+# 6. Daily bot cast processing at 01:00 UTC
+0 1 * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/bot/casts/daily/process" >> /var/log/framedl-crons.log 2>&1
+
+# 7. Payouts cron at 08:30 UTC
+30 8 * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/payouts/cron" >> /var/log/framedl-crons.log 2>&1
