@@ -56,9 +56,17 @@ jobs:
     name: Deploy to Hetzner VPS
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: ${{ secrets.HETZNER_HOST != '' }}
+    env:
+      HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
     steps:
+      - name: Check Hetzner credentials
+        if: env.HETZNER_HOST == ''
+        run: |
+          echo "HETZNER_HOST secret is not configured yet. Skipping deploy step."
+          echo "To enable deployments, add HETZNER_HOST and HETZNER_SSH_KEY in Repository Secrets."
+
       - name: Trigger rolling deploy on Hetzner VPS via SSH
+        if: env.HETZNER_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HETZNER_HOST }}
