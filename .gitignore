@@ -47,3 +47,4 @@ mocks.json
 /out
 /cache
 /broadcast
+.env*

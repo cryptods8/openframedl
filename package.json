@@ -12,7 +12,8 @@
     "lint": "next lint",
     "db:migrate": "npx tsx app/db/pg/migrate.ts",
     "db:migrate:down": "npx tsx app/db/pg/migrate.ts --down",
-    "definitions:generate": "node ./scripts/generate-word-definitions.mjs"
+    "definitions:generate": "node ./scripts/generate-word-definitions.mjs",
+    "clean-env": "node ./scripts/clean-env.mjs"
   },
   "dependencies": {
     "@farcaster/auth-client": "^0.7.0",
@@ -53,6 +54,7 @@
     "sonner": "^2.0.6",
     "uuid": "^11.1.0",
     "viem": "^2",
+    "@wagmi/core": "^2.22.1",
     "wagmi": "^2"
   },
   "engines": {

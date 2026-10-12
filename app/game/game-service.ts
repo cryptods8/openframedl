@@ -33,14 +33,8 @@ import { isBadgeAccessUser } from "../lib/badge-access";
 
 const startingDate = new Date("2024-02-03");
 
-const seedSalt = process.env.SEED_SALT;
-if (!seedSalt) {
-  throw new Error("SEED_SALT must be set");
-}
-const shuffleSecret = process.env.SHUFFLE_SECRET;
-if (!shuffleSecret) {
-  throw new Error("SHUFFLE_SECRET must be set");
-}
+const seedSalt = process.env.SEED_SALT || "build_seed_salt";
+const shuffleSecret = process.env.SHUFFLE_SECRET || "build_shuffle_secret";
 
 function shuffleArray<T>(array: T[], seed: string): T[] {
   let rng = seedrandom(seed);

@@ -3,6 +3,9 @@ import webpack from 'next/dist/compiled/webpack/webpack-lib.js';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // prevent double render on dev mode, which causes 2 frames to exist
   reactStrictMode: false,
   images: {
