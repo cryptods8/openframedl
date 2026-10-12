@@ -2,6 +2,8 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    profiles:
+      - caddy # Disabled by default so host Nginx can bind 80/443. Run with --profile caddy if standalone.
     ports:
       - "80:80"
       - "443:443"
