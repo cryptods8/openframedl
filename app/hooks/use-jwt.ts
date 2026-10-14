@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 function getFromLocalStorage() {
   if (typeof window === "undefined") {
     return undefined;
   }
-  return localStorage.getItem("jwt");
+  return localStorage.getItem("jwt") || undefined;
 }
 
 function saveToLocalStorage(jwt: string) {
@@ -19,30 +19,30 @@ function saveToLocalStorage(jwt: string) {
 
 export function useJwt() {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
-  const jwt = searchParams.get("jwt") as string | undefined;
+  const urlJwt = searchParams.get("jwt") as string | undefined;
+  const [jwt, setJwt] = useState<string | undefined>(urlJwt);
 
   useEffect(() => {
-    if (!jwt) {
-      return;
+    if (urlJwt) {
+      saveToLocalStorage(urlJwt);
+      setJwt(urlJwt);
+    } else {
+      const stored = getFromLocalStorage();
+      if (stored) {
+        setJwt(stored);
+      }
     }
-
-    saveToLocalStorage(jwt);
-
-    // const newSearchParams = new URLSearchParams(searchParams.toString());
-    // newSearchParams.delete("jwt");
-    // const query = newSearchParams.toString();
-    // const newPathname = pathname + (query ? `?${query}` : "");
-    // router.replace(newPathname);
-  }, [jwt, router, searchParams, pathname]);
+  }, [urlJwt]);
 
   function clear() {
-    localStorage.removeItem("jwt");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("jwt");
+    }
+    setJwt(undefined);
   }
 
   return {
-    jwt: jwt || getFromLocalStorage() || undefined,
+    jwt,
     clear,
   };
 }

@@ -57,13 +57,17 @@ function Game({
 
   useEffect(() => {
     const load = async () => {
+      const resolvedUserId = fid?.toString() || sessionId;
+      if (!resolvedUserId) {
+        return;
+      }
       setLoading(true);
       try {
         const resp = await fetch(`/api/games/play`, {
           method: "POST",
           body: JSON.stringify({
             userData,
-            userId: fid?.toString() || sessionId,
+            userId: resolvedUserId,
             identityProvider: asGuest
               ? fid
                 ? "fc_unauth"
@@ -178,9 +182,11 @@ function GameContainer({
     }
     if (status === "unauthenticated" && isFirstLoad) {
       setIsFirstLoad(false);
-      handleSignIn();
+      if (context.isMiniApp) {
+        handleSignIn();
+      }
     }
-  }, [status, isFirstLoad, handleSignIn]);
+  }, [status, isFirstLoad, handleSignIn, context.isMiniApp]);
 
   // const handleSignOut = useCallback(async () => {
   //   try {
@@ -333,7 +339,7 @@ export function AppFrame({
   const clientContext = useClientContext();
 
   if (!clientContext.isReady) {
-    return null;
+    return <Loading />;
   }
 
   const debugPanel = debug ? (
