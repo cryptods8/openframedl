@@ -66,6 +66,14 @@ interface GameCompletedDialogProps {
   onNewGame: (gameType: "practice" | "arena") => Promise<void>;
 }
 
+function useSafeQueryClient() {
+  try {
+    return useQueryClient();
+  } catch {
+    return undefined;
+  }
+}
+
 export function GameCompletedDialog({
   isOpen,
   isAppFrame,
@@ -75,7 +83,7 @@ export function GameCompletedDialog({
   onShare,
   onNewGame,
 }: GameCompletedDialogProps) {
-  const queryClient = useQueryClient();
+  const queryClient = useSafeQueryClient();
   const { jwt } = useJwt();
   const config = useAppConfig();
   const router = useRouter();
@@ -232,8 +240,8 @@ export function GameCompletedDialog({
             open={showFreezeDialog}
             onClose={() => {
               setShowFreezeDialog(false);
-              queryClient.invalidateQueries({ queryKey: ["user-stats"] });
-              queryClient.invalidateQueries({ queryKey: ["streak-freeze"] });
+              queryClient?.invalidateQueries({ queryKey: ["user-stats"] });
+              queryClient?.invalidateQueries({ queryKey: ["streak-freeze"] });
             }}
           />
           {game && (

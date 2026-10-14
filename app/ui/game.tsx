@@ -445,9 +445,7 @@ export function Game({
   const [mode, setMode] = useLocalStorage<GamePlayMode>("inputMode", "normal");
   const router = useRouter();
 
-  const [isWindowFocused, setIsWindowFocused] = useState(
-    document.hasFocus() || !window.matchMedia("(hover: hover)").matches,
-  );
+  const [isWindowFocused, setIsWindowFocused] = useState(true);
   const { status: sessionStatus } = useSession();
   const { jwt } = useJwt();
   const { sessionId } = useSessionId();
@@ -465,6 +463,12 @@ export function Game({
   }, [isGameOver, hideNav, showNav]);
 
   useEffect(() => {
+    if (typeof document !== "undefined" && typeof window !== "undefined") {
+      setIsWindowFocused(
+        document.hasFocus() || !window.matchMedia("(hover: hover)").matches,
+      );
+    }
+
     const onFocus = () => setIsWindowFocused(true);
     const onBlur = () => setIsWindowFocused(false);
 
@@ -923,15 +927,17 @@ export function Game({
           </div>
         )}
       </div>
-      <GameCompletedDialog
-        isOpen={isDialogOpen}
-        onClose={handleDialogClose}
-        onShare={handleShare}
-        onNewGame={handleNewGame}
-        game={currentGame}
-        isAppFrame={appFrame}
-        anonUserInfo={anonUserInfo}
-      />
+      {isDialogOpen && (
+        <GameCompletedDialog
+          isOpen={isDialogOpen}
+          onClose={handleDialogClose}
+          onShare={handleShare}
+          onNewGame={handleNewGame}
+          game={currentGame}
+          isAppFrame={appFrame}
+          anonUserInfo={anonUserInfo}
+        />
+      )}
       <GameIntroDialog isOpen={isIntroOpen} onClose={handleIntroClose} />
       {currentGame?.arena?.config?.authorNote && (
         <Dialog open={isNoteOpen} onClose={() => setIsNoteOpen(false)}>

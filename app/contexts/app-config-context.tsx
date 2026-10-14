@@ -7,7 +7,13 @@ export type AppConfigContextType = {
   isPro: boolean;
 };
 
-const AppConfigContext = createContext<AppConfigContextType | undefined>(undefined);
+const defaultContext: AppConfigContextType = {
+  externalBaseUrl:
+    typeof window !== "undefined" ? window.location.origin : "",
+  isPro: false,
+};
+
+const AppConfigContext = createContext<AppConfigContextType>(defaultContext);
 
 export function AppConfigProvider({ 
   children, 
@@ -17,7 +23,7 @@ export function AppConfigProvider({
   config: AppConfigContextType;
 }) {
   return (
-    <AppConfigContext.Provider value={config}>
+    <AppConfigContext.Provider value={config ?? defaultContext}>
       {children}
     </AppConfigContext.Provider>
   );
@@ -25,8 +31,5 @@ export function AppConfigProvider({
 
 export function useAppConfig() {
   const context = useContext(AppConfigContext);
-  if (context === undefined) {
-    throw new Error('useAppConfig must be used within a AppConfigProvider');
-  }
-  return context;
+  return context ?? defaultContext;
 } 
