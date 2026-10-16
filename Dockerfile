@@ -6,7 +6,7 @@ RUN corepack enable
 
 # 1. Install dependencies
 FROM base AS deps
-WORKDIR /app
+WORKDIR /usr/src/app
 
 # Install build tools if any native modules need compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,8 +20,8 @@ RUN pnpm install --frozen-lockfile
 
 # 2. Build the application
 FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+WORKDIR /usr/src/app
+COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -31,7 +31,7 @@ RUN pnpm build
 
 # 3. Production runner
 FROM node:20-bookworm-slim AS runner
-WORKDIR /app
+WORKDIR /usr/src/app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -47,9 +47,9 @@ RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 -g nodejs nextjs
 
 # Copy public assets and standalone output
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /usr/src/app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /usr/src/app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /usr/src/app/.next/static ./.next/static
 
 USER nextjs
 
