@@ -13,7 +13,7 @@ import { Button } from "./button/button";
 import { Dialog } from "./dialog";
 import { MintBadgeButton } from "./mint-badge-button";
 import { useSharing } from "@/app/hooks/use-sharing";
-import { externalBaseUrl } from "@/app/constants";
+import { useAppConfig } from "@/app/contexts/app-config-context";
 
 export interface DisplayBadge extends BadgeInfo {
   dbId?: string;
@@ -47,6 +47,7 @@ export function BadgeDetailDialog({
   const [mintSuccess, setMintSuccess] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
   const { composeCast } = useSharing();
+  const { externalBaseUrl } = useAppConfig();
 
   const imageUrl = badge
     ? getBadgeImageUrl(badge.category, badge.milestone, badge.username)

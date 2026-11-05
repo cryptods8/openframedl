@@ -10,11 +10,12 @@ import { base, baseSepolia } from "viem/chains";
 
 // --- Config ---
 
-const CONTRACT_ADDRESS = process.env
-  .NEXT_PUBLIC_STREAK_FREEZE_CA as Address | undefined;
+const CONTRACT_ADDRESS = process.env[
+  "NEXT_PUBLIC_STREAK_FREEZE_CA"
+] as Address | undefined;
 
 const CHAIN_ID = parseInt(
-  process.env.NEXT_PUBLIC_STREAK_FREEZE_CHAIN_ID || "8453",
+  process.env["NEXT_PUBLIC_STREAK_FREEZE_CHAIN_ID"] || "8453",
   10
 );
 

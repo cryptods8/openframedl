@@ -1,15 +1,10 @@
 "use client";
 
 import { AuthKitProvider } from "@farcaster/auth-kit";
-import { domain } from "@/app/lib/auth";
+import { domain as defaultDomain } from "@/app/lib/auth";
 import { SignIn } from "@/app/ui/auth/sign-in";
 import { SessionProvider } from "next-auth/react";
-
-const config = {
-  relay: "https://relay.farcaster.xyz",
-  rpcUrl: "https://mainnet.optimism.io",
-  domain: domain,
-};
+import { useAppConfig } from "@/app/contexts/app-config-context";
 
 export function ProfileApp({
   children,
@@ -18,6 +13,12 @@ export function ProfileApp({
   children: React.ReactNode;
   headerless?: boolean;
 }) {
+  const { domain } = useAppConfig();
+  const config = {
+    relay: "https://relay.farcaster.xyz",
+    rpcUrl: "https://mainnet.optimism.io",
+    domain: domain || defaultDomain,
+  };
   return (
     <SessionProvider>
       <AuthKitProvider config={config}>

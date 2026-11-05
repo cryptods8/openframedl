@@ -17,18 +17,30 @@ import {
   STREAK_FREEZE_CHAIN_ID,
   STREAK_FREEZE_TOKEN_ID,
 } from "../lib/streak-freeze-contract";
+import { useAppConfig } from "../contexts/app-config-context";
 
-const CONTRACT_ADDRESS = STREAK_FREEZE_CONTRACT_ADDRESS as `0x${string}`;
-const CHAIN_ID = STREAK_FREEZE_CHAIN_ID;
+const DEFAULT_CONTRACT_ADDRESS =
+  STREAK_FREEZE_CONTRACT_ADDRESS as `0x${string}`;
+const DEFAULT_CHAIN_ID = STREAK_FREEZE_CHAIN_ID;
 
 const CHAIN_CONFIGS: Record<string, { id: number; name: string }> = {
   "84532": { id: 84532, name: "Base Sepolia" },
   "8453": { id: 8453, name: "Base" },
 };
-const CHAIN_CONFIG = CHAIN_CONFIGS[String(CHAIN_ID)] || {
-  id: CHAIN_ID,
-  name: "Unknown",
-};
+
+function useStreakFreezeContractConfig() {
+  const { streakFreezeCa, streakFreezeChainId } = useAppConfig();
+  const contractAddress = (streakFreezeCa ||
+    DEFAULT_CONTRACT_ADDRESS) as `0x${string}`;
+  const cid = streakFreezeChainId
+    ? parseInt(streakFreezeChainId, 10)
+    : DEFAULT_CHAIN_ID;
+  const chainConfig = CHAIN_CONFIGS[String(cid)] || {
+    id: cid,
+    name: "Unknown",
+  };
+  return { CONTRACT_ADDRESS: contractAddress, CHAIN_CONFIG: chainConfig };
+}
 
 const ERC20_ABI = [
   {
@@ -76,6 +88,7 @@ export function PurchaseStreakFreezeButton({
   const { isConnected, address, chainId } = useAccount();
   const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
+  const { CONTRACT_ADDRESS, CHAIN_CONFIG } = useStreakFreezeContractConfig();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
   const { isLoading, isSuccess } = useWaitForTransactionReceipt({
@@ -307,6 +320,7 @@ export function ClaimStreakFreezeButton({
   const { isConnected, address, chainId } = useAccount();
   const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
+  const { CONTRACT_ADDRESS, CHAIN_CONFIG } = useStreakFreezeContractConfig();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
   const { isLoading, isSuccess } = useWaitForTransactionReceipt({
@@ -404,6 +418,7 @@ export function BurnMultipleStreakFreezeButton({
   const { isConnected, address, chainId } = useAccount();
   const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
+  const { CONTRACT_ADDRESS, CHAIN_CONFIG } = useStreakFreezeContractConfig();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
   const { isLoading, isSuccess } = useWaitForTransactionReceipt({
@@ -555,6 +570,7 @@ export function BurnStreakFreezeButton({
   const { isConnected, address, chainId } = useAccount();
   const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
+  const { CONTRACT_ADDRESS, CHAIN_CONFIG } = useStreakFreezeContractConfig();
 
   const { data: hash, isPending, writeContract } = useWriteContract();
   const { isLoading, isSuccess } = useWaitForTransactionReceipt({

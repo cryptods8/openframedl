@@ -15,18 +15,25 @@ import {
   BADGE_NFT_CONTRACT_ADDRESS,
   BADGE_NFT_CHAIN_ID,
 } from "../lib/badge-nft-contract";
+import { useAppConfig } from "../contexts/app-config-context";
 
-const CONTRACT_ADDRESS = BADGE_NFT_CONTRACT_ADDRESS as `0x${string}`;
-const CHAIN_ID = BADGE_NFT_CHAIN_ID;
+const DEFAULT_CONTRACT_ADDRESS = BADGE_NFT_CONTRACT_ADDRESS as `0x${string}`;
+const DEFAULT_CHAIN_ID = BADGE_NFT_CHAIN_ID;
 
 const CHAIN_CONFIGS: Record<string, { id: number; name: string }> = {
   "84532": { id: 84532, name: "Base Sepolia" },
   "8453": { id: 8453, name: "Base" },
 };
-const CHAIN_CONFIG = CHAIN_CONFIGS[String(CHAIN_ID)] || {
-  id: CHAIN_ID,
-  name: "Unknown",
-};
+
+function getChainConfig(chainIdStr?: string) {
+  const cid = chainIdStr ? parseInt(chainIdStr, 10) : DEFAULT_CHAIN_ID;
+  return (
+    CHAIN_CONFIGS[String(cid)] || {
+      id: cid,
+      name: "Unknown",
+    }
+  );
+}
 
 interface MintBadgeButtonProps {
   category: string;
@@ -50,6 +57,10 @@ export function MintBadgeButton({
   const { isConnected, address, chainId } = useAccount();
   const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
+  const { badgeNftCa, badgeNftChainId } = useAppConfig();
+  const CONTRACT_ADDRESS = (badgeNftCa ||
+    DEFAULT_CONTRACT_ADDRESS) as `0x${string}`;
+  const CHAIN_CONFIG = getChainConfig(badgeNftChainId);
 
   const { data: hash, isPending, writeContract } = useWriteContract();
   const { isLoading, isSuccess } = useWaitForTransactionReceipt({

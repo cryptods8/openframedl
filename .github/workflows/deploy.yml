@@ -57,21 +57,21 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     env:
-      HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+      HETZNER_HOST: ${{ secrets.HETZNER_HOST || vars.HETZNER_HOST }}
     steps:
       - name: Check Hetzner credentials
         if: env.HETZNER_HOST == ''
         run: |
-          echo "HETZNER_HOST secret is not configured yet. Skipping deploy step."
-          echo "To enable deployments, add HETZNER_HOST and HETZNER_SSH_KEY in Repository Secrets."
+          echo "HETZNER_HOST is not configured in secrets or vars. Skipping deploy step."
+          echo "To enable deployments, add HETZNER_HOST and HETZNER_SSH_KEY in Repository Secrets/Variables."
 
       - name: Trigger rolling deploy on Hetzner VPS via SSH
         if: env.HETZNER_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER || 'root' }}
+          host: ${{ secrets.HETZNER_HOST || vars.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER || vars.HETZNER_USER || 'root' }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          port: ${{ secrets.HETZNER_PORT || 22 }}
+          port: ${{ secrets.HETZNER_PORT || vars.HETZNER_PORT || 22 }}
           script: |
             /opt/framedl/scripts/deploy.sh

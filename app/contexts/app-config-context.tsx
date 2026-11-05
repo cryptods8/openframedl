@@ -5,6 +5,16 @@ import { createContext, useContext, ReactNode } from 'react';
 export type AppConfigContextType = {
   externalBaseUrl: string;
   isPro: boolean;
+  domain?: string;
+  gameNftCa?: string;
+  gameNftChainId?: string;
+  gameNftMintPrice?: string;
+  gameNftErc20TokenConfig?: string;
+  badgeNftCa?: string;
+  badgeNftChainId?: string;
+  streakFreezeCa?: string;
+  streakFreezeChainId?: string;
+  streakFreezeMintPrice?: string;
 };
 
 const defaultContext: AppConfigContextType = {

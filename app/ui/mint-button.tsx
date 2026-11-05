@@ -11,9 +11,12 @@ import { AnimatedBorder } from "./animated-border";
 import { Button } from "./button/button";
 import { decodeEventLog, parseEther, parseUnits } from "viem";
 import { MintMetadata } from "../db/pg/types";
+import { useAppConfig } from "../contexts/app-config-context";
 
-const MINT_PRICE = process.env.NEXT_PUBLIC_GAME_NFT_MINT_PRICE || "0.0004";
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAME_NFT_CA as `0x${string}`;
+const DEFAULT_MINT_PRICE =
+  process.env.NEXT_PUBLIC_GAME_NFT_MINT_PRICE || "0.0004";
+const DEFAULT_CONTRACT_ADDRESS = process.env
+  .NEXT_PUBLIC_GAME_NFT_CA as `0x${string}`;
 const CONTRACT_ABI = [
   {
     name: "mintGame",
@@ -86,7 +89,7 @@ const ERC20_ABI = [
   },
 ] as const;
 
-const CHAIN_ID = parseInt(
+const DEFAULT_CHAIN_ID = parseInt(
   process.env.NEXT_PUBLIC_GAME_NFT_CHAIN_ID || "84532",
   10,
 );
@@ -101,14 +104,14 @@ const CHAIN_CONFIGS = {
     name: "Base",
   },
 } as Record<string, { id: number; name: string }>;
-const CHAIN_CONFIG: { id: number; name: string } = CHAIN_CONFIGS[CHAIN_ID] || {
-  id: 0,
-  name: "Unknown",
-};
 
-if (process.env.NEXT_PUBLIC_GAME_NFT_CHAIN_ID && CHAIN_CONFIG.id === 0) {
-  throw new Error(
-    `Invalid NEXT_PUBLIC_GAME_NFT_CHAIN_ID: ${process.env.NEXT_PUBLIC_GAME_NFT_CHAIN_ID}`,
+function getChainConfig(chainIdStr?: string): { id: number; name: string } {
+  const cid = chainIdStr ? parseInt(chainIdStr, 10) : DEFAULT_CHAIN_ID;
+  return (
+    CHAIN_CONFIGS[cid] || {
+      id: 0,
+      name: "Unknown",
+    }
   );
 }
 
@@ -189,6 +192,11 @@ export function MintButton({
   const { isConnected, address, chainId } = useAccount();
   const { connectWallet } = useWalletConnector();
   const { switchChain } = useSwitchChain();
+  const { gameNftCa, gameNftChainId, gameNftMintPrice } = useAppConfig();
+  const CONTRACT_ADDRESS = (gameNftCa ||
+    DEFAULT_CONTRACT_ADDRESS) as `0x${string}`;
+  const MINT_PRICE = gameNftMintPrice || DEFAULT_MINT_PRICE;
+  const CHAIN_CONFIG = getChainConfig(gameNftChainId);
 
   const [optimisticApproval, setOptimisticApproval] = React.useState(false);
   const shouldMintAfterApproval = React.useRef(false);

@@ -13,7 +13,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 45 19 * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/enqueue/daily-reminder?variant=late" >> /var/log/framedl-crons.log 2>&1
 
 # 4. Arena notification enqueue every 10 mins starting at min 5
-5/10 * * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/enqueue/arena" >> /var/log/framedl-crons.log 2>&1
+5-59/10 * * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/enqueue/arena" >> /var/log/framedl-crons.log 2>&1
 
 # 5. Process notification queue every 2 minutes
 */2 * * * * root /opt/framedl/scripts/trigger-cron.sh main "/api/notifications/process" >> /var/log/framedl-crons.log 2>&1

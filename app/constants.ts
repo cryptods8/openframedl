@@ -58,5 +58,5 @@ export const hubHttpUrl = hubConfigs[0]!.httpUrl;
 export const hubRequestOptions = hubConfigs[0]!.requestOptions;
 
 export const isPro =
-  process.env.NEXT_PUBLIC_FRAMEDL_PRO === "true" ||
-  process.env.FRAMEDL_PRO === "true";
+  process.env["NEXT_PUBLIC_FRAMEDL_PRO"] === "true" ||
+  process.env["FRAMEDL_PRO"] === "true";

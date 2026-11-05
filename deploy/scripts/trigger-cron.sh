@@ -27,7 +27,7 @@ else
 fi
 
 if [ -f "$ENV_FILE" ]; then
-  CRON_SECRET=$(grep -E '^CRON_SECRET=' "$ENV_FILE" | cut -d '=' -f2- | tr -d '"' | tr -d "'" || true)
+  CRON_SECRET=$(grep -E '^CRON_SECRET=' "$ENV_FILE" | cut -d '=' -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" || true)
 else
   echo "Warning: $ENV_FILE not found, attempting request without token"
   CRON_SECRET=""

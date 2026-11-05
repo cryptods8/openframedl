@@ -9,9 +9,12 @@ import { Button } from "../button/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { Switch } from "@headlessui/react";
 import { useLocalStorage } from "@/app/hooks/use-local-storage";
+import { useAppConfig } from "@/app/contexts/app-config-context";
 
-const MINT_PRICE = process.env.NEXT_PUBLIC_GAME_NFT_MINT_PRICE || "0.0004";
-const ERC20_TOKEN_CONFIG = process.env.NEXT_PUBLIC_GAME_NFT_ERC20_TOKEN_CONFIG;
+const DEFAULT_MINT_PRICE =
+  process.env.NEXT_PUBLIC_GAME_NFT_MINT_PRICE || "0.0004";
+const DEFAULT_ERC20_TOKEN_CONFIG =
+  process.env.NEXT_PUBLIC_GAME_NFT_ERC20_TOKEN_CONFIG;
 // const ERC20_TOKEN_CONFIG =
 //   process.env.NEXT_PUBLIC_GAME_NFT_ERC20_TOKEN_CONFIG ||
 //   '{ "address": "0x4ed4e862860bed51a9570b96d89af5e1b0efefed", "decimals": 18, "name": "DEGEN", "symbol": "DEGEN", "price": "50" }';
@@ -24,14 +27,6 @@ function safeParseJson<T>(json?: string | undefined | null): T | null {
     return null;
   }
 }
-
-const erc20MintingTokenConfig = safeParseJson<{
-  address: `0x${string}`;
-  decimals: number;
-  name: string;
-  symbol: string;
-  price: string;
-}>(ERC20_TOKEN_CONFIG);
 
 interface GameMintDialogContentProps {
   game: { id: string; status: GameStatus };
@@ -203,6 +198,15 @@ export function GameMintDialogContent({
   anonUserInfo,
 }: GameMintDialogContentProps) {
   const gameId = game.id;
+  const { gameNftMintPrice, gameNftErc20TokenConfig } = useAppConfig();
+  const MINT_PRICE = gameNftMintPrice || DEFAULT_MINT_PRICE;
+  const erc20MintingTokenConfig = safeParseJson<{
+    address: `0x${string}`;
+    decimals: number;
+    name: string;
+    symbol: string;
+    price: string;
+  }>(gameNftErc20TokenConfig ?? DEFAULT_ERC20_TOKEN_CONFIG);
   const [erc20MintingEnabled, setErc20MintingEnabled] = useLocalStorage(
     `erc20MintingEnabled/${erc20MintingTokenConfig?.address ?? "default"}`,
     !!erc20MintingTokenConfig

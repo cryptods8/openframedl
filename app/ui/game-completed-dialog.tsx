@@ -98,7 +98,7 @@ export function GameCompletedDialog({
 
   const isMinted = (game?.gameData?.mints?.length ?? 0) > 0;
   const isSkipped = skippedGames[game?.id ?? ""] ?? false;
-  const canMint = !!CONTRACT_ADDRESS;
+  const canMint = !!(config.gameNftCa || CONTRACT_ADDRESS);
   const isArena = !!game?.arena;
   const isArt = !!game?.customMaker?.isArt;
   const hasNextArenaGame =

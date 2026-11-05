@@ -7,7 +7,7 @@ import { UserData } from "../game/game-repository";
 import { loadUserData } from "../games/user-data";
 import { isProduction } from "../constants";
 
-export const domain = process.env.NEXT_PUBLIC_DOMAIN || "framedl.com";
+export const domain = process.env["NEXT_PUBLIC_DOMAIN"] || "framedl.com";
 
 export const authOptions: NextAuthOptions = {
   providers: [

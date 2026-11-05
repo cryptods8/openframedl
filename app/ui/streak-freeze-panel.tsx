@@ -13,8 +13,9 @@ import { toast } from "./toasts/toast";
 import { SnowFlakeIcon } from "../image-ui/icons/SnowFlakeIcon";
 import { PanelTitle } from "./panel-title";
 import { cn } from "../utils";
+import { useAppConfig } from "../contexts/app-config-context";
 
-const MINT_PRICE =
+const DEFAULT_MINT_PRICE =
   process.env.NEXT_PUBLIC_STREAK_FREEZE_NFT_MINT_PRICE || "0.0025";
 
 interface PendingClaim {
@@ -42,6 +43,8 @@ interface StreakFreezeData {
 
 export function StreakFreezePanel() {
   const { address } = useAccount();
+  const { streakFreezeMintPrice } = useAppConfig();
+  const MINT_PRICE = streakFreezeMintPrice || DEFAULT_MINT_PRICE;
 
   const { data, isLoading, isFetching, refetch } = useQuery<StreakFreezeData>({
     queryKey: ["streak-freeze", address],

@@ -177,6 +177,18 @@ function main() {
       } else {
         keptKeys.push(keyName);
       }
+      // Convert double-quoted values containing '$' (and no single quotes) to single-quoted
+      // so Docker Compose env_file does not interpolate '$var' / '$@' in secrets
+      const eqIdx = line.indexOf("=");
+      if (eqIdx !== -1) {
+        const prefix = line.slice(0, eqIdx + 1);
+        const val = line.slice(eqIdx + 1).trim();
+        if (val.startsWith('"') && val.endsWith('"') && val.includes("$") && !val.includes("'")) {
+          const inner = val.slice(1, -1);
+          keptLines.push(`${prefix}'${inner}'`);
+          continue;
+        }
+      }
     }
 
     keptLines.push(line);
