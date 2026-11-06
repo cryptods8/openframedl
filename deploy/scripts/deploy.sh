@@ -46,4 +46,11 @@ done
 echo "==> Pruning dangling Docker images..."
 docker image prune -f
 
+DEPLOY_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+COMMIT_SHA=$(docker inspect framedl-framedl-app-1 --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || echo "unknown")
+IMAGE_CREATED=$(docker inspect framedl-framedl-app-1 --format '{{index .Config.Labels "org.opencontainers.image.created"}}' 2>/dev/null || echo "unknown")
+IMAGE_DIGEST=$(docker inspect framedl-framedl-app-1 --format '{{.Image}}' 2>/dev/null || echo "unknown")
+
+echo "[${DEPLOY_TIME}] deployed commit=${COMMIT_SHA} built=${IMAGE_CREATED} image=${IMAGE_DIGEST}" | tee -a /var/log/framedl-deploys.log
+
 echo "==> Deployment finished successfully!"

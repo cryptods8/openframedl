@@ -49,6 +49,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_COMMIT_SHA=${{ github.sha }}
+            BUILD_TIME=${{ steps.meta.outputs.json && fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

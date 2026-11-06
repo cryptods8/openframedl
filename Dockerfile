@@ -33,10 +33,15 @@ RUN pnpm build
 FROM node:20-bookworm-slim AS runner
 WORKDIR /usr/src/app
 
+ARG GIT_COMMIT_SHA=""
+ARG BUILD_TIME=""
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
+ENV BUILD_TIME=$BUILD_TIME
 
 # Install curl for container health check
 RUN apt-get update && apt-get install -y --no-install-recommends \
