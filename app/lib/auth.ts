@@ -115,6 +115,8 @@ export const authOptions: NextAuthOptions = {
       return { ...session, user };
     },
   },
+  // Partitioned (CHIPS) so the cookies survive inside another site's iframe (web Farcaster clients)
+  // in browsers that block third-party cookies
   cookies:
     (isProduction || !isProduction)
       ? {
@@ -123,6 +125,7 @@ export const authOptions: NextAuthOptions = {
             options: {
               httpOnly: true,
               sameSite: "none",
+              partitioned: true,
               path: "/",
               secure: true,
             },
@@ -132,6 +135,7 @@ export const authOptions: NextAuthOptions = {
             options: {
               httpOnly: true,
               sameSite: "none",
+              partitioned: true,
               secure: true,
             },
           },
@@ -140,6 +144,7 @@ export const authOptions: NextAuthOptions = {
             options: {
               httpOnly: true,
               sameSite: "none",
+              partitioned: true,
               secure: true,
             },
           },
